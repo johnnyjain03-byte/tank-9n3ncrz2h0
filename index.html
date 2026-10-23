@@ -8,8 +8,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Gym Bro">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="theme-color" content="#F4F6FB" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0E1320" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F4F6FB">
+<meta name="color-scheme" content="light only">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
@@ -26,18 +26,8 @@
   --body:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;
   --r:18px;
 }
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#0E1320; --surface:#182033; --soft:#222B40; --ink:#F3F6FC; --muted:#B4BED2; --line:#2C3650;
-  --orange:#FF7442; --orange-soft:#3D2418; --blue:#5B8BFF; --blue-soft:#1C2A4F; --green:#2FD58C; --green-soft:#133528;
-  --violet:#A37BFF; --violet-soft:#2A2148; --sun:#FFD24D; --sun-soft:#3A3115; --red:#FF5A6C; --red-soft:#3F1A22;
-  --on-accent:#0E1320; color-scheme:dark}}
-:root[data-theme="dark"]{
-  --bg:#0E1320; --surface:#182033; --soft:#222B40; --ink:#F3F6FC; --muted:#B4BED2; --line:#2C3650;
-  --orange:#FF7442; --orange-soft:#3D2418; --blue:#5B8BFF; --blue-soft:#1C2A4F; --green:#2FD58C; --green-soft:#133528;
-  --violet:#A37BFF; --violet-soft:#2A2148; --sun:#FFD24D; --sun-soft:#3A3115; --red:#FF5A6C; --red-soft:#3F1A22;
-  --on-accent:#0E1320; color-scheme:dark}
 *{box-sizing:border-box}
-:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+:root{color-scheme:light only;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 html{-webkit-text-size-adjust:100%}
 body{margin:0}
 img{max-width:100%}
@@ -77,6 +67,8 @@ p{margin:0}
 .btn.block{width:100%}
 .btn:disabled{opacity:.5;cursor:default}
 input[type=text],input[type=time],input[type=date],input:not([type]),select{background:var(--soft);border:2px solid transparent;border-radius:12px;padding:12px;min-width:0;width:100%;font-size:17px}
+input[type=time],input[type=date]{-webkit-appearance:none;appearance:none;display:block;max-width:100%;min-height:50px;text-align:left}
+input::-webkit-date-and-time-value{text-align:left}
 input:focus,select:focus{border-color:var(--blue);outline:none}
 .field{display:flex;flex-direction:column;gap:5px;min-width:0}
 .field span{font-size:14px;font-weight:700;color:var(--muted)}

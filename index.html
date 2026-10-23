@@ -182,6 +182,10 @@ th{font-size:13px;color:var(--muted);border-top:0}
 .aisle{font-size:14px;font-weight:800;color:var(--green);margin-top:8px}
 .pchips{display:flex;flex-wrap:wrap;gap:8px}
 .pchip{border:2px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 13px;font-weight:700;font-size:15px}
+.painscale{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.painscale .seg{padding:10px 0;text-align:center}
+.painscale .seg.on{background:var(--red);border-color:var(--red);color:#fff}
+.pchip.on{background:var(--ink);border-color:var(--ink);color:#fff}
 .pchip.no{background:var(--red-soft);border-color:var(--red);color:var(--red);text-decoration:line-through}
 /* goal */
 .goal{background:var(--violet);color:#fff;border:0;text-align:left}
@@ -972,7 +976,7 @@ function viewTrain() {
   ${modeBanner()}${tankTip('gym')}${segs}${todayNote}${injury}
   <div class="card">
     <div><h2>${ss.n}: ${esc(ss.sub)}</h2><p class="muted">About ${ss.ex.length * 10} min · <button class="linkbtn" data-a="help" data-v="sess:${UI.sess}">What to do at the gym</button>${UI.sess === plan ? ' · <button class="linkbtn" data-a="dayOpen">Can\'t train today?</button>' : ''}</p></div>
-    ${exs.map(x => x.id ? exCard(x.id, d, x) : `<div class="ex"><b>${esc(EX[x.orig].n)}</b><p class="small muted">Skip it today: no ${av.map(a => AREAS[a]).join('/')}-friendly swap.</p></div>`).join('')}
+    ${exs.map(x => x.id ? exCard(x.id, d, x) : x.skip ? skippedCard(x) : `<div class="ex"><b>${esc(EX[x.orig].n)}</b><p class="small muted">Skip it today: no ${av.map(a => AREAS[a]).join('/')}-friendly swap.</p></div>`).join('')}
     <button class="btn block blue" data-a="saveSession">${d.session === UI.sess ? 'Update session' : 'Finish session'}</button>
   </div>
   ${sched}`;
@@ -981,7 +985,9 @@ function safeFor(id, avoid) { return !(EX[id].stress || []).some(t => avoid.incl
 // the exercises you actually do today: your swaps first, then injury-friendly replacements, no duplicates
 function sessionExercises(key, k) {
   const d = getDay(k) || {}, dayS = d.exSwap || {}, av = S.core.gym.avoid, used = new Set(), out = [];
+  const skips = d.exSkip || {};
   for (const orig of SESS[key].ex) {
+    if (skips[orig]) { out.push({ id: null, orig, skip: skips[orig] }); continue; }
     let id = dayS[orig] || S.core.gym.swap[orig] || orig, why = dayS[orig] ? 'today' : S.core.gym.swap[orig] ? 'always' : '';
     if (!EX[id]) { id = orig; why = ''; }
     if (!safeFor(id, av) || used.has(id)) {
@@ -991,6 +997,14 @@ function sessionExercises(key, k) {
     used.add(id); out.push({ id, orig, why });
   }
   return out;
+}
+function skippedCard(x) {
+  const r = x.skip;
+  return `<div class="ex" style="background:var(--red-soft)">
+    <b>${esc(EX[r.ex] ? EX[r.ex].n : EX[x.orig].n)}: skipped today</b>
+    <p class="small">${esc(SKIP_REASONS[r.reason] || r.reason)}${r.reason === 'pain' ? ` · ${esc(AREAS[r.area] || 'other')} · pain ${r.pain}/10` : ''}<br><span class="muted">"${esc(r.note)}"</span></p>
+    <div class="meal-act" style="margin-top:0"><button class="linkbtn" data-a="exSwap" data-v="${x.orig}">Swap instead</button><button class="linkbtn" data-a="exUndo" data-v="${x.orig}">Undo skip</button></div>
+  </div>`;
 }
 function exCard(id, d, x = {}) {
   const E = EX[id], sg = suggestion(id), saved = d.lifts && d.lifts[id], dr = UI.draft[id] || {};
@@ -1138,6 +1152,7 @@ function viewMe() {
     ${chart(series, p.goalWeight)}
   </div>
   ${photoCard()}
+  ${skipLogCard()}
   <div class="card">
     <h2>Waist</h2>
     <div class="row" style="flex-wrap:nowrap">
@@ -1147,6 +1162,18 @@ function viewMe() {
     ${S.core.measurements.length ? `<p class="small">${S.core.measurements.slice(-6).map(m => shortDate(m.d) + ': <b>' + m.waist + ' cm</b>').join(' · ')}</p>` : '<p class="small muted">Once a week. Waist down while weight stays flat = fat going, muscle coming.</p>'}
   </div>
   ${settingsCard()}`;
+}
+function skipLogCard() {
+  const log = (S.core.skipLog || []).slice().reverse();
+  if (!log.length) return '';
+  const since = addDays(TODAY(), -14), recent = {};
+  log.filter(x => x.reason === 'pain' && x.d >= since).forEach(x => { recent[x.area] = (recent[x.area] || 0) + 1; });
+  const warn = Object.entries(recent).filter(([, n]) => n >= 2).map(([a, n]) => `${AREAS[a] || 'Other'} pain ${n} times in 2 weeks.`);
+  return `<details class="card"><summary>Skips & injury report (${log.length})</summary>
+    ${warn.length ? `<div class="banner warn"><p class="small"><b>${esc(warn.join(' '))}</b> Get it checked by a physio. Turn on the friendly mode for that area in Gym → Swap → It hurts.</p></div>` : ''}
+    <div>${log.slice(0, 15).map(x => `<div style="border-top:1px solid var(--line);padding:8px 0"><div class="spread small"><b>${esc(x.ex)}</b><span class="muted">${shortDate(x.d)}</span></div><p class="small">${esc(SKIP_REASONS[x.reason] || x.reason)}${x.reason === 'pain' ? ` · ${esc(AREAS[x.area] || 'other')} · pain ${x.pain}/10` : ''}</p><p class="small muted">"${esc(x.note)}"</p></div>`).join('')}</div>
+    <button class="btn ghost small" data-a="copySkipLog">Copy report for a physio</button>
+  </details>`;
 }
 function photoCard() {
   const ph = (S.core.photos || []).filter(x => x.pose === UI.pose).sort((a, b) => a.d < b.d ? -1 : a.d > b.d ? 1 : 0);
@@ -1261,26 +1288,48 @@ function exHowHTML(id) {
     <p class="muted">${E.sets} sets of ${E.lo}–${E.hi} reps. Rest ${E.main ? '2–3 min' : '60–90 s'} between sets.</p>
     <a class="vid" href="${videoLink(E.n)}" target="_blank" rel="noopener">▶ Watch a video</a>`;
 }
+const SKIP_REASONS = { pain: 'Pain or injury', equip: 'No equipment', time: 'No time', tired: 'Too tired', other: 'Other' };
 function swapSheet() {
   const sw = UI.sheet.swap, orig = sw.orig, k = TODAY(), cur = (sessionExercises(UI.sess, k).find(x => x.orig === orig) || {}).id || orig;
   const close = `<div class="spread"><span class="lbl">Swap exercise</span><button class="btn small ghost" data-a="closeSheet">Close</button></div>`;
+  const avoid = sw.area && sw.area !== 'other' ? [sw.area] : [];
+  const opts = [orig].concat(ALTS[orig] || []).filter(a => EX[a] && a !== cur && safeFor(a, avoid));
+  // last resort: skip, but Tank tries to talk you into a swap first
+  if (sw.step === 'skip1') return `<div class="in" role="dialog" aria-label="Skip exercise">${close}
+    <div class="hero grumpy"><span class="face">${tankSVG('grumpy')}</span><div class="say"><b>Tank</b><p>Skip? Then those muscles get nothing today. Do one of these instead. Same muscles, no ${esc(EX[orig].n.toLowerCase())}.</p></div></div>
+    ${opts.slice(0, 3).map(a => `<button class="opt" data-a="swQuick" data-v="${a}"><b>${esc(EX[a].n)}</b><span>${EX[a].sets} × ${EX[a].lo}–${EX[a].hi} · tap to swap for today</span></button>`).join('') || '<p class="small">No safe swap for this one.</p>'}
+    <button class="btn ghost block" data-a="swSkip2">No, I need to skip it</button></div>`;
+  if (sw.step === 'skip2') {
+    const r = sw.sk || {};
+    return `<div class="in" role="dialog" aria-label="Skip report">${close}
+      <h2>Skip report: ${esc(EX[cur].n)}</h2>
+      <p class="small muted">Tank wants a reason. If it's pain, this report helps you or a physio see a pattern.</p>
+      <div class="field"><span>Why are you skipping?</span><div class="pchips">${Object.entries(SKIP_REASONS).map(([v, l]) => `<button class="pchip ${r.reason === v ? 'on' : ''}" data-a="skReason" data-v="${v}">${l}</button>`).join('')}</div></div>
+      ${r.reason === 'pain' ? `
+        <div class="field"><span>Where?</span><div class="pchips">${Object.entries(AREAS).concat([['other', 'somewhere else']]).map(([v, l]) => `<button class="pchip ${r.area === v ? 'on' : ''}" data-a="skArea" data-v="${v}">${l[0].toUpperCase() + l.slice(1)}</button>`).join('')}</div></div>
+        <div class="field"><span>How bad? 1 = barely, 10 = can't move</span><div class="painscale">${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => `<button class="seg ${r.pain === n ? 'on' : ''}" data-a="skPain" data-v="${n}">${n}</button>`).join('')}</div></div>` : ''}
+      <label class="field"><span>What happened?</span><input id="sk-note" type="text" placeholder="${r.reason === 'pain' ? 'e.g. sharp pain in lower back on the 2nd set' : 'e.g. bar was taken the whole session'}" value="${esc(r.note || '')}"></label>
+      ${r.reason === 'pain' && r.pain >= 7 ? '<div class="banner warn"><p class="small">Pain 7 or more: stop training that area and get it checked by a doctor or physio.</p></div>' : ''}
+      <button class="btn block" data-a="skSave">Skip and save report</button>
+      <button class="btn ghost block" data-a="swBackToSwap">Actually, let me swap</button></div>`;
+  }
   if (!sw.reason) return `<div class="in" role="dialog" aria-label="Swap exercise">${close}
     <h2>Why swap ${esc(EX[cur].n.toLowerCase())}?</h2>
-    ${[['busy', 'Machine busy or no equipment', 'Pick something that works the same muscles'], ['nope', 'I don\'t want to do it', 'Fine. Pick another one. It still has to be done.'], ['pain', 'It hurts', 'Knee, lower back or shoulder. Tank picks safe options.']].map(([v, t, d]) => `<button class="opt" data-a="swReason" data-v="${v}"><b>${t}</b><span>${d}</span></button>`).join('')}</div>`;
+    ${[['busy', 'Machine busy or no equipment', 'Pick something that works the same muscles'], ['nope', 'I don\'t want to do it', 'Fine. Pick another one. It still has to be done.'], ['pain', 'It hurts', 'Knee, lower back or shoulder. Tank picks safe options.']].map(([v, t, d]) => `<button class="opt" data-a="swReason" data-v="${v}"><b>${t}</b><span>${d}</span></button>`).join('')}
+    <button class="linkbtn" data-a="swSkip1" style="color:var(--muted);margin-top:4px">I can't do it at all, skip it</button></div>`;
   if (sw.reason === 'pain' && !sw.area) return `<div class="in" role="dialog" aria-label="Where does it hurt">${close}
     <h2>Where does it hurt?</h2>
     ${Object.entries(AREAS).map(([v, l]) => `<button class="opt" data-a="swArea" data-v="${v}"><b>${l[0].toUpperCase() + l.slice(1)}</b></button>`).join('')}
-    <button class="opt" data-a="swArea" data-v="other"><b>Somewhere else</b><span>Skip this exercise today and pick a different one</span></button>
+    <button class="opt" data-a="swArea" data-v="other"><b>Somewhere else</b><span>Pick a different exercise</span></button>
     <div class="banner warn"><p class="small">Pain is a stop sign, not a challenge. Sharp pain, swelling, or pain that lasts over a week: see a doctor or physio.</p></div></div>`;
-  const avoid = sw.area && sw.area !== 'other' ? [sw.area] : [];
-  const opts = [orig].concat(ALTS[orig] || []).filter(a => EX[a] && a !== cur && safeFor(a, avoid));
   const list = opts.length ? opts.map(a => `<button class="opt ${sw.pick === a ? 'on' : ''}" data-a="swPick" data-v="${a}"><b>${esc(EX[a].n)}${a === orig ? ' (original)' : ''}</b><span>${EX[a].sets} × ${EX[a].lo}–${EX[a].hi}${EX[a].note ? ' · ' + esc(EX[a].note) : ''}${sw.area && sw.area !== 'other' ? ' · easy on the ' + AREAS[sw.area] : ''}</span></button>`).join('')
-    : `<p class="small">No ${AREAS[sw.area] || ''}-friendly swap for this one. Skip it today.</p>`;
+    : `<p class="small">No ${AREAS[sw.area] || ''}-friendly swap for this one.</p><button class="btn block" data-a="swSkip2">Skip it and write what happened</button>`;
   return `<div class="in" role="dialog" aria-label="Pick a replacement">${close}
     <h2>Do this instead</h2>
     ${list}
     ${sw.pick ? `<div class="grid2"><button class="btn blue" data-a="swApply" data-v="today">Just today</button><button class="btn ghost" data-a="swApply" data-v="always">From now on</button></div>` : ''}
     ${sw.area && sw.area !== 'other' && !S.core.gym.avoid.includes(sw.area) ? `<button class="btn ghost block" data-a="avoidOn" data-v="${sw.area}">Make every session ${AREAS[sw.area]}-friendly</button>` : ''}
+    ${opts.length ? '<button class="linkbtn" data-a="swSkip1" style="color:var(--muted);margin-top:4px">None of these work, skip it</button>' : ''}
   </div>`;
 }
 function daySheet() {
@@ -1436,6 +1485,8 @@ function computeReport(k, a) {
   if (e.p < T.protein) fixes.push('Protein short by ' + (T.protein - e.p) + ' g.');
   if (e.s > T.sugar) fixes.push('Sugar ' + e.s + ' g, over your ' + T.sugar + ' g limit.');
   if (tr === 'skip') fixes.push(dayMode(k) === 'sick' ? 'Trained while ill. Stop it.' : 'Skipped training.');
+  const skd = Object.values((getDay(k) || {}).exSkip || {});
+  if (skd.length) fixes.push('Skipped ' + skd.map(x => (EX[x.ex] || {}).n || 'an exercise').join(', ').toLowerCase() + (skd.some(x => x.reason === 'pain') ? ' because of pain. Look after it.' : '.'));
   if (v('sleep') === 'lo') fixes.push('Under 6 hours of sleep.');
   if (v('creatine') === 'no') fixes.push('Forgot creatine.');
   tomorrow.push(tomSession + (tr === 'skip' && SESS[tp] ? '. No skipping twice in a row.' : '.'));
@@ -1616,7 +1667,40 @@ const A = {
     UI.sheet = null; saveCore(); tankSay(sw.reason === 'pain' ? 'soft' : 'grumpy', msg); render();
     toast('Swapped to ' + EX[alt].n);
   },
-  exUndo(el) { const d = getDay(TODAY()); if (d && d.exSwap) delete d.exSwap[el.dataset.v]; delete S.core.gym.swap[el.dataset.v]; saveCore(); render(); },
+  swSkip1() { UI.sheet.swap.step = 'skip1'; render(); },
+  swSkip2() {
+    const sw = UI.sheet.swap;
+    sw.sk = sw.sk || { reason: sw.reason === 'pain' ? 'pain' : sw.reason === 'busy' ? 'equip' : sw.reason === 'nope' ? 'tired' : '', area: sw.area && sw.area !== 'other' ? sw.area : '' };
+    sw.step = 'skip2'; render();
+  },
+  swBackToSwap() { const sw = UI.sheet.swap; sw.step = ''; sw.reason = sw.reason || 'nope'; render(); },
+  swQuick(el) { UI.sheet.swap.pick = el.dataset.v; UI.sheet.swap.reason = UI.sheet.swap.reason || 'nope'; A.swApply({ dataset: { v: 'today' } }); },
+  skReason(el) { const r = UI.sheet.swap.sk; r.note = val('sk-note'); r.reason = el.dataset.v; render(); },
+  skArea(el) { const r = UI.sheet.swap.sk; r.note = val('sk-note'); r.area = el.dataset.v; render(); },
+  skPain(el) { const r = UI.sheet.swap.sk; r.note = val('sk-note'); r.pain = +el.dataset.v; render(); },
+  skSave() {
+    const sw = UI.sheet.swap, r = sw.sk, k = TODAY(), orig = sw.orig;
+    r.note = val('sk-note');
+    if (!r.reason) { toast('Pick a reason first.'); return; }
+    if (r.reason === 'pain' && (!r.area || !r.pain)) { toast('Say where it hurts and how bad.'); return; }
+    if (r.note.length < 3) { toast('Write a few words about what happened.'); return; }
+    const cur = (sessionExercises(UI.sess, k).find(x => x.orig === orig) || {}).id || orig;
+    const d = getDay(k, true); d.exSkip = d.exSkip || {}; d.exSwap = d.exSwap || {};
+    delete d.exSwap[orig];
+    d.exSkip[orig] = { ex: cur, reason: r.reason, area: r.area || '', pain: r.pain || 0, note: r.note };
+    S.core.skipLog = (S.core.skipLog || []).filter(x => !(x.d === k && x.orig === orig));
+    S.core.skipLog.push({ d: k, orig, ex: EX[cur].n, reason: r.reason, area: r.area || '', pain: r.pain || 0, note: r.note });
+    if (S.core.skipLog.length > 200) S.core.skipLog = S.core.skipLog.slice(-200);
+    delete UI.draft[cur]; UI.sheet = null; saveCore();
+    tankSay(r.reason === 'pain' ? 'soft' : 'angry', r.reason === 'pain' ? 'Report saved. Look after that ' + (AREAS[r.area] || 'body') + '. Do the rest of the session.' : 'Skipped. Noted. I never forget. Finish the rest of it.');
+    render();
+  },
+  copySkipLog() {
+    const txt = 'Gym Bro: skip and injury report\n' + (S.core.skipLog || []).slice().reverse().map(x => `${x.d}  ${x.ex}: ${SKIP_REASONS[x.reason] || x.reason}${x.reason === 'pain' ? ` (${AREAS[x.area] || 'other'}, pain ${x.pain}/10)` : ''}. ${x.note}`).join('\n');
+    const done = () => toast('Report copied. Paste it in a message to your physio.');
+    try { navigator.clipboard.writeText(txt).then(done, () => toast('Could not copy. Take a screenshot instead.')); } catch (e) { toast('Could not copy. Take a screenshot instead.'); }
+  },
+  exUndo(el) { const d = getDay(TODAY()), o = el.dataset.v; if (d && d.exSkip && d.exSkip[o]) { delete d.exSkip[o]; S.core.skipLog = (S.core.skipLog || []).filter(x => !(x.d === TODAY() && x.orig === o)); } if (d && d.exSwap) delete d.exSwap[el.dataset.v]; delete S.core.gym.swap[el.dataset.v]; saveCore(); render(); },
   avoidOn(el) { if (!S.core.gym.avoid.includes(el.dataset.v)) S.core.gym.avoid.push(el.dataset.v); UI.sheet = null; saveCore(); tankSay('soft', 'Every session is ' + AREAS[el.dataset.v] + '-friendly now. Heal up. Then we go again.'); render(); },
   avoidOff() { S.core.gym.avoid = []; saveCore(); tankSay('happy', 'Back to full program. Easy at first, OK?'); render(); },
   dayOpen() { UI.sheet = 'day'; render(); },

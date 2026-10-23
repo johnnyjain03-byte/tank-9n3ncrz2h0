@@ -1316,7 +1316,7 @@ function swapSheet() {
   if (!sw.reason) return `<div class="in" role="dialog" aria-label="Swap exercise">${close}
     <h2>Why swap ${esc(EX[cur].n.toLowerCase())}?</h2>
     ${[['busy', 'Machine busy or no equipment', 'Pick something that works the same muscles'], ['nope', 'I don\'t want to do it', 'Fine. Pick another one. It still has to be done.'], ['pain', 'It hurts', 'Knee, lower back or shoulder. Tank picks safe options.']].map(([v, t, d]) => `<button class="opt" data-a="swReason" data-v="${v}"><b>${t}</b><span>${d}</span></button>`).join('')}
-    <button class="linkbtn" data-a="swSkip1" style="color:var(--muted);margin-top:4px">I can't do it at all, skip it</button></div>`;
+    <button class="btn ghost block" data-a="swSkip1" style="margin-top:6px">Skip it (last resort)</button></div>`;
   if (sw.reason === 'pain' && !sw.area) return `<div class="in" role="dialog" aria-label="Where does it hurt">${close}
     <h2>Where does it hurt?</h2>
     ${Object.entries(AREAS).map(([v, l]) => `<button class="opt" data-a="swArea" data-v="${v}"><b>${l[0].toUpperCase() + l.slice(1)}</b></button>`).join('')}
@@ -1329,7 +1329,7 @@ function swapSheet() {
     ${list}
     ${sw.pick ? `<div class="grid2"><button class="btn blue" data-a="swApply" data-v="today">Just today</button><button class="btn ghost" data-a="swApply" data-v="always">From now on</button></div>` : ''}
     ${sw.area && sw.area !== 'other' && !S.core.gym.avoid.includes(sw.area) ? `<button class="btn ghost block" data-a="avoidOn" data-v="${sw.area}">Make every session ${AREAS[sw.area]}-friendly</button>` : ''}
-    ${opts.length ? '<button class="linkbtn" data-a="swSkip1" style="color:var(--muted);margin-top:4px">None of these work, skip it</button>' : ''}
+    ${opts.length ? '<button class="btn ghost block" data-a="swSkip1" style="margin-top:6px">None of these work, skip it</button>' : ''}
   </div>`;
 }
 function daySheet() {

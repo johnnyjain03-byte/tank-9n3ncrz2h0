@@ -682,7 +682,15 @@ function pushCard(compact) {
   return `<div class="card" ${compact ? 'style="background:var(--orange-soft)"' : ''}><h2>Notifications</h2>${body}</div>`;
 }
 function markDirty() { clearTimeout(S.timer); S.timer = setTimeout(flush, 250); }
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush(); else if (UI.tab === 'today' && !UI.sheet) render(); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush(); else { checkUpdate(); if (UI.tab === 'today' && !UI.sheet) render(); } });
+// the app updates itself: when a newer version is online, reload into it (your data stays on the phone)
+const APP_VERSION = '7';
+async function checkUpdate() {
+  try {
+    const v = (await (await fetch('version.txt?t=' + Date.now(), { cache: 'no-store' })).text()).trim();
+    if (v && v !== APP_VERSION) { flush(); toast('Updating Gym Bro…'); setTimeout(() => location.reload(), 600); }
+  } catch (e) {}
+}
 const monthOf = k => k.slice(0, 7);
 function getDay(k, create) {
   const m = monthOf(k);
@@ -1859,6 +1867,7 @@ if ('serviceWorker' in navigator) window.addEventListener('load', () => navigato
   ensureTodayMode();
   render();
   syncPush();
+  checkUpdate();
   let lastDay = TODAY();
   setInterval(() => { if (TODAY() !== lastDay) { lastDay = TODAY(); ensureTodayMode(); } if (UI.tab === 'today' && !UI.sheet) render(); }, 5 * 60000);
   setInterval(() => { if (UI.tab === 'today' && !UI.sheet && UI.say && UI.say.until < Date.now()) { UI.say = null; render(); } }, 3000);

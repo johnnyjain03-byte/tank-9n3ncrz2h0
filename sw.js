@@ -1,9 +1,10 @@
 // Network first so updates show up straight away; cached copy when offline.
-const CACHE = 'gym-bro-v6';
+const CACHE = 'gym-bro-v7';
 self.addEventListener('install', e => { self.skipWaiting(); });
 self.addEventListener('activate', e => { e.waitUntil(self.clients.claim()); });
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
+  if (e.request.url.includes('version.txt')) return;
   e.respondWith(
     fetch(e.request).then(res => {
       const copy = res.clone();

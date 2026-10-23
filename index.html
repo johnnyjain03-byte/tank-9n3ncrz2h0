@@ -271,6 +271,10 @@ const weekStart = k => { const d = parseKey(k); return addDays(k, -((d.getDay() 
 const CHECK = '<svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg>';
 const pick = (arr, seed) => arr[((seed % arr.length) + arr.length) % arr.length];
 
+/* ---------- push notifications (sent by the Gym Bro push server) ---------- */
+const PUSH_URL = '';
+const VAPID_PUBLIC = 'BJN2ANHuN3BmTt-84niUfexGISrFjCs_ro6WCMS8-v4ujxeinsQt2WSgy34mnl2x3kQG8Q6why-4QaTSXLC-hyw';
+
 /* ---------- goals & programs ---------- */
 // kcal: offset from maintenance; prot: g per kg; rate: planned kg per week
 const GOALS = {
@@ -315,6 +319,56 @@ const EX = {
   scalf: { n: 'Seated calf raise', sets: 3, lo: 12, hi: 20, inc: 5, start: 30, how: ['Knees under the pad, balls of your feet on the edge.', 'Deep stretch at the bottom.', 'Push up high and pause.'] },
   crunch: { n: 'Cable crunch', sets: 3, lo: 12, hi: 15, inc: 5, start: 40, how: ['Kneel facing the cable, rope next to your head.', 'Crunch your ribs towards your hips.', 'Hips stay still. Come back up slowly.'] },
 };
+// Alternatives you can swap to. stress = what the exercise loads, so a sore knee/back/shoulder can avoid it.
+Object.assign(EX, {
+  tbdl: { n: 'Trap-bar deadlift', sets: 3, lo: 5, hi: 8, inc: 5, start: 90, main: true, how: ['Stand in the middle of the hex bar, feet hip-width.', 'Grip the handles, chest up, push the floor away.', 'Stand tall, lower under control. A bit easier on the lower back than a normal deadlift.'] },
+  hipthrust: { n: 'Barbell hip thrust', sets: 3, lo: 8, hi: 12, inc: 5, start: 60, main: true, how: ['Upper back on a bench, bar over your hips with a pad.', 'Drive your hips up until your body is flat from knees to shoulders. Squeeze 1 second.', 'Lower slowly. Easy on knees and lower back.'] },
+  pullthrough: { n: 'Cable pull-through', sets: 3, lo: 12, hi: 15, inc: 5, start: 25, how: ['Rope on the low cable, face away, rope between your legs.', 'Push your hips back, back flat.', 'Snap your hips forward and squeeze your glutes.'] },
+  gobletsq: { n: 'Goblet squat', sets: 3, lo: 10, hi: 12, inc: 2, start: 24, note: 'one dumbbell', how: ['Hold a dumbbell at your chest, feet shoulder-width.', 'Sit down between your heels, chest up.', 'Stand up through the whole foot.'] },
+  hacksq: { n: 'Hack squat (machine)', sets: 3, lo: 8, hi: 12, inc: 10, start: 60, main: true, how: ['Back flat on the pad, feet shoulder-width in the middle of the platform.', 'Lower until your thighs are level with the platform.', 'Push up without locking your knees hard.'] },
+  dbbench: { n: 'Dumbbell bench press', sets: 4, lo: 6, hi: 10, inc: 2, start: 26, main: true, note: 'kg per dumbbell', how: ['Lie on a flat bench, dumbbells at your chest.', 'Press up and slightly together.', 'Lower slowly to a deep stretch.'] },
+  machpress: { n: 'Machine chest press', sets: 3, lo: 8, hi: 12, inc: 5, start: 50, how: ['Seat so the handles are at mid-chest.', 'Press forward until your arms are straight.', 'Come back slowly. Stop before it hurts.'] },
+  floorpress: { n: 'Dumbbell floor press', sets: 3, lo: 8, hi: 12, inc: 2, start: 24, note: 'kg per dumbbell', how: ['Lie on the floor, knees bent, dumbbells at your chest.', 'Press up. Lower until your elbows touch the floor.', 'The floor limits the range, so it\'s kind to sore shoulders.'] },
+  pushup: { n: 'Push-ups', sets: 3, lo: 10, hi: 25, inc: 0, start: 0, note: 'bodyweight', how: ['Hands a bit wider than shoulders, body straight.', 'Lower your chest to just above the floor.', 'Push up. Too easy? Lower more slowly.'] },
+  pecdeck: { n: 'Pec deck (machine fly)', sets: 3, lo: 12, hi: 15, inc: 5, start: 40, how: ['Seat so the handles are at chest height.', 'Bring the handles together in front of you.', 'Open slowly to a stretch.'] },
+  latpd: { n: 'Lat pulldown', sets: 3, lo: 8, hi: 12, inc: 5, start: 55, how: ['Hands a bit wider than shoulders, thighs under the pads.', 'Pull the bar to your upper chest, elbows down.', 'Let it up slowly until your arms are straight.'] },
+  assistpull: { n: 'Assisted pull-up', sets: 3, lo: 8, hi: 12, inc: 0, start: 20, note: 'kg of help, less = harder', how: ['Kneel on the pad, pick an assist weight.', 'Pull your chin over the bar.', 'Lower all the way. Use less help over time.'] },
+  dbrow: { n: 'One-arm dumbbell row', sets: 3, lo: 8, hi: 12, inc: 2, start: 30, note: 'kg, reps per arm', how: ['One hand and knee on a bench, back flat.', 'Pull the dumbbell to your hip.', 'Lower slowly. All reps one side, then switch.'] },
+  cablelat: { n: 'Cable lateral raise', sets: 3, lo: 12, hi: 20, inc: 2.5, start: 5, how: ['Low cable, handle in the hand furthest from the machine.', 'Raise your arm out to the side to shoulder height.', 'Lower slowly.'] },
+  reardelt: { n: 'Reverse pec deck', sets: 3, lo: 12, hi: 20, inc: 5, start: 30, how: ['Face the pec deck, handles at shoulder height.', 'Open your arms back, squeeze your shoulder blades.', 'Return slowly.'] },
+  ohext: { n: 'Overhead cable triceps extension', sets: 2, lo: 10, hi: 15, inc: 2.5, start: 20, how: ['Rope on the cable, face away, rope behind your head.', 'Straighten your arms forward and up.', 'Bend back slowly.'] },
+  cgbench: { n: 'Close-grip bench press', sets: 3, lo: 6, hi: 10, inc: 2.5, start: 50, how: ['Hands shoulder-width on the bar.', 'Lower to your lower chest, elbows close to your body.', 'Press up.'] },
+  hammer: { n: 'Hammer curl', sets: 2, lo: 10, hi: 15, inc: 1, start: 12, note: 'kg per dumbbell', how: ['Dumbbells at your sides, palms facing in.', 'Curl up without swinging.', 'Lower slowly.'] },
+  revlunge: { n: 'Reverse lunge', sets: 3, lo: 8, hi: 12, inc: 2, start: 12, note: 'kg per dumbbell, reps per leg', how: ['Step back with one leg.', 'Lower the back knee almost to the floor.', 'Push through the front heel to stand. Kinder to knees than walking lunges.'] },
+  stepup: { n: 'Step-up', sets: 3, lo: 8, hi: 12, inc: 2, start: 12, note: 'kg per dumbbell, reps per leg', how: ['Box or bench at knee height.', 'Step up, pushing through the top heel.', 'Step down slowly.'] },
+  glutebridge: { n: 'Glute bridge', sets: 3, lo: 12, hi: 20, inc: 5, start: 0, note: 'kg on the hips, 0 = bodyweight', how: ['Lie on your back, knees bent, feet flat.', 'Push your hips up, squeeze your glutes 1 second.', 'Lower slowly.'] },
+  seatcurl: { n: 'Seated leg curl', sets: 3, lo: 10, hi: 15, inc: 2.5, start: 40, how: ['Pad just above your heels, thigh pad tight.', 'Curl your heels down and back.', 'Return slowly.'] },
+  lpcalf: { n: 'Calf raise on the leg press', sets: 4, lo: 12, hi: 20, inc: 10, start: 80, how: ['Balls of your feet on the bottom edge of the platform.', 'Push with your toes, deep stretch at the bottom.', 'Pause at the top.'] },
+  deadbug: { n: 'Dead bug', sets: 3, lo: 8, hi: 12, inc: 0, start: 0, note: 'bodyweight, reps per side', how: ['Lie on your back, arms up, knees bent at 90°.', 'Slowly lower the opposite arm and leg, lower back pressed to the floor.', 'Return and switch sides.'] },
+  plank: { n: 'Plank', sets: 3, lo: 30, hi: 60, inc: 0, start: 0, note: 'seconds, not reps', how: ['Forearms on the floor, body straight from head to heels.', 'Squeeze glutes and stomach.', 'Hold and breathe.'] },
+  landmine: { n: 'Landmine press', sets: 3, lo: 8, hi: 12, inc: 2.5, start: 20, note: 'kg on the bar', how: ['Bar in a landmine corner, hold the end at your shoulder.', 'Press up and forward.', 'Lower slowly. Easier on shoulders than the overhead press.'] },
+  dbohp: { n: 'Seated dumbbell shoulder press', sets: 3, lo: 8, hi: 12, inc: 2, start: 18, note: 'kg per dumbbell', how: ['Seated, back supported, dumbbells at your shoulders.', 'Press up until your arms are straight.', 'Lower slowly.'] },
+  machsp: { n: 'Machine shoulder press', sets: 3, lo: 8, hi: 12, inc: 5, start: 40, how: ['Handles at shoulder height.', 'Press up.', 'Lower slowly.'] },
+  inclinemach: { n: 'Incline machine press', sets: 3, lo: 8, hi: 12, inc: 5, start: 40, how: ['Seat so the handles are at your upper chest.', 'Press up and forward.', 'Lower slowly.'] },
+});
+const STRESS = {
+  bench: ['shoulder'], wpull: ['shoulder'], idb: ['shoulder'], lat: ['shoulder'], squat: ['knee', 'back'], rdl: ['back'], bss: ['knee'], hlr: ['back'],
+  ohp: ['shoulder', 'back'], incb: ['shoulder'], pull: ['shoulder'], dip: ['shoulder'], fly: ['shoulder'], dl: ['back'], lpress: ['knee'], lunge: ['knee'], lext: ['knee'], crunch: ['back'],
+  tbdl: ['back'], gobletsq: ['knee'], hacksq: ['knee'], dbbench: ['shoulder'], pushup: ['shoulder'], pecdeck: ['shoulder'], assistpull: ['shoulder'], cablelat: ['shoulder'],
+  cgbench: ['shoulder'], revlunge: ['knee'], stepup: ['knee'], dbohp: ['shoulder'], machsp: ['shoulder'], inclinemach: ['shoulder'],
+};
+for (const id in EX) EX[id].stress = STRESS[id] || [];
+const ALTS = {
+  bench: ['dbbench', 'machpress', 'floorpress', 'pushup'], wpull: ['latpd', 'assistpull', 'pull', 'dbrow'], idb: ['inclinemach', 'dbbench', 'floorpress', 'machpress'],
+  csrow: ['dbrow', 'crow', 'latpd'], lat: ['cablelat', 'reardelt', 'face'], push: ['ohext', 'cgbench'], curl: ['hammer'],
+  squat: ['hacksq', 'lpress', 'gobletsq', 'hipthrust', 'glutebridge'], rdl: ['pullthrough', 'hipthrust', 'seatcurl', 'glutebridge'],
+  bss: ['revlunge', 'stepup', 'lpress', 'hipthrust', 'glutebridge', 'pullthrough'], lcurl: ['seatcurl', 'glutebridge'], calf: ['lpcalf', 'scalf'], hlr: ['crunch', 'deadbug', 'plank'],
+  ohp: ['dbohp', 'machsp', 'landmine'], incb: ['idb', 'inclinemach', 'floorpress', 'machpress'], pull: ['latpd', 'assistpull', 'dbrow'], crow: ['dbrow', 'csrow', 'latpd'],
+  dip: ['cgbench', 'push', 'ohext'], fly: ['pecdeck', 'machpress', 'floorpress'], face: ['reardelt', 'csrow'],
+  dl: ['tbdl', 'hipthrust', 'pullthrough', 'rdl', 'glutebridge'], lpress: ['hacksq', 'gobletsq', 'hipthrust', 'glutebridge'], lunge: ['revlunge', 'stepup', 'hipthrust', 'glutebridge', 'pullthrough', 'seatcurl'],
+  lext: ['gobletsq', 'stepup', 'hipthrust', 'glutebridge', 'seatcurl', 'pullthrough'], scalf: ['calf', 'lpcalf'], crunch: ['deadbug', 'plank', 'hlr'],
+};
+const AREAS = { knee: 'knee', back: 'lower back', shoulder: 'shoulder' };
 const SESS = {
   UA: { n: 'Upper 1', sub: 'Chest & back, heavy', ex: ['bench', 'wpull', 'idb', 'csrow', 'lat', 'push', 'curl'], info: 'Upper body, heavy. Chest and back first, then shoulders and arms.' },
   LA: { n: 'Legs 1', sub: 'Squat day', ex: ['squat', 'rdl', 'bss', 'lcurl', 'calf', 'hlr'], info: 'Legs built around the squat. Thighs, glutes, hamstrings, calves and abs.' },
@@ -334,7 +388,7 @@ function weekPlan() {
   if (S.core.goal.days === 3) return { 1: 'FA', 2: c === 'low' ? 'REST' : 'Z2', 3: 'FB', 4: c === 'high' ? 'Z2' : 'REST', 5: 'FC', 6: c === 'low' ? 'EASY' : 'LONG', 0: 'REST' };
   return { 1: 'UA', 2: 'LA', 3: c === 'low' ? 'REST' : 'Z2', 4: 'UB', 5: 'LB', 6: c === 'low' ? 'EASY' : 'LONG', 0: c === 'high' ? 'EASY' : 'REST' };
 }
-const planFor = k => weekPlan()[parseKey(k).getDay()];
+const planFor = k => (S.core.overrides && S.core.overrides[k]) || weekPlan()[parseKey(k).getDay()];
 const programSessions = () => [...new Set([1, 2, 3, 4, 5, 6, 0].map(i => weekPlan()[i]).filter(p => SESS[p]))];
 const TRAVEL_WO = [
   { n: 'Hotel room, no equipment', items: ['Push-ups 4 × as many as you can', 'Split squat on a chair 4 × 12 per leg', 'Pike push-ups 3 × 10', 'Single-leg deadlift 3 × 12 per leg', 'Table row 3 × 12', 'Plank 3 × 45 s'] },
@@ -524,9 +578,12 @@ const DEFAULT_CORE = () => ({
   profile: { age: 30, height: 180, weight: 80, goalWeight: 76, deadline: '' },
   settings: { start: TODAY(), wake: '07:30', gym: '18:30', sleep: '23:30', ride: '10:00' },
   goal: { type: 'recomp', days: 4 },
+  gym: { swap: {}, avoid: [] },
+  overrides: {},
   food: { focus: 'normal', exclude: [], extras: [], swaps: {} },
   mode: { type: 'normal', since: TODAY(), sick: '', rampStart: null },
   measurements: [], photos: [], shop: {}, quietHandled: '',
+  push: { on: false, id: '' },
 });
 const S = { core: null, months: {}, timer: null, purl: {} };
 function photoDB() {
@@ -552,13 +609,73 @@ async function loadStore() {
   const def = DEFAULT_CORE();
   if ((S.core.v || 1) < 4) { S.core.shop = {}; delete (S.core.settings || {}).phase; S.core.v = 4; }
   for (const k in def) if (S.core[k] === undefined) S.core[k] = def[k];
-  for (const grp of ['settings', 'profile', 'goal', 'food']) for (const k in def[grp]) if (S.core[grp][k] === undefined) S.core[grp][k] = def[grp][k];
+  for (const grp of ['settings', 'profile', 'goal', 'food', 'gym']) for (const k in def[grp]) if (S.core[grp][k] === undefined) S.core[grp][k] = def[grp][k];
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
   await loadPhotoURLs();
 }
 function flush() {
   try { localStorage.setItem('gymbro-state', JSON.stringify({ core: S.core, months: S.months })); }
   catch (e) { toast('Phone storage is full. Delete some photos.'); }
+  if (S.core && S.core.push && S.core.push.on) { clearTimeout(S.pushTimer); S.pushTimer = setTimeout(syncPush, 1500); }
+}
+/* push: the server only knows your times, this week's plan and what's ticked today, so Tank skips what you've done */
+const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const isStandalone = () => navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+function pushState() {
+  if (!PUSH_URL) return 'unavailable';
+  if (isIOS() && !isStandalone()) return 'install';
+  if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return 'unsupported';
+  if (Notification.permission === 'denied') return 'blocked';
+  return S.core.push.on ? 'on' : 'off';
+}
+function pushStatus() {
+  const k = TODAY(), d = getDay(k) || { t: {} }, done = {}, week = {}, wp = weekPlan(), ws = weekStart(k);
+  tasksFor(k).forEach(t => { done[t.id] = isDone(k, t); });
+  for (let i = 0; i < 7; i++) { const dk = addDays(k, i), p = planFor(dk); week[parseKey(dk).getDay()] = { p, n: SESS[p] ? SESS[p].n : CARDIO[p] ? CARDIO[p].n : p === 'HOME' ? 'Home workout' : 'Rest' }; }
+  return {
+    tz: Intl.DateTimeFormat().resolvedOptions().timeZone, times: S.core.settings, mode: S.core.mode.type, week,
+    today: { date: k, done, ate: (d.ate || []).map(x => +x.split('#')[1]), ci: !!d.ci, meals: dayMeals(k).map(m => R[m.id].n) },
+    meas: S.core.measurements.some(m => m.d >= ws),
+  };
+}
+async function syncPush() {
+  if (!PUSH_URL || !S.core.push.on) return;
+  try {
+    const reg = await navigator.serviceWorker.ready, sub = await reg.pushManager.getSubscription();
+    if (!sub) { S.core.push.on = false; flush(); return; }
+    await fetch(PUSH_URL + '/sync', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: S.core.push.id, sub: sub.toJSON(), ...pushStatus() }), keepalive: true });
+  } catch (e) {}
+}
+const keyBytes = s => { const b = atob(s.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - s.length % 4) % 4)); return Uint8Array.from(b, c => c.charCodeAt(0)); };
+async function enablePush() {
+  const perm = await Notification.requestPermission();
+  if (perm !== 'granted') { toast('Notifications not allowed. You can allow them in iPhone Settings → Notifications → Gym Bro.', 4000); render(); return; }
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = (await reg.pushManager.getSubscription()) || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(VAPID_PUBLIC) });
+    S.core.push = { on: true, id: S.core.push.id || (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2) + 'gymbro') };
+    flush(); clearTimeout(S.pushTimer); await syncPush();
+    await fetch(PUSH_URL + '/test', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: S.core.push.id }) });
+    tankSay('happy', 'Notifications on. I\'ll be watching you. Always.', 12000);
+  } catch (e) { toast('Could not turn on notifications. Try again.'); }
+  render();
+}
+async function disablePush() {
+  try { const reg = await navigator.serviceWorker.ready, sub = await reg.pushManager.getSubscription(); if (sub) await sub.unsubscribe(); } catch (e) {}
+  try { await fetch(PUSH_URL + '/off', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: S.core.push.id }) }); } catch (e) {}
+  S.core.push.on = false; flush(); tankSay('grumpy', 'Fine. I\'ll sulk in silence.'); render();
+}
+function pushCard(compact) {
+  const st = pushState();
+  if (st === 'unavailable' || (compact && (st === 'on' || st === 'unsupported'))) return '';
+  const body = {
+    install: '<p class="small">To get Tank\'s notifications, open Gym Bro from its <b>Home Screen icon</b>. Add it from Safari: Share → Add to Home Screen.</p>',
+    unsupported: '<p class="small">This phone can\'t show web app notifications. Update to iOS 16.4 or later.</p>',
+    blocked: '<p class="small">Notifications are blocked. Go to iPhone <b>Settings → Notifications → Gym Bro</b> and turn on Allow Notifications.</p>',
+    off: `<p class="small">Tank reminds you about weigh-in, creatine, lunch, steps, the gym, the check-in and bedtime. Anything you've already ticked, he skips.</p><button class="btn block" data-a="pushOn">Turn on notifications</button>`,
+    on: `<p class="small"><b>On.</b> Tank reminds you about weigh-in, creatine, lunch, steps, gym, check-in and bedtime, and skips anything you've already done. If you added the old Tank calendar, delete it so you don't get double reminders.</p><div class="row"><button class="btn ghost small" data-a="pushTest">Send a test</button><button class="btn ghost small" data-a="pushOff">Turn off</button></div>`,
+  }[st];
+  return `<div class="card" ${compact ? 'style="background:var(--orange-soft)"' : ''}><h2>Notifications</h2>${body}</div>`;
 }
 function markDirty() { clearTimeout(S.timer); S.timer = setTimeout(flush, 250); }
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush(); else if (UI.tab === 'today' && !UI.sheet) render(); });
@@ -679,7 +796,8 @@ function setAte(d, meal, on) {
 function tasksFor(k) {
   const mode = dayMode(k), T = targets(mode), plan = planFor(k), L = [];
   if (mode === 'normal') {
-    if (SESS[plan]) L.push({ id: 'train', label: 'Gym: ' + SESS[plan].n, sub: SESS[plan].sub, go: 'train' });
+    if (plan === 'HOME') L.push({ id: 'travelTrain', label: 'Home workout, 25 min', sub: 'Instead of the gym today', go: 'train' });
+    else if (SESS[plan]) L.push({ id: 'train', label: 'Gym: ' + SESS[plan].n, sub: SESS[plan].sub, go: 'train' });
     else if (CARDIO[plan]) L.push({ id: 'cardio', label: CARDIO[plan].n, sub: CARDIO[plan].sub });
     else L.push({ id: 'recover', label: '20-min walk', sub: 'Rest day' });
     L.push({ id: 'creatine', label: 'Creatine 5 g' });
@@ -759,7 +877,8 @@ function viewToday() {
     <div class="tasks">${tasks.map(t => taskRow(k, t)).join('')}</div>
   </div>
   ${goalCard(true)}
-  ${late ? '' : ciCard()}`;
+  ${late ? '' : ciCard()}
+  ${pushCard(true)}`;
 }
 function goalCard(link) {
   const g = goalInfo(), p = S.core.profile, G = GOALS[S.core.goal.type];
@@ -830,7 +949,8 @@ function tankTip(area) {
 }
 function viewTrain() {
   const k = TODAY(), mode = S.core.mode.type, plan = planFor(k), list = programSessions();
-  if (!UI.sess || (UI.sess !== 'TRAVEL' && !list.includes(UI.sess))) UI.sess = mode === 'travel' ? 'TRAVEL' : (SESS[plan] ? plan : list[0]);
+  if (!UI.sess || (UI.sess !== 'TRAVEL' && !list.includes(UI.sess) && !SESS[UI.sess])) UI.sess = mode === 'travel' || plan === 'HOME' ? 'TRAVEL' : (SESS[plan] ? plan : list[0]);
+  if (SESS[plan] && !list.includes(plan)) list.unshift(plan);
   const d = getDay(k) || {};
   const segs = `<div class="segs">${list.concat('TRAVEL').map(s => `<button class="seg ${UI.sess === s ? 'on' : ''}" data-a="sess" data-v="${s}">${s === 'TRAVEL' ? 'Travel' : SESS[s].n}${s === plan ? ' (today)' : ''}</button>`).join('')}</div>`;
   const sched = `<details class="card"><summary>Your week</summary><table>
@@ -838,22 +958,41 @@ function viewTrain() {
   </table><p class="small muted">${S.core.goal.days} gym days a week · goal: ${esc(GOALS[S.core.goal.type].n)}. <button class="linkbtn" data-a="goalOpen">Change</button></p></details>`;
   if (UI.sess === 'TRAVEL') {
     const did = d.t && d.t.travelTrain;
-    return `${modeBanner()}${segs}<div class="card"><h2>Travel workout</h2><p class="muted">25 minutes. Do 2 exercises back to back, rest 60 s, repeat.</p>
+    return `${modeBanner()}${segs}<div class="card"><h2>${plan === 'HOME' ? 'Home workout' : 'Travel workout'}</h2><p class="muted">25 minutes. Do 2 exercises back to back, rest 60 s, repeat.</p>
       ${TRAVEL_WO.map((w, i) => `<details ${i === 0 ? 'open' : ''}><summary>${esc(w.n)}</summary><ol class="how" style="padding-left:20px;margin:0">${w.items.map(x => `<li>${esc(x)}</li>`).join('')}</ol></details>`).join('')}
       <button class="btn block blue" data-a="travelDone" ${did ? 'disabled' : ''}>${did ? 'Done today' : 'I did it'}</button></div>${sched}`;
   }
   const ss = SESS[UI.sess];
-  const todayNote = !SESS[plan] && mode === 'normal' ? `<div class="banner travel"><p class="small"><b>No gym today.</b> ${plan === 'REST' ? 'Rest day: walk 20 min.' : esc(CARDIO[plan].n) + ', easy pace.'}</p></div>` : '';
+  const moved = S.core.overrides[k];
+  const todayNote = !SESS[plan] && mode === 'normal' ? `<div class="banner travel"><p class="small"><b>No gym today.</b> ${plan === 'REST' ? 'Rest day: walk 20 min.' : CARDIO[plan] ? esc(CARDIO[plan].n) + ', easy pace.' : ''}${moved ? ' You changed today\'s plan. <button class="linkbtn" data-a="dayUndo">Undo</button>' : ''}</p></div>` : '';
+  const av = S.core.gym.avoid;
+  const injury = av.length ? `<div class="banner warn"><h3>${av.map(a => AREAS[a][0].toUpperCase() + AREAS[a].slice(1)).join(' + ')}-friendly mode</h3><p class="small">Exercises that load your ${av.map(a => AREAS[a]).join(' or ')} are swapped automatically. Pain for more than a week, or sharp pain? See a physio.</p><button class="btn ghost small" data-a="avoidOff">My ${av.map(a => AREAS[a]).join(' and ')} feel${av.length > 1 ? '' : 's'} fine again</button></div>` : '';
+  const exs = sessionExercises(UI.sess, k);
   return `
-  ${modeBanner()}${tankTip('gym')}${segs}${todayNote}
+  ${modeBanner()}${tankTip('gym')}${segs}${todayNote}${injury}
   <div class="card">
-    <div><h2>${ss.n}: ${esc(ss.sub)}</h2><p class="muted">About ${ss.ex.length * 10} min · <button class="linkbtn" data-a="help" data-v="sess:${UI.sess}">What to do at the gym</button></p></div>
-    ${ss.ex.map(id => exCard(id, d)).join('')}
+    <div><h2>${ss.n}: ${esc(ss.sub)}</h2><p class="muted">About ${ss.ex.length * 10} min · <button class="linkbtn" data-a="help" data-v="sess:${UI.sess}">What to do at the gym</button>${UI.sess === plan ? ' · <button class="linkbtn" data-a="dayOpen">Can\'t train today?</button>' : ''}</p></div>
+    ${exs.map(x => x.id ? exCard(x.id, d, x) : `<div class="ex"><b>${esc(EX[x.orig].n)}</b><p class="small muted">Skip it today: no ${av.map(a => AREAS[a]).join('/')}-friendly swap.</p></div>`).join('')}
     <button class="btn block blue" data-a="saveSession">${d.session === UI.sess ? 'Update session' : 'Finish session'}</button>
   </div>
   ${sched}`;
 }
-function exCard(id, d) {
+function safeFor(id, avoid) { return !(EX[id].stress || []).some(t => avoid.includes(t)); }
+// the exercises you actually do today: your swaps first, then injury-friendly replacements, no duplicates
+function sessionExercises(key, k) {
+  const d = getDay(k) || {}, dayS = d.exSwap || {}, av = S.core.gym.avoid, used = new Set(), out = [];
+  for (const orig of SESS[key].ex) {
+    let id = dayS[orig] || S.core.gym.swap[orig] || orig, why = dayS[orig] ? 'today' : S.core.gym.swap[orig] ? 'always' : '';
+    if (!EX[id]) { id = orig; why = ''; }
+    if (!safeFor(id, av) || used.has(id)) {
+      const alt = (ALTS[orig] || []).find(a => EX[a] && safeFor(a, av) && !used.has(a));
+      if (alt) { id = alt; why = 'injury'; } else if (!safeFor(id, av)) { out.push({ id: null, orig }); continue; }
+    }
+    used.add(id); out.push({ id, orig, why });
+  }
+  return out;
+}
+function exCard(id, d, x = {}) {
   const E = EX[id], sg = suggestion(id), saved = d.lifts && d.lifts[id], dr = UI.draft[id] || {};
   const w = dr.w !== undefined && dr.w !== null ? dr.w : saved ? saved.w : sg.w;
   const st = dr.st !== undefined ? dr.st : saved ? (liftOk(saved, E) ? 'ok' : 'miss') : '';
@@ -861,7 +1000,8 @@ function exCard(id, d) {
   const goal = E.inc ? (sg.up ? 'up from ' + sg.last.w : sg.last ? 'same as last time' : 'starting guess') : 'add a rep each time';
   return `<div class="ex ${E.main ? 'main' : ''}">
     <div class="ex-top"><button class="exname" data-a="how" data-v="${id}"><b>${esc(E.n)}</b><span>${E.sets} sets × ${E.lo}–${E.hi} reps${E.note ? ' · ' + esc(E.note) : ''}</span></button>${E.main ? '<span class="tag">Main</span>' : ''}</div>
-    <button class="linkbtn" data-a="how" data-v="${id}">${open ? 'Hide how-to' : 'How to do it'}</button>
+    ${x.why ? `<p class="small" style="font-weight:700;color:var(--blue)">Instead of ${esc(EX[x.orig].n)} (${x.why === 'today' ? 'just today' : x.why === 'always' ? 'always' : (AREAS[S.core.gym.avoid.find(a => (EX[x.orig].stress || []).includes(a))] || 'injury') + '-friendly'})${x.why !== 'injury' ? ` · <button class="linkbtn" data-a="exUndo" data-v="${x.orig}">Undo</button>` : ''}</p>` : ''}
+    <div class="meal-act" style="margin-top:0"><button class="linkbtn" data-a="how" data-v="${id}">${open ? 'Hide how-to' : 'How to do it'}</button><button class="linkbtn" data-a="exSwap" data-v="${x.orig || id}">Swap</button></div>
     ${open ? `<div class="how">${exHowHTML(id)}</div>` : ''}
     <div class="ex-log">
       <label class="field"><span>kg (${esc(goal)})</span><input id="w-${id}" data-ex="${id}" inputmode="decimal" value="${w}"></label>
@@ -988,6 +1128,7 @@ function viewMe() {
     ${!g.maintain && !g.reached ? `<p class="small muted">${g.useMeasured ? 'Goal date uses your real pace: ' + Math.abs(g.rate).toFixed(2) + ' kg a week.' : 'Goal date uses the planned pace of ' + Math.abs(g.rate) + ' kg a week until you have 2 weeks of weigh-ins.'}</p>` : ''}
     ${paceMsg ? `<div class="banner ${g.need > 0.8 ? 'warn' : 'good'}"><p class="small">${esc(paceMsg)}</p></div>` : ''}
   </div>
+  ${pushCard(false)}
   <div class="card">
     <h2>Weigh-in</h2>
     <div class="row" style="flex-wrap:nowrap">
@@ -1105,7 +1246,7 @@ const HELP = {
   'ride:Z2': { t: 'Easy ride, 45 min', s: ['Bike outside or at the gym for 45 minutes.', 'Keep it easy: you can talk in full sentences. Heart rate about 125–145.', 'Too hard and it eats into your leg recovery.'] },
   'ride:LONG': { t: 'Long ride, 60–90 min', s: ['Option 1: 60–90 minutes at an easy, chatty pace.', 'Option 2: 10 min easy, then 6 rounds of 2 min hard + 2 min easy, then 10 min easy.', 'Eat breakfast first and take water. Shake after.'] },
   'ride:EASY': { t: 'Easy ride, 30 min', s: ['30 minutes of light pedalling, outside or on a gym bike.', 'It should feel easy. It helps your legs recover.'] },
-  travelTrain: { t: 'Travel workout, 25 min', s: TRAVEL_WO[0].items.concat(['Do two exercises back to back, rest 60 s, repeat. Or walk 10,000 steps instead.']) },
+  travelTrain: { t: 'Home or travel workout, 25 min', s: TRAVEL_WO[0].items.concat(['Do two exercises back to back, rest 60 s, repeat. Or walk 10,000 steps instead.']) },
 };
 function helpIdFor(k, t) {
   const plan = planFor(k);
@@ -1119,6 +1260,42 @@ function exHowHTML(id) {
   return `<ol>${E.how.map(s => `<li>${esc(s)}</li>`).join('')}</ol>
     <p class="muted">${E.sets} sets of ${E.lo}–${E.hi} reps. Rest ${E.main ? '2–3 min' : '60–90 s'} between sets.</p>
     <a class="vid" href="${videoLink(E.n)}" target="_blank" rel="noopener">▶ Watch a video</a>`;
+}
+function swapSheet() {
+  const sw = UI.sheet.swap, orig = sw.orig, k = TODAY(), cur = (sessionExercises(UI.sess, k).find(x => x.orig === orig) || {}).id || orig;
+  const close = `<div class="spread"><span class="lbl">Swap exercise</span><button class="btn small ghost" data-a="closeSheet">Close</button></div>`;
+  if (!sw.reason) return `<div class="in" role="dialog" aria-label="Swap exercise">${close}
+    <h2>Why swap ${esc(EX[cur].n.toLowerCase())}?</h2>
+    ${[['busy', 'Machine busy or no equipment', 'Pick something that works the same muscles'], ['nope', 'I don\'t want to do it', 'Fine. Pick another one. It still has to be done.'], ['pain', 'It hurts', 'Knee, lower back or shoulder. Tank picks safe options.']].map(([v, t, d]) => `<button class="opt" data-a="swReason" data-v="${v}"><b>${t}</b><span>${d}</span></button>`).join('')}</div>`;
+  if (sw.reason === 'pain' && !sw.area) return `<div class="in" role="dialog" aria-label="Where does it hurt">${close}
+    <h2>Where does it hurt?</h2>
+    ${Object.entries(AREAS).map(([v, l]) => `<button class="opt" data-a="swArea" data-v="${v}"><b>${l[0].toUpperCase() + l.slice(1)}</b></button>`).join('')}
+    <button class="opt" data-a="swArea" data-v="other"><b>Somewhere else</b><span>Skip this exercise today and pick a different one</span></button>
+    <div class="banner warn"><p class="small">Pain is a stop sign, not a challenge. Sharp pain, swelling, or pain that lasts over a week: see a doctor or physio.</p></div></div>`;
+  const avoid = sw.area && sw.area !== 'other' ? [sw.area] : [];
+  const opts = [orig].concat(ALTS[orig] || []).filter(a => EX[a] && a !== cur && safeFor(a, avoid));
+  const list = opts.length ? opts.map(a => `<button class="opt ${sw.pick === a ? 'on' : ''}" data-a="swPick" data-v="${a}"><b>${esc(EX[a].n)}${a === orig ? ' (original)' : ''}</b><span>${EX[a].sets} × ${EX[a].lo}–${EX[a].hi}${EX[a].note ? ' · ' + esc(EX[a].note) : ''}${sw.area && sw.area !== 'other' ? ' · easy on the ' + AREAS[sw.area] : ''}</span></button>`).join('')
+    : `<p class="small">No ${AREAS[sw.area] || ''}-friendly swap for this one. Skip it today.</p>`;
+  return `<div class="in" role="dialog" aria-label="Pick a replacement">${close}
+    <h2>Do this instead</h2>
+    ${list}
+    ${sw.pick ? `<div class="grid2"><button class="btn blue" data-a="swApply" data-v="today">Just today</button><button class="btn ghost" data-a="swApply" data-v="always">From now on</button></div>` : ''}
+    ${sw.area && sw.area !== 'other' && !S.core.gym.avoid.includes(sw.area) ? `<button class="btn ghost block" data-a="avoidOn" data-v="${sw.area}">Make every session ${AREAS[sw.area]}-friendly</button>` : ''}
+  </div>`;
+}
+function daySheet() {
+  const k = TODAY(), plan = planFor(k), orig = weekPlan()[parseKey(k).getDay()], name = SESS[orig] ? SESS[orig].n : CARDIO[orig] ? CARDIO[orig].n : 'today\'s plan';
+  const opt = (v, t, d) => `<button class="opt" data-a="dayApply" data-v="${v}"><b>${t}</b><span>${d}</span></button>`;
+  return `<div class="in" role="dialog" aria-label="Change today">
+    <div class="spread"><span class="lbl">Change today</span><button class="btn small ghost" data-a="closeSheet">Close</button></div>
+    <h2>Can't do ${esc(name)} today?</h2>
+    ${opt('HOME', 'Home workout instead', '25 minutes, no equipment. Still counts.')}
+    ${opt('Z2', 'Easy ride instead', '45 minutes on the bike.')}
+    ${opt('MOVE', 'Move it to tomorrow', 'Today becomes a rest day, tomorrow you do ' + esc(name) + '.')}
+    ${opt('REST', 'Skip it, rest today', 'Your body, your call. Don\'t make it a habit.')}
+    ${S.core.overrides[k] ? opt('UNDO', 'Back to the original plan', esc(name) + ' today.') : ''}
+    <p class="small muted">Feeling ill? Use the mode button at the top instead.</p>
+  </div>`;
 }
 function helpSheet(id) {
   const close = `<div class="spread"><span class="lbl">How to</span><button class="btn small ghost" data-a="closeSheet">Close</button></div>`;
@@ -1140,6 +1317,7 @@ function helpSheet(id) {
       ${ss.ex.map(e => `<details class="helpex"><summary>${esc(EX[e].n)}${EX[e].main ? ' · Main' : ''}</summary><div class="how">${exHowHTML(e)}</div></details>`).join('')}
       <p class="small muted">Gym manners: wipe the bench, put the weights back, and if a machine is busy, ask "how many sets left?"</p>
       <button class="btn blue block" data-a="openSess" data-v="${key}">Open ${esc(ss.n)}</button>
+      ${key === planFor(TODAY()) ? '<button class="btn ghost block" data-a="dayOpen">Can\'t do it today? Change it</button>' : ''}
     </div>`;
   }
   const h = HELP[id] || { t: 'How to', s: ['Just do it and tick the box.'] };
@@ -1336,7 +1514,7 @@ function render() {
   UI.jump = false;
   document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.v === UI.tab));
   const sh = $('#sheet');
-  if (UI.sheet) { sh.innerHTML = UI.sheet === 'mode' ? modeSheet() : UI.sheet === 'goal' ? goalSheet() : helpSheet(UI.sheet.help); sh.hidden = false; } else { sh.hidden = true; sh.innerHTML = ''; }
+  if (UI.sheet) { sh.innerHTML = UI.sheet === 'mode' ? modeSheet() : UI.sheet === 'goal' ? goalSheet() : UI.sheet === 'day' ? daySheet() : UI.sheet.swap ? swapSheet() : helpSheet(UI.sheet.help); sh.hidden = false; } else { sh.hidden = true; sh.innerHTML = ''; }
 }
 function ensureTodayMode() {
   const k = TODAY(), d = getDay(k);
@@ -1414,7 +1592,7 @@ const A = {
   },
   saveSession() {
     const k = TODAY(), d = todayDay(), lifts = {};
-    SESS[UI.sess].ex.forEach(id => {
+    sessionExercises(UI.sess, k).filter(x => x.id).map(x => x.id).forEach(id => {
       const saved = d.lifts && d.lifts[id], dr = UI.draft[id] || {};
       const st = dr.st !== undefined ? dr.st : saved ? (liftOk(saved, EX[id]) ? 'ok' : 'miss') : '';
       if (st) lifts[id] = { w: num('w-' + id) || 0, ok: st === 'ok' };
@@ -1424,6 +1602,36 @@ const A = {
     if (tasksFor(k).some(t => t.id === 'train')) d.t.train = 1;
     UI.draft = {}; touch(k); tankSay('happy', REACT.train); go('today');
   },
+  exSwap(el) { keepDraft(); UI.sheet = { swap: { orig: el.dataset.v } }; render(); },
+  swReason(el) { UI.sheet.swap.reason = el.dataset.v; render(); },
+  swArea(el) { UI.sheet.swap.area = el.dataset.v; render(); },
+  swPick(el) { UI.sheet.swap.pick = el.dataset.v; render(); },
+  swApply(el) {
+    const sw = UI.sheet.swap, k = TODAY(), d = getDay(k, true), alt = sw.pick, orig = sw.orig;
+    d.exSwap = d.exSwap || {};
+    if (el.dataset.v === 'today') { if (alt === orig) delete d.exSwap[orig]; else d.exSwap[orig] = alt; }
+    else { delete d.exSwap[orig]; if (alt === orig) delete S.core.gym.swap[orig]; else S.core.gym.swap[orig] = alt; }
+    delete UI.draft[orig];
+    const msg = { busy: 'Machine busy? Fine. ' + EX[alt].n + '. No standing around.', nope: 'Don\'t want to? Fine. ' + EX[alt].n + '. I\'m watching.', pain: 'Pain is a stop sign. ' + EX[alt].n + ' instead. Still counts.' }[sw.reason];
+    UI.sheet = null; saveCore(); tankSay(sw.reason === 'pain' ? 'soft' : 'grumpy', msg); render();
+    toast('Swapped to ' + EX[alt].n);
+  },
+  exUndo(el) { const d = getDay(TODAY()); if (d && d.exSwap) delete d.exSwap[el.dataset.v]; delete S.core.gym.swap[el.dataset.v]; saveCore(); render(); },
+  avoidOn(el) { if (!S.core.gym.avoid.includes(el.dataset.v)) S.core.gym.avoid.push(el.dataset.v); UI.sheet = null; saveCore(); tankSay('soft', 'Every session is ' + AREAS[el.dataset.v] + '-friendly now. Heal up. Then we go again.'); render(); },
+  avoidOff() { S.core.gym.avoid = []; saveCore(); tankSay('happy', 'Back to full program. Easy at first, OK?'); render(); },
+  dayOpen() { UI.sheet = 'day'; render(); },
+  dayApply(el) {
+    const v = el.dataset.v, k = TODAY(), tk = addDays(k, 1), o = S.core.overrides, orig = weekPlan()[parseKey(k).getDay()];
+    for (const key in o) if (key < addDays(k, -14)) delete o[key];
+    if (v === 'UNDO') { if (o[tk] === orig) delete o[tk]; delete o[k]; }
+    else if (v === 'MOVE') { o[k] = 'REST'; o[tk] = orig; }
+    else o[k] = v;
+    const d = getDay(k); if (d && d.mode === undefined) d.mode = S.core.mode.type;
+    UI.sheet = null; UI.sess = null; saveCore();
+    tankSay(v === 'REST' ? 'angry' : 'grumpy', { HOME: 'No gym? Home workout then. The floor is free.', Z2: 'Ride instead. Easy pace, full 45 minutes.', MOVE: 'Moved to tomorrow. Tomorrow you go. No excuses.', REST: 'Skipping. I\'ll remember this.', UNDO: 'Back to the plan. Good.' }[v]);
+    go('today');
+  },
+  dayUndo() { A.dayApply({ dataset: { v: 'UNDO' } }); },
   travelDone() { todayDay().t.travelTrain = 1; touch(); tankSay('happy', REACT.travelTrain); render(); },
   foodTab(el) { UI.food = el.dataset.v; UI.open = null; render(); },
   openRecipe(el) { UI.open = UI.open === el.dataset.v ? null : el.dataset.v; render(); },
@@ -1499,6 +1707,12 @@ const A = {
   },
   help(el) { if (UI.tab === 'train') keepDraft(); UI.sheet = { help: el.dataset.v }; render(); },
   openSess(el) { UI.sheet = null; UI.sess = el.dataset.v; UI.draft = {}; go('train'); },
+  pushOn() { enablePush(); },
+  pushOff() { disablePush(); },
+  async pushTest() {
+    try { const r = await fetch(PUSH_URL + '/test', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: S.core.push.id }) }); toast(r.ok ? 'Sent. It should pop up in a few seconds.' : 'Test failed. Turn notifications off and on again.'); }
+    catch (e) { toast('No connection. Try again.'); }
+  },
   ciStart() { const k = ciKey(), d = getDay(k); UI.ci = { k, step: 0, a: d && d.ci ? JSON.parse(JSON.stringify(d.ci.a)) : {} }; go('checkin'); },
   ciOpen() { UI.repKey = ciKey(); go('report'); },
   ciClose() { UI.ci = null; go('today'); },
@@ -1560,6 +1774,7 @@ if ('serviceWorker' in navigator) window.addEventListener('load', () => navigato
   await loadStore();
   ensureTodayMode();
   render();
+  syncPush();
   let lastDay = TODAY();
   setInterval(() => { if (TODAY() !== lastDay) { lastDay = TODAY(); ensureTodayMode(); } if (UI.tab === 'today' && !UI.sheet) render(); }, 5 * 60000);
   setInterval(() => { if (UI.tab === 'today' && !UI.sheet && UI.say && UI.say.until < Date.now()) { UI.say = null; render(); } }, 3000);

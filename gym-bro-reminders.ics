@@ -1,0 +1,1026 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Road to London//Tank//EN
+CALSCALE:GREGORIAN
+X-WR-CALNAME:Tank (Gym Bro)
+BEGIN:VEVENT
+UID:91fba6d9-0417-4d2f-85d1-f35e8198a55f@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261026T073000
+DTEND:20261026T073500
+RRULE:FREQ=WEEKLY;BYDAY=MO
+SUMMARY:Tank: Weigh in. The scale doesn't bite. I do.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Weigh in. The scale doesn't bite. I do.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:e70fd079-c345-4a92-9831-b18400a9cb09@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261027T073000
+DTEND:20261027T073500
+RRULE:FREQ=WEEKLY;BYDAY=TU
+SUMMARY:Tank: Scale. Now. Before coffee\, before excuses.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Scale. Now. Before coffee\, before excuses.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:b8c0ec26-7872-45cd-94b7-42561a4de73b@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261028T073000
+DTEND:20261028T073500
+RRULE:FREQ=WEEKLY;BYDAY=WE
+SUMMARY:Tank: Get on the scale. I can wait. I can't\, actually.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Get on the scale. I can wait. I can't\, actually.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:5ebfd4c6-7fd4-413e-bc33-2d5990bbc6e0@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261029T073000
+DTEND:20261029T073500
+RRULE:FREQ=WEEKLY;BYDAY=TH
+SUMMARY:Tank: Weigh in or I'll assume the worst.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Weigh in or I'll assume the worst.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:3d550e68-f5ba-45b1-a7f9-5a6cedfb86aa@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261030T073000
+DTEND:20261030T073500
+RRULE:FREQ=WEEKLY;BYDAY=FR
+SUMMARY:Tank: Scale time. The number fears you. Probably.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Scale time. The number fears you. Probably.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:99f9e3fc-ce86-4d7f-8364-7a280d9bbfc1@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261031T073000
+DTEND:20261031T073500
+RRULE:FREQ=WEEKLY;BYDAY=SA
+SUMMARY:Tank: Saturday weigh-in. Yes\, weekends count.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Saturday weigh-in. Yes\, weekends count.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:c4ef6ec8-729c-498c-b024-0b48e76113ad@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261032T073000
+DTEND:20261032T073500
+RRULE:FREQ=WEEKLY;BYDAY=SU
+SUMMARY:Tank: Sunday weigh-in. Pizza last night? We'll see.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Sunday weigh-in. Pizza last night? We'll see.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:b0febbfc-3436-4b24-9ffd-972a0f959dc5@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261026T080000
+DTEND:20261026T081000
+RRULE:FREQ=WEEKLY;BYDAY=MO
+SUMMARY:Tank: Creatine. 5 g. Now. I'm not asking twice. I will absolutely ask twice.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Creatine. 5 g. Now. I'm not asking twice. I will absolutely ask twice.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:a176de26-2b76-4acc-b91c-6824d02187fb@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261027T080000
+DTEND:20261027T081000
+RRULE:FREQ=WEEKLY;BYDAY=TU
+SUMMARY:Tank: Breakfast + creatine. Don't make me come over there.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Breakfast + creatine. Don't make me come over there.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:c5a1651e-a6ab-40b1-ad84-c2fa96949706@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261028T080000
+DTEND:20261028T081000
+RRULE:FREQ=WEEKLY;BYDAY=WE
+SUMMARY:Tank: Creatine. It's one spoon. You lift more than that.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Creatine. It's one spoon. You lift more than that.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:5ba9f62c-42f7-4a30-b42e-e0a11430fbe8@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261029T080000
+DTEND:20261029T081000
+RRULE:FREQ=WEEKLY;BYDAY=TH
+SUMMARY:Tank: Creatine o'clock. Your muscles are waiting\, unlike you.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Creatine o'clock. Your muscles are waiting\, unlike you.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:ad1de3b5-deb4-4d4b-8cd5-9d4807983cd2@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261030T080000
+DTEND:20261030T081000
+RRULE:FREQ=WEEKLY;BYDAY=FR
+SUMMARY:Tank: Creatine. Breakfast. Go. Chop chop.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Creatine. Breakfast. Go. Chop chop.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:7a00a220-dd59-4a8c-b496-f80e5a5f368a@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261031T080000
+DTEND:20261031T081000
+RRULE:FREQ=WEEKLY;BYDAY=SA
+SUMMARY:Tank: Creatine on weekends too. Weekends aren't a loophole.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Creatine on weekends too. Weekends aren't a loophole.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:5635eb0c-7681-44c9-9f73-c7e295c2014a@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261032T080000
+DTEND:20261032T081000
+RRULE:FREQ=WEEKLY;BYDAY=SU
+SUMMARY:Tank: Creatine. Even on Sunday. Especially on Sunday.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Creatine. Even on Sunday. Especially on Sunday.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fdf21b38-c457-4d7b-a271-0719f3259a20@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261026T110000
+DTEND:20261026T110500
+RRULE:FREQ=WEEKLY;BYDAY=MO
+SUMMARY:Tank: Drink water. You're basically a raisin.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Drink water. You're basically a raisin.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:77d2cb67-298f-4f7e-8424-87032bbc6ceb@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261027T110000
+DTEND:20261027T110500
+RRULE:FREQ=WEEKLY;BYDAY=TU
+SUMMARY:Tank: Stand up and walk. Your steps are embarrassing me.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Stand up and walk. Your steps are embarrassing me.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:b9c7ea52-1fa4-4d27-93bd-f2c68aea964a@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261028T110000
+DTEND:20261028T110500
+RRULE:FREQ=WEEKLY;BYDAY=WE
+SUMMARY:Tank: Water. Big glass. Now. I'm watching.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Water. Big glass. Now. I'm watching.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:77fe8428-ef2e-46be-a530-b07c9417d175@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261029T110000
+DTEND:20261029T110500
+RRULE:FREQ=WEEKLY;BYDAY=TH
+SUMMARY:Tank: Get 2\,000 steps before lunch or I eat your trainers.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Get 2\,000 steps before lunch or I eat your trainers.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:0a566bde-a7a9-4632-abce-6df12801745e@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261030T110000
+DTEND:20261030T110500
+RRULE:FREQ=WEEKLY;BYDAY=FR
+SUMMARY:Tank: Hydrate. Your muscles are 75% water and 25% excuses.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Hydrate. Your muscles are 75% water and 25% excuses.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:f7beaa24-4fc3-4d29-aec2-697bfd63d4ef@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261031T110000
+DTEND:20261031T110500
+RRULE:FREQ=WEEKLY;BYDAY=SA
+SUMMARY:Tank: Go outside. Walk. The sofa will survive without you.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Go outside. Walk. The sofa will survive without you.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fd48da95-27b5-4871-a59d-490b53559eff@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261032T110000
+DTEND:20261032T110500
+RRULE:FREQ=WEEKLY;BYDAY=SU
+SUMMARY:Tank: Sunday walk. 30 min. Non-negotiable.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Sunday walk. 30 min. Non-negotiable.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:222dee5b-832d-4f22-be7f-6a9246152688@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261026T130000
+DTEND:20261026T132000
+RRULE:FREQ=WEEKLY;BYDAY=MO
+SUMMARY:Tank: Lunch. Protein first\, or I chew your charger.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Lunch. Protein first\, or I chew your charger.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:30f04512-6e85-42d9-a767-e6e22046e665@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261027T130000
+DTEND:20261027T132000
+RRULE:FREQ=WEEKLY;BYDAY=TU
+SUMMARY:Tank: Lunch time. Chicken box. Not a meal deal 'just this once'.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Lunch time. Chicken box. Not a meal deal 'just this once'.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:8c378ea6-f7c9-4edc-9d6e-7d9df41319d2@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261028T130000
+DTEND:20261028T132000
+RRULE:FREQ=WEEKLY;BYDAY=WE
+SUMMARY:Tank: Lunch. Eat your prep box. You cooked it\, so eat it.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Lunch. Eat your prep box. You cooked it\, so eat it.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:88a2570f-ca54-46f7-8676-d496d78a2499@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261029T130000
+DTEND:20261029T132000
+RRULE:FREQ=WEEKLY;BYDAY=TH
+SUMMARY:Tank: Lunch. 40 g protein. Do the maths\, genius.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Lunch. 40 g protein. Do the maths\, genius.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:465c73c3-3b90-4ad5-9b59-f82f5a66606a@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261030T130000
+DTEND:20261030T132000
+RRULE:FREQ=WEEKLY;BYDAY=FR
+SUMMARY:Tank: Lunch. If it's beige and fried\, put it down.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Lunch. If it's beige and fried\, put it down.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:74c93afe-fad2-49f0-8c7a-ed86931ae346@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261031T130000
+DTEND:20261031T132000
+RRULE:FREQ=WEEKLY;BYDAY=SA
+SUMMARY:Tank: Lunch. Chilli prawn mango salad. Fancy. You're welcome.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Lunch. Chilli prawn mango salad. Fancy. You're welcome.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:8bb0fed9-8173-4b8a-b6eb-8775006c5e7b@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261032T130000
+DTEND:20261032T132000
+RRULE:FREQ=WEEKLY;BYDAY=SU
+SUMMARY:Tank: Lunch. Protein. Then you can scroll.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Lunch. Protein. Then you can scroll.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:d1b5a31b-9c71-4590-b653-aeedbb934a36@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261026T160000
+DTEND:20261026T160500
+RRULE:FREQ=WEEKLY;BYDAY=MO
+SUMMARY:Tank: Half the day is gone. So is half your excuse budget.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Half the day is gone. So is half your excuse budget.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fca2f83c-1af0-40d5-92ae-027b6cb73b90@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261027T160000
+DTEND:20261027T160500
+RRULE:FREQ=WEEKLY;BYDAY=TU
+SUMMARY:Tank: Gym in 2.5 hours. Start mentally preparing your legs.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Gym in 2.5 hours. Start mentally preparing your legs.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:9de0709f-a6b5-4b53-a62d-5b13d8f05dd3@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261028T160000
+DTEND:20261028T160500
+RRULE:FREQ=WEEKLY;BYDAY=WE
+SUMMARY:Tank: Ride tonight. Pump your tyres\, not your ego.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Ride tonight. Pump your tyres\, not your ego.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:7f121989-73b3-43a4-b1d4-2c575d0199ee@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261029T160000
+DTEND:20261029T160500
+RRULE:FREQ=WEEKLY;BYDAY=TH
+SUMMARY:Tank: 4pm slump? Walk it off. Not with a biscuit.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: 4pm slump? Walk it off. Not with a biscuit.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:28e9dacc-4a6c-4789-adae-0a27770aa203@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261030T160000
+DTEND:20261030T160500
+RRULE:FREQ=WEEKLY;BYDAY=FR
+SUMMARY:Tank: Gym tonight. If you're 'tired'\, tell it to me in the squat rack.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Gym tonight. If you're 'tired'\, tell it to me in the squat rack.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:b955df43-8b1a-4b9b-914a-c646978d304e@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261031T160000
+DTEND:20261031T160500
+RRULE:FREQ=WEEKLY;BYDAY=SA
+SUMMARY:Tank: Have you walked today? I already know the answer.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Have you walked today? I already know the answer.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:bc852d39-e223-4744-937b-dd5287365e05@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261032T160000
+DTEND:20261032T160500
+RRULE:FREQ=WEEKLY;BYDAY=SU
+SUMMARY:Tank: Meal prep at 6. Buy the stuff now or cry later.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Meal prep at 6. Buy the stuff now or cry later.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:4f0de64a-43af-425a-a055-3cb4860d3c3b@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261026T173000
+DTEND:20261026T174000
+RRULE:FREQ=WEEKLY;BYDAY=MO
+SUMMARY:Tank: Pack the bag. Shoes\, water\, attitude. Gym in 60 min.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Pack the bag. Shoes\, water\, attitude. Gym in 60 min.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:872ecfa7-037c-4a0d-96b0-033169f5f35f@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261027T173000
+DTEND:20261027T174000
+RRULE:FREQ=WEEKLY;BYDAY=TU
+SUMMARY:Tank: Pack the bag. Shoes\, water\, attitude. Gym in 60 min.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Pack the bag. Shoes\, water\, attitude. Gym in 60 min.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:ce06563e-eba9-4ffc-a862-e0a10220867c@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261029T173000
+DTEND:20261029T174000
+RRULE:FREQ=WEEKLY;BYDAY=TH
+SUMMARY:Tank: Pack the bag. Shoes\, water\, attitude. Gym in 60 min.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Pack the bag. Shoes\, water\, attitude. Gym in 60 min.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:5d1995fc-6de8-48a8-a886-675abf1b9f26@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261030T173000
+DTEND:20261030T174000
+RRULE:FREQ=WEEKLY;BYDAY=FR
+SUMMARY:Tank: Pack the bag. Shoes\, water\, attitude. Gym in 60 min.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Pack the bag. Shoes\, water\, attitude. Gym in 60 min.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:49cc1576-6e7d-438b-934e-3e4cef75e577@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261026T183000
+DTEND:20261026T194500
+RRULE:FREQ=WEEKLY;BYDAY=MO
+SUMMARY:Tank: Gym: Upper A. Go now. I'm not mad. Yet.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Gym: Upper A. Go now. I'm not mad. Yet.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:5e3aa593-ef55-48e0-af38-c565b51a4bb5@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261027T183000
+DTEND:20261027T194500
+RRULE:FREQ=WEEKLY;BYDAY=TU
+SUMMARY:Tank: Gym: Lower A. Go now. I'm not mad. Yet.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Gym: Lower A. Go now. I'm not mad. Yet.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:d99f793b-b4db-46c9-8e9c-be737ca494e5@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261029T183000
+DTEND:20261029T194500
+RRULE:FREQ=WEEKLY;BYDAY=TH
+SUMMARY:Tank: Gym: Upper B. Go now. I'm not mad. Yet.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Gym: Upper B. Go now. I'm not mad. Yet.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:3f46c22d-f430-43bf-b426-b2155fa07ac6@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261030T183000
+DTEND:20261030T194500
+RRULE:FREQ=WEEKLY;BYDAY=FR
+SUMMARY:Tank: Gym: Lower B. Go now. I'm not mad. Yet.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Gym: Lower B. Go now. I'm not mad. Yet.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:f3959c77-3ee8-4246-a530-3c9988d60a48@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261028T183000
+DTEND:20261028T191500
+RRULE:FREQ=WEEKLY;BYDAY=WE
+SUMMARY:Tank: Ride. 45 min easy. Get on the bike or I sit on your saddle.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Ride. 45 min easy. Get on the bike or I sit on your saddle.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:ff0041d3-7b1b-42f8-987d-d3ef15d55d44@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261031T100000
+DTEND:20261031T113000
+RRULE:FREQ=WEEKLY;BYDAY=SA
+SUMMARY:Tank: Long ride. 60-90 min. The road isn't going to ride itself.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Long ride. 60-90 min. The road isn't going to ride itself.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:4d153b47-e140-4c21-9e73-a51b72e6f5b8@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261032T180000
+DTEND:20261032T184500
+RRULE:FREQ=WEEKLY;BYDAY=SU
+SUMMARY:Tank: Meal prep. 40 min. 3 Greek chicken bowls. Go. Then check the shopping list.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Meal prep. 40 min. 3 Greek chicken bowls. Go. Then check the shopping list.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:06d96444-3df5-426d-8ac1-133f4f1e9592@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261026T201500
+DTEND:20261026T203500
+RRULE:FREQ=WEEKLY;BYDAY=MO
+SUMMARY:Tank: Gochujang beef tonight. Then tick your meals or I assume pizza.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Gochujang beef tonight. Then tick your meals or I assume pizza.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:64507d33-ae08-40b1-b4ac-b15e73329cff@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261027T201500
+DTEND:20261027T203500
+RRULE:FREQ=WEEKLY;BYDAY=TU
+SUMMARY:Tank: Dinner and log it. I trust you as far as I can throw you.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Dinner and log it. I trust you as far as I can throw you.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:f858eb77-b969-4f03-bb11-9b131bd7e241@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261028T201500
+DTEND:20261028T203500
+RRULE:FREQ=WEEKLY;BYDAY=WE
+SUMMARY:Tank: Dinner. Log it. Don't 'forget'.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Dinner. Log it. Don't 'forget'.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:5d4c282d-d706-45d6-9aa9-1a4bf8942468@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261029T201500
+DTEND:20261029T203500
+RRULE:FREQ=WEEKLY;BYDAY=TH
+SUMMARY:Tank: Dinner. Log it. No snacks after\, you're not a raccoon.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Dinner. Log it. No snacks after\, you're not a raccoon.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:c88510b1-a8f2-47e8-b5d7-7370919cb1e5@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261030T201500
+DTEND:20261030T203500
+RRULE:FREQ=WEEKLY;BYDAY=FR
+SUMMARY:Tank: Dinner. Friday is not a cheat day. It's a Friday.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Dinner. Friday is not a cheat day. It's a Friday.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:b1f3c9d5-bb3f-47d1-ba56-a4f155887461@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261031T201500
+DTEND:20261031T203500
+RRULE:FREQ=WEEKLY;BYDAY=SA
+SUMMARY:Tank: Saturday dinner. One meal out is fine. One. ONE.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Saturday dinner. One meal out is fine. One. ONE.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:0ca95684-e97d-4cda-a029-942bb34f5e1a@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261032T201500
+DTEND:20261032T203500
+RRULE:FREQ=WEEKLY;BYDAY=SU
+SUMMARY:Tank: Dinner + omega-3. Log it. Big week tomorrow.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Dinner + omega-3. Log it. Big week tomorrow.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:f4f37b72-756b-4fb5-886b-0fddda9b534d@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261026T213000
+DTEND:20261026T214000
+RRULE:FREQ=WEEKLY;BYDAY=MO
+SUMMARY:Tank: Evening check-in. Open the app and confess what you ate.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Evening check-in. Open the app and confess what you ate.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:f863d0fa-652e-4a35-ac86-423e09e7d0c2@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261027T213000
+DTEND:20261027T214000
+RRULE:FREQ=WEEKLY;BYDAY=TU
+SUMMARY:Tank: Check-in time. 14 questions. Lie and I'll know.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Check-in time. 14 questions. Lie and I'll know.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:9c5b9e41-98d9-4c69-bbd3-a80336328603@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261028T213000
+DTEND:20261028T214000
+RRULE:FREQ=WEEKLY;BYDAY=WE
+SUMMARY:Tank: Interrogation o'clock. Open the app\, tell me everything.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Interrogation o'clock. Open the app\, tell me everything.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:219ae9d8-30b7-4d35-bee3-52b40cc729f2@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261029T213000
+DTEND:20261029T214000
+RRULE:FREQ=WEEKLY;BYDAY=TH
+SUMMARY:Tank: Evening report. What did you eat? All of it. Go.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Evening report. What did you eat? All of it. Go.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:dd95ba0c-6dc3-40c7-bdec-a85d84dc73fb@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261030T213000
+DTEND:20261030T214000
+RRULE:FREQ=WEEKLY;BYDAY=FR
+SUMMARY:Tank: Friday check-in. Yes\, the beers count.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Friday check-in. Yes\, the beers count.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:769a94cd-2b73-4e04-aecf-878cdd1633d3@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261031T213000
+DTEND:20261031T214000
+RRULE:FREQ=WEEKLY;BYDAY=SA
+SUMMARY:Tank: Saturday check-in. I already know about the takeaway. Tell me anyway.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Saturday check-in. I already know about the takeaway. Tell me anyway.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:a1d37ebe-2a7d-42c8-a9a5-3d96ede925d3@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261032T213000
+DTEND:20261032T214000
+RRULE:FREQ=WEEKLY;BYDAY=SU
+SUMMARY:Tank: Sunday check-in\, then waist and photos. Don't hide.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Sunday check-in\, then waist and photos. Don't hide.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:22bf168e-f9ea-4a6e-b480-2467193809ab@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261026T230000
+DTEND:20261026T231000
+RRULE:FREQ=WEEKLY;BYDAY=MO
+SUMMARY:Tank: Bed in 30 min. Muscles grow while you sleep\, not while you scroll.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Bed in 30 min. Muscles grow while you sleep\, not while you scroll.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:a18215e1-5e1d-488c-b44a-3fdc60f30f7f@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261027T230000
+DTEND:20261027T231000
+RRULE:FREQ=WEEKLY;BYDAY=TU
+SUMMARY:Tank: Screens off. Yes\, you. Bed by 23:30.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Screens off. Yes\, you. Bed by 23:30.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:0b333523-7f23-4415-9a94-5c01344ef9e3@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261028T230000
+DTEND:20261028T231000
+RRULE:FREQ=WEEKLY;BYDAY=WE
+SUMMARY:Tank: Lights out soon. Sleep is a free steroid. Take it.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Lights out soon. Sleep is a free steroid. Take it.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:b5ff4f56-dd8e-49df-85fc-e51a21671e85@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261029T230000
+DTEND:20261029T231000
+RRULE:FREQ=WEEKLY;BYDAY=TH
+SUMMARY:Tank: Phone down. If you're reading this\, you're late.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Phone down. If you're reading this\, you're late.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:07a1e5c2-b71c-4b4c-9964-5ed3de2fee62@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261030T230000
+DTEND:20261030T231000
+RRULE:FREQ=WEEKLY;BYDAY=FR
+SUMMARY:Tank: Bed. Even on Friday. Especially on Friday.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Bed. Even on Friday. Especially on Friday.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:cc14da6a-bd48-4fee-b1dd-b7da51dea3cb@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261031T230000
+DTEND:20261031T231000
+RRULE:FREQ=WEEKLY;BYDAY=SA
+SUMMARY:Tank: Saturday night\, bed by midnight. I'm not your mum\, I'm worse.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Saturday night\, bed by midnight. I'm not your mum\, I'm worse.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:efb4d233-0bf8-4664-9e5b-2a4df29eb5e3@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261032T230000
+DTEND:20261032T231000
+RRULE:FREQ=WEEKLY;BYDAY=SU
+SUMMARY:Tank: Big week tomorrow. Sleep. Now.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Big week tomorrow. Sleep. Now.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:87caceb4-0663-4858-87aa-05c93e48f5c4@road-to-london
+DTSTAMP:20261023T120000Z
+DTSTART:20261032T090000
+DTEND:20261032T091500
+RRULE:FREQ=WEEKLY;BYDAY=SU
+SUMMARY:Tank: Sunday check: waist at the belly button + photos every 2 weeks. Don't be shy\, I've seen worse.
+URL:https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+DESCRIPTION:Open the app: https://johnnyjain03-byte.github.io/tank-9n3ncrz2h0/
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Tank: Sunday check: waist at the belly button + photos every 2 weeks. Don't be shy\, I've seen worse.
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+END:VCALENDAR

@@ -1,5 +1,5 @@
 // Network first so updates show up straight away; cached copy when offline.
-const CACHE = 'gym-bro-v11';
+const CACHE = 'gym-bro-v12';
 self.addEventListener('install', e => { self.skipWaiting(); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', e => {
@@ -14,11 +14,11 @@ self.addEventListener('fetch', e => {
     }).catch(() => caches.match(key))
   );
 });
-// Tank's reminders from the push server
+// Gym Bro's reminders from the push server
 self.addEventListener('push', e => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch (err) { d = { body: e.data ? e.data.text() : '' }; }
-  e.waitUntil(self.registration.showNotification(d.title || 'Tank', { body: d.body || 'Open Gym Bro.', icon: 'icon-192.png', badge: 'icon-192.png', tag: d.tag, data: { url: d.url || './' } }));
+  e.waitUntil(self.registration.showNotification(d.title || 'Gym Bro', { body: d.body || 'Open Gym Bro.', icon: 'icon-192.png', badge: 'icon-192.png', tag: d.tag, data: { url: d.url || './' } }));
 });
 self.addEventListener('notificationclick', e => {
   e.notification.close();

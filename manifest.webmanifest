@@ -1,7 +1,7 @@
 {
   "name": "Gym Bro",
   "short_name": "Gym Bro",
-  "description": "Tank the bulldog's fat-loss and muscle plan.",
+  "description": "Your capybara coach for fat loss and muscle.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

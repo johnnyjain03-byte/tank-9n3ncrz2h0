@@ -73,7 +73,7 @@ input:focus,select:focus{border-color:var(--blue);outline:none}
 input::placeholder{color:#7A8499}
 .field{display:flex;flex-direction:column;gap:5px;min-width:0}
 .field span{font-size:14px;font-weight:700;color:var(--muted)}
-/* Tank */
+/* Gym Bro */
 .hero{background:var(--sun);border-radius:var(--r);padding:14px 16px;display:flex;gap:12px;align-items:center;color:#1A1405}
 .hero.angry{background:#FFB199} .hero.happy{background:#A8EBC9} .hero.soft{background:#C9D8FF}
 .face{background:none;border:0;padding:0;flex:none;line-height:0}
@@ -267,7 +267,7 @@ details[open] summary{margin-bottom:12px}
     <div class="brand">Gym Bro<small id="sub">Loading…</small></div>
     <button class="chip" id="modeChip" data-a="mode" aria-label="Change mode"><span class="dot"></span><span id="modeLabel">Normal</span></button>
   </header>
-  <main id="view"><div class="loading">Tank is waking up…</div></main>
+  <main id="view"><div class="loading">Gym Bro is waking up…</div></main>
 </div>
 <nav class="tabs" aria-label="Sections"><div>
   <button data-a="tab" data-v="today"><svg viewBox="0 0 24 24"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg>Today</button>
@@ -557,7 +557,7 @@ function parseAct(text) {
   const i = /hard|intense|fast|race|match|sprint|tough/.test(t) ? 2 : /easy|light|slow|chill|gentle/.test(t) ? 0 : 1;
   return { a, min: Math.max(5, Math.min(600, Math.round(min))), i };
 }
-// Extra mode: a full day of sport. Tank fills four slots; you swap, skip or add your own.
+// Extra mode: a full day of sport. Gym Bro fills four slots; you swap, skip or add your own.
 const XSLOTS = [
   { t: '09:00', opts: [['ride', 120, 1], ['hike', 180, 1], ['run', 45, 1], ['swim', 60, 1], ['surf', 120, 1], ['ski', 180, 1]] },
   { t: '13:30', opts: [['swim', 45, 0], ['tennis', 60, 1], ['climb', 60, 1], ['kayak', 60, 0], ['walk', 60, 0]] },
@@ -570,7 +570,7 @@ function extraPlan(k) {
   return XSLOTS.map((s, i) => { const [a, min, it] = s.opts[0]; return { id: 'b' + i, slot: i, a, min, i: it, t: s.t }; });
 }
 const xplanFor = k => { const d = getDay(k, true); if (!d.xplan) d.xplan = extraPlan(k).map(b => ({ ...b })); return d.xplan; };
-// extra sport you log isn't in your base calories, so Tank feeds some of it back (trackers overestimate, so not all)
+// extra sport you log isn't in your base calories, so Gym Bro feeds some of it back (trackers overestimate, so not all)
 function activityBonus(k, mode) {
   const d = getDay(k), w = currentWeight();
   let net = ((d && d.extra) || []).reduce((s, x) => s + actNet(x.a, x.min, x.i, w), 0);
@@ -844,7 +844,7 @@ function suppPlan() {
   });
 }
 
-/* ---------- Tank the capybara: fit, fat, ill or on holiday depending on your mode ---------- */
+/* ---------- Gym Bro the capybara: fit, fat, ill or on holiday depending on your mode ---------- */
 const TANK = {
   morning: ['Creatine. Now. I\'m not asking twice. I will absolutely ask twice.', 'Morning. Scale first, excuses never.', 'Your bed isn\'t going to make you lean. Get up.', 'Weigh in. The number isn\'t scared of you yet.'],
   midday: ['Protein at lunch or I chew your trainers.', 'Get up and walk. Your steps are embarrassing me.', 'Drink water. You\'re basically a raisin right now.', 'Half the day is gone. So is half your excuse budget.'],
@@ -921,7 +921,7 @@ function tankLook() {
   if (underEating()) return 'skinny';
   return streak() >= 7 ? 'strong' : 'fit';
 }
-// two checked-in days in a row well under your calories or protein: Tank wastes away
+// two checked-in days in a row well under your calories or protein: Gym Bro wastes away
 function underEating() {
   for (const k of [addDays(TODAY(), -1), addDays(TODAY(), -2)]) {
     const d = getDay(k); if (!d || !d.ci || (d.mode || 'normal') !== 'normal') return false;
@@ -978,7 +978,7 @@ function tankSVG(mood, look) {
     + (mood === 'angry' ? '<path d="M101 20 l7 -6 M105 28 l8 -2 M96 12 l1 -8" stroke="#D9192E" stroke-width="3" stroke-linecap="round"/>' : '');
   const cheeks = fat ? `<ellipse cx="27" cy="63" rx="10" ry="13" fill="${fur}"/><ellipse cx="93" cy="63" rx="10" ry="13" fill="${fur}"/>` : '';
   const hollow = look === 'skinny' ? `<path d="M34 60 Q37 70 35 78 M86 60 Q83 70 85 78" stroke="${dark}" stroke-width="1.6" fill="none" opacity=".55"/>` : '';
-  return `<svg viewBox="0 0 120 120" role="img" aria-label="Tank the capybara looks ${look === 'ill' ? 'ill' : mood}">
+  return `<svg viewBox="0 0 120 120" role="img" aria-label="Gym Bro the capybara looks ${look === 'ill' ? 'ill' : mood}">
     ${body}
     <ellipse cx="31" cy="15" rx="6.5" ry="5.5" fill="${dark}"/><ellipse cx="89" cy="15" rx="6.5" ry="5.5" fill="${dark}"/>
     ${cheeks}
@@ -999,7 +999,7 @@ const DEFAULT_CORE = () => ({
   profile: { age: 30, height: 180, weight: 80, goalWeight: 76, deadline: '', sex: '', exp: 'mid' },
   settings: { start: TODAY(), wake: '07:30', gym: '18:30', sleep: '23:30', ride: '10:00' },
   goal: { type: 'recomp', days: 4, adj: 0 },
-  // a plan has a start and an end; at the end Tank reviews it and sets up the next one
+  // a plan has a start and an end; at the end Gym Bro reviews it and sets up the next one
   plan: { start: TODAY(), end: addDays(TODAY(), 84), n: 1, w0: 0, waist0: 0, type: 'recomp' },
   plans: [],
   gym: { swap: {}, avoid: [] },
@@ -1053,7 +1053,7 @@ function flush() {
   if (S.core && S.core.push && S.core.push.on) { clearTimeout(S.pushTimer); S.pushTimer = setTimeout(syncPush, 1500); }
   if (S.core) { clearTimeout(S.planTimer); S.planTimer = setTimeout(syncPlan, 2500); }
 }
-/* push: the server only knows your times, this week's plan and what's ticked today, so Tank skips what you've done */
+/* push: the server only knows your times, this week's plan and what's ticked today, so Gym Bro skips what you've done */
 const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const isStandalone = () => navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
 function pushState() {
@@ -1109,11 +1109,11 @@ function pushCard(compact) {
   const st = pushState();
   if (st === 'unavailable' || (compact && (st === 'on' || st === 'unsupported'))) return '';
   const body = {
-    install: '<p class="small">To get Tank\'s notifications, open Gym Bro from its <b>Home Screen icon</b>. Add it from Safari: Share → Add to Home Screen.</p>',
+    install: '<p class="small">To get Gym Bro\'s notifications, open Gym Bro from its <b>Home Screen icon</b>. Add it from Safari: Share → Add to Home Screen.</p>',
     unsupported: '<p class="small">This phone can\'t show web app notifications. Update to iOS 16.4 or later.</p>',
     blocked: '<p class="small">Notifications are blocked. Go to iPhone <b>Settings → Notifications → Gym Bro</b> and turn on Allow Notifications.</p>',
-    off: `<p class="small">Tank reminds you about weigh-in, creatine, lunch, steps, the gym, the check-in and bedtime. Anything you've already ticked, he skips.</p><button class="btn block" data-a="pushOn">Turn on notifications</button>`,
-    on: `<p class="small"><b>On.</b> Tank reminds you about weigh-in, creatine, lunch, steps, gym, check-in and bedtime, and skips anything you've already done. If you added the old Tank calendar, delete it so you don't get double reminders.</p><div class="row"><button class="btn ghost small" data-a="pushTest">Send a test</button><button class="btn ghost small" data-a="pushOff">Turn off</button></div>`,
+    off: `<p class="small">Gym Bro reminds you about weigh-in, creatine, lunch, steps, the gym, the check-in and bedtime. Anything you've already ticked, he skips.</p><button class="btn block" data-a="pushOn">Turn on notifications</button>`,
+    on: `<p class="small"><b>On.</b> Gym Bro reminds you about weigh-in, creatine, lunch, steps, gym, check-in and bedtime, and skips anything you've already done. If you added the old reminders calendar, delete it so you don't get double reminders.</p><div class="row"><button class="btn ghost small" data-a="pushTest">Send a test</button><button class="btn ghost small" data-a="pushOff">Turn off</button></div>`,
   }[st];
   return `<div class="card" ${compact ? 'style="background:var(--orange-soft)"' : ''}><h2>Notifications</h2>${body}</div>`;
 }
@@ -1124,7 +1124,7 @@ async function loadPrices() {
   try { const r = await fetch('prices.json?t=' + Date.now(), { cache: 'no-store' }); if (r.ok) { const p = await r.json(); if (p && p.items) { S.prices = p; try { localStorage.setItem('gymbro-prices', JSON.stringify(p)); } catch (e) {} } } } catch (e) {}
 }
 // the app updates itself: when a newer version is online, reload into it (your data stays on the phone)
-const APP_VERSION = '11';
+const APP_VERSION = '12';
 async function checkUpdate() {
   try {
     const v = (await (await fetch('version.txt?t=' + Date.now(), { cache: 'no-store' })).text()).trim();
@@ -1512,7 +1512,7 @@ async function syncPlan(force) {
   try { const r = await fetch(PUSH_URL + '/plan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive: true }); if (r.ok) S.lastPlan = body; } catch (e) {}
 }
 
-/* ---------- food search: type it like you'd say it ("2 coffees and a croissant"), Tank counts it ---------- */
+/* ---------- food search: type it like you'd say it ("2 coffees and a croissant"), Gym Bro counts it ---------- */
 const STOPW = new Set(['of', 'the', 'some', 'my', 'i', 'had', 'ate', 'drank', 'eat', 'drink', 'x', 'a', 'an', 'and', 'with', 'or', 'big', 'small', 'large', 'medium', 'little', 'bit', 'cup', 'cups', 'mug', 'glass', 'glasses', 'portion', 'portions', 'piece', 'pieces', 'bowl', 'plate', 'g', 'ml', 'grams']);
 const stem = w => w.length <= 3 ? w : w.replace(/ies$/, 'y').replace(/(ch|sh|ss|x|o)es$/, '$1').replace(/([^s])s$/, '$1').replace(/ie$/, 'y');
 const foodPool = () => (S.core.myFoods || []).map(f => ({ ...f, mine: true, kw: (f.n + ' ' + (f.kw || '')).toLowerCase() })).concat(Object.values(FOOD));
@@ -1562,12 +1562,12 @@ function toast(msg, ms = 2600) { const t = $('#toast'); t.textContent = msg; t.h
 function heroHTML() {
   const tm = UI.say && UI.say.until > Date.now() ? UI.say : tankMood();
   return `<div class="hero ${tm.mood}">
-    <button class="face ${UI.jump ? 'jump' : ''}" data-a="poke" aria-label="Poke Tank">${tankSVG(tm.mood)}</button>
-    <div class="say"><b>Tank</b><p>${esc(tm.msg)}</p><i>Tap Tank to poke him</i></div></div>
+    <button class="face ${UI.jump ? 'jump' : ''}" data-a="poke" aria-label="Poke Gym Bro">${tankSVG(tm.mood)}</button>
+    <div class="say"><b>Gym Bro</b><p>${esc(tm.msg)}</p><i>Tap Gym Bro to poke him</i></div></div>
   <div class="talk">${[['motivate', 'Motivate me'], ['lazy', 'I don\'t want to train'], ['hungry', 'I\'m hungry'], ['roast', 'Roast me']].map(([v, l]) => `<button data-a="talk" data-v="${v}">${l}</button>`).join('')}</div>`;
 }
 function viewToday() {
-  if (S.core.needsSetup) return `<div class="hero neutral"><span class="face">${tankSVG('neutral')}</span><div class="say"><b>Tank</b><p>New recruit. Fill this in. I'll know if you lie.</p></div></div>` + setupCard();
+  if (S.core.needsSetup) return `<div class="hero neutral"><span class="face">${tankSVG('neutral')}</span><div class="say"><b>Gym Bro</b><p>New recruit. Fill this in. I'll know if you lie.</p></div></div>` + setupCard();
   const k = TODAY(), tasks = tasksFor(k), st = streak(), qn = quietGap(), late = new Date().getHours() >= 19 || new Date().getHours() < 4;
   return `${heroHTML()}
   ${qn ? `<div class="banner warn"><h3>Where were you?</h3><div class="row">
@@ -1590,14 +1590,14 @@ function viewToday() {
 }
 function sexCard() {
   if (S.core.profile.sex) return '';
-  return `<div class="card" style="background:var(--sun-soft)"><h3>One question from Tank</h3>
+  return `<div class="card" style="background:var(--sun-soft)"><h3>One question from Gym Bro</h3>
     <p class="small">Male or female? It changes your calories and starting weights. I should have asked on day one.</p>
     <div class="sexpick"><button class="btn ghost" data-a="setSex" data-v="male">Male</button><button class="btn ghost" data-a="setSex" data-v="female">Female</button></div></div>`;
 }
 function planEndCard() {
   const P = S.core.plan, left = diffDays(P.end, TODAY());
   if (left > 0) return '';
-  return `<button class="card goal" data-a="reviewOpen"><span class="lbl">Plan ${P.n} ${left === 0 ? 'ends today' : 'is finished'}</span><span class="date">Your report is ready</span><span class="small">Tank checked your results and set up the next plan. Tap to see it.</span></button>`;
+  return `<button class="card goal" data-a="reviewOpen"><span class="lbl">Plan ${P.n} ${left === 0 ? 'ends today' : 'is finished'}</span><span class="date">Your report is ready</span><span class="small">Gym Bro checked your results and set up the next plan. Tap to see it.</span></button>`;
 }
 function extraList(k) {
   const xs = (getDay(k) || {}).extra || [];
@@ -1614,7 +1614,7 @@ function clashCard() {
 function extraCard() {
   const k = TODAY(), xp = extraPlan(k), d = getDay(k) || { t: {} }, tot = xp.filter(b => !b.skip).reduce((s, b) => s + actKcal(b.a, b.min, b.i), 0);
   return `<div class="card"><div class="spread"><h2>Sports day</h2><span class="streak" style="background:var(--violet-soft);color:var(--violet)">about ${fmt(tot)} kcal</span></div>
-    <p class="small muted">Tank planned your day. Swap anything, skip it, or add your own. Your food today is bigger to fuel it.</p>
+    <p class="small muted">Gym Bro planned your day. Swap anything, skip it, or add your own. Your food today is bigger to fuel it.</p>
     ${xp.slice().sort((a, b) => a.t < b.t ? -1 : a.t > b.t ? 1 : 0).map(b => { const done = d.t && d.t['x:' + b.id]; return `<div class="blk ${done ? 'done' : ''} ${b.skip ? 'skip' : ''}">
       <div class="spread"><span class="time">${b.t}</span><span class="small muted">${INT[b.i]} · ${b.min} min · about ${fmt(actKcal(b.a, b.min, b.i))} kcal</span></div>
       <b>${esc(actOf(b.a).n)}${b.skip ? ' (skipped)' : done ? ' ✓' : ''}</b>
@@ -1634,7 +1634,7 @@ function goalCard(link) {
 function setupCard() {
   const p = S.core.profile, s = S.core.settings;
   return `<div class="card" style="background:var(--sun-soft)">
-    <h2>Tell Tank about you</h2>
+    <h2>Tell Gym Bro about you</h2>
     <p class="small">This sets your calories, protein and goal date. You can change it any time.</p>
     <div class="grid2">
       <label class="field"><span>Age</span><input id="su-age" inputmode="numeric" placeholder="${p.age}"></label>
@@ -1748,7 +1748,7 @@ function whyCard() {
       <li><span><b>Protein ${G.prot} g per kg.</b> Muscle gains top out around 1.6–2.2 g/kg. ${G.rate < 0 ? 'You\'re losing fat too, so you sit at the top.' : ''}</span></li>
       <li><span><b>Lose at most 0.5–1% of your weight a week.</b> Faster than that and muscle goes with the fat.</span></li>
       <li><span><b>Cardio mostly easy.</b> Easy rides burn fat without wrecking your legs for squats.</span></li>
-      <li><span><b>Men and women:</b> same method. Women build muscle at the same rate relative to their size. Tank changes calories and starting weights, not the program.</span></li>
+      <li><span><b>Men and women:</b> same method. Women build muscle at the same rate relative to their size. Gym Bro changes calories and starting weights, not the program.</span></li>
     </ol>
     <h3>Sources</h3>
     <ul class="src">${SOURCES.map(([n, u]) => `<li><a href="${u}" target="_blank" rel="noopener">${esc(n)}</a></li>`).join('')}</ul></details>`;
@@ -1825,7 +1825,7 @@ function viewFood() {
     <div class="tasks">${meals.map(m => mealCard(m, ate.includes(m.key), true)).join('')}</div>
     ${(d.food || []).length ? `<div><div class="aisle">Also today</div>${d.food.map((f, i) => `<div class="spread small" style="border-top:1px solid var(--line);padding-top:8px"><span style="flex:1;min-width:0"><b>${esc(f.n)}</b> <span class="muted">${f.k} kcal · P ${f.p} · sugar ${f.s || 0} g</span></span><button class="linkbtn" data-a="rmFood" data-v="${i}">Remove</button></div>`).join('')}</div>` : ''}
     <button class="btn green block" data-a="foodOpen">+ Add food or drink</button>
-    <p class="small muted">Coffee, a croissant, a beer: type it like you'd say it and Tank counts it.</p>
+    <p class="small muted">Coffee, a croissant, a beer: type it like you'd say it and Gym Bro counts it.</p>
   </div>
   ${budgetAlertCard()}
   ${suppCard()}`;
@@ -1854,7 +1854,7 @@ function foodPrefs() {
   const all = {}; Object.values(R).forEach(r => r.ing.forEach(i => { all[i[0]] = i[3]; }));
   const ex = S.core.food.exclude, left = ['b', 'l', 'd'].map(p => POOLS[p].filter(okRecipe).length);
   return `<div class="card"><h2>My foods</h2>
-    <p class="small">Tap anything you don't eat or don't like. Tank removes every recipe with it and changes your menu.</p>
+    <p class="small">Tap anything you don't eat or don't like. Gym Bro removes every recipe with it and changes your menu.</p>
     ${left.some(n => n < 2) ? '<div class="banner warn"><p class="small">Only a few recipes left in some meals. Your menu will repeat a lot.</p></div>' : ''}
     ${AISLES.map(a => { const items = Object.keys(all).filter(n => all[n] === a).sort(); return items.length ? `<div><div class="aisle">${a}</div><div class="pchips">${items.map(n => `<button class="pchip ${ex.includes(n) ? 'no' : ''}" data-a="prefToggle" data-v="${esc(n)}" aria-pressed="${ex.includes(n)}">${esc(n)}</button>`).join('')}</div></div>` : ''; }).join('')}
     ${ex.length ? '<button class="btn ghost small" data-a="prefReset">I eat everything again</button>' : ''}
@@ -1867,8 +1867,8 @@ function foodBudget() {
     <label class="field"><span>Country</span><input id="b-country" type="text" value="${esc(b.country)}" placeholder="e.g. England"></label>
     ${b.region === 'OT' ? `<div class="grid2"><label class="field"><span>Currency</span><select id="b-cur">${Object.keys(P.fx).map(x => `<option ${b.cur === x ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
       <label class="field"><span>Prices most like</span><select id="b-like">${['UK', 'EU', 'US'].map(x => `<option ${b.like === x ? 'selected' : ''}>${x}</option>`).join('')}</select></label></div>
-      <button class="btn ghost small" data-a="bOther">Save</button><p class="small muted">Rough: Tank converts typical ${esc(b.like || 'US')} prices into your currency.</p>` : `<button class="btn ghost small" data-a="bCountry">Save country</button>`}`;
-  if (!c) return `<div class="card"><h2>Food budget</h2><p class="small">Tank picks recipes that fit your budget, using real supermarket prices for your region.</p>${region}</div>`;
+      <button class="btn ghost small" data-a="bOther">Save</button><p class="small muted">Rough: Gym Bro converts typical ${esc(b.like || 'US')} prices into your currency.</p>` : `<button class="btn ghost small" data-a="bCountry">Save country</button>`}`;
+  if (!c) return `<div class="card"><h2>Food budget</h2><p class="small">Gym Bro picks recipes that fit your budget, using real supermarket prices for your region.</p>${region}</div>`;
   const tc = tierCosts(), now = weekCostWith(budgetPools(), c), up5 = x => Math.ceil(x / 5) * 5, over = b.weekly > 0 && now > b.weekly * 1.02;
   const drivers = costDrivers(c).slice(0, 5);
   return `${budgetAlertCard()}
@@ -1877,9 +1877,9 @@ function foodBudget() {
     <p class="small muted">All meals and snacks on your menu for a week. Spices and oil you already have barely count.</p>
     ${Object.entries(TIERS).map(([t, [n, d]]) => `<button class="opt ${b.tier === t ? 'on' : ''}" data-a="bTier" data-v="${t}"><b>${n}: about ${money(up5(tc[t]))} a week</b><span>${d}</span></button>`).join('')}
     <div class="row" style="flex-wrap:nowrap"><label class="field" style="flex:1"><span>Or your own amount a week (${esc(c.cur)})</span><input id="b-weekly" inputmode="decimal" value="${b.weekly || ''}" placeholder="${Math.round(tc.normal)}"></label><button class="btn green" data-a="bSave" style="align-self:flex-end">Save</button></div>
-    ${b.weekly > 0 ? `<p class="small">Budget <b>${money(b.weekly)}</b>. This week's menu: about <b class="${over ? 'up' : ''}">${money(now)}</b>.${over ? ' Even the cheapest menu costs more. Try the swaps below.' : ' Tank picked recipes that fit.'}</p>` : '<p class="small">Pick one and Tank builds your menu to fit it.</p>'}
+    ${b.weekly > 0 ? `<p class="small">Budget <b>${money(b.weekly)}</b>. This week's menu: about <b class="${over ? 'up' : ''}">${money(now)}</b>.${over ? ' Even the cheapest menu costs more. Try the swaps below.' : ' Gym Bro picked recipes that fit.'}</p>` : '<p class="small">Pick one and Gym Bro builds your menu to fit it.</p>'}
     ${b.weekly > up5(tc.comfort) * 1.2 ? `<p class="small muted">You don't need to spend more than about ${money(up5(tc.normal))}. Your menu is built for your goal; a bigger budget only adds treats if you pick Treat.</p>` : ''}
-    <p class="small muted">Prices checked ${longDate(P.updated)}. Tank checks them every 2 weeks and tells you if your food gets more expensive. Change your budget any time.</p>
+    <p class="small muted">Prices checked ${longDate(P.updated)}. Gym Bro checks them every 2 weeks and tells you if your food gets more expensive. Change your budget any time.</p>
   </div>
   <div class="card"><h2>Where the money goes</h2>
     ${drivers.map(([n, v]) => `<div style="border-top:1px solid var(--line);padding-top:8px"><div class="spread small"><b>${esc(n)}</b><span class="num">${money(v)} a week</span></div>${BUDGET_SWAPS[n] ? `<p class="small muted">Cheaper: ${esc(BUDGET_SWAPS[n])}</p>` : ''}</div>`).join('')}
@@ -2008,9 +2008,9 @@ const calHttps = () => PUSH_URL + '/cal/' + S.core.sid + '.ics';
 const googleCalURL = () => 'https://calendar.google.com/calendar/r?cid=' + encodeURIComponent(calURL());
 function calendarCard() {
   if (!PUSH_URL) return '';
-  const app = S.core.calApp || 'apple', clash = S.core.health.at ? 'Your own events come in through the Shortcut, so Tank spots clashes with the gym and finds you a free slot.' : 'Want Tank to spot clashes with your own events? Set up the Shortcut in Apple Health & Watch above.';
+  const app = S.core.calApp || 'apple', clash = S.core.health.at ? 'Your own events come in through the Shortcut, so Gym Bro spots clashes with the gym and finds you a free slot.' : 'Want Gym Bro to spot clashes with your own events? Set up the Shortcut in Apple Health & Watch above.';
   return `<div class="card"><h2>Calendar</h2>
-    <p class="small">Your gym sessions and rides in your calendar, 2 weeks ahead. Move a session in Gym and the calendar follows. You can't delete them in the calendar: only Tank can, after you confirm in Gym that you can't train.</p>
+    <p class="small">Your gym sessions and rides in your calendar, 2 weeks ahead. Move a session in Gym and the calendar follows. You can't delete them in the calendar: only Gym Bro can, after you confirm in Gym that you can't train.</p>
     <div class="segs">${[['apple', 'Apple Calendar'], ['google', 'Google Calendar']].map(([v, l]) => `<button class="seg ${app === v ? 'on' : ''}" data-a="calApp" data-v="${v}">${l}</button>`).join('')}</div>
     ${app === 'apple' ? `<a class="btn violet block" href="${calURL()}" data-a="calOn">Add Gym Bro to Apple Calendar</a>
       <p class="small muted">Tap Subscribe when asked. Then iPhone Settings → Apps → Calendar → Calendar Accounts → Fetch New Data → every 15 minutes, so moves show up fast.</p>
@@ -2106,8 +2106,8 @@ function modeSheet() {
     ${opt('travel', 'Away', 'Short hotel workouts. Streak protected.')}
     ${opt('sick', 'Ill', 'Rest first. Streak protected. Easy comeback after.')}
     ${opt('break', 'Diet break', '1–2 weeks at maintenance.')}
-    ${opt('extra', 'Extra: sports day', 'A full day of sport. Tank plans it, you swap, skip or add. More food.')}
-    <p class="small muted">In Normal mode Tank's body follows you: strong after a 7-day streak, round when you skip the gym, skinny when you don't eat enough.</p>
+    ${opt('extra', 'Extra: sports day', 'A full day of sport. Gym Bro plans it, you swap, skip or add. More food.')}
+    <p class="small muted">In Normal mode Gym Bro's body follows you: strong after a 7-day streak, round when you skip the gym, skinny when you don't eat enough.</p>
     ${m.type === 'sick' ? `<h3>Where are the symptoms?</h3>
       ${[['above', 'Above the neck', 'Runny nose, mild sore throat'], ['below', 'Below the neck', 'Chest, body aches, stomach'], ['fever', 'Fever', 'Hot, chills, 38 °C+']].map(x => `<button class="opt ${m.sick === x[0] ? 'on' : ''}" data-a="setSick" data-v="${x[0]}"><b>${x[1]}</b><span>${x[2]}</span></button>`).join('')}
       ${m.sick ? `<div class="banner sick"><p class="small">${esc(SICK_ADVICE[m.sick])}</p></div>` : ''}` : ''}
@@ -2123,7 +2123,7 @@ function goalSheet() {
     <h3>Plan dates</h3>
     <div class="grid2"><label class="field"><span>Start</span><input id="g-start" type="date" value="${g.start}"></label><label class="field"><span>End</span><input id="g-end" type="date" value="${g.end}"></label></div>
     <div class="segs">${[8, 12, 16].map(w => `<button class="seg ${diffDays(g.end, g.start) === w * 7 ? 'on' : ''}" data-a="gWeeks" data-v="${w}">${w} weeks</button>`).join('')}<button class="seg" data-a="gWeeks" data-v="auto">Until goal</button></div>
-    <p class="small muted">When the plan ends, Tank checks your results and sets up the next one.</p>
+    <p class="small muted">When the plan ends, Gym Bro checks your results and sets up the next one.</p>
     <h3>Gym days a week</h3>
     <div class="segs">${[[3, '3 days · full body'], [4, '4 days · upper & legs']].map(([v, l]) => `<button class="seg ${g.days === v ? 'on' : ''}" data-a="gDays" data-v="${v}">${l}</button>`).join('')}</div>
     <h3>Menu</h3>
@@ -2166,16 +2166,16 @@ function swapSheet() {
   const close = `<div class="spread"><span class="lbl">Swap exercise</span><button class="btn small ghost" data-a="closeSheet">Close</button></div>`;
   const avoid = sw.area && sw.area !== 'other' ? [sw.area] : [];
   const opts = [orig].concat(ALTS[orig] || []).filter(a => EX[a] && a !== cur && safeFor(a, avoid));
-  // last resort: skip, but Tank tries to talk you into a swap first
+  // last resort: skip, but Gym Bro tries to talk you into a swap first
   if (sw.step === 'skip1') return `<div class="in" role="dialog" aria-label="Skip exercise">${close}
-    <div class="hero grumpy"><span class="face">${tankSVG('grumpy')}</span><div class="say"><b>Tank</b><p>Skip? Then those muscles get nothing today. Do one of these instead. Same muscles, no ${esc(EX[orig].n.toLowerCase())}.</p></div></div>
+    <div class="hero grumpy"><span class="face">${tankSVG('grumpy')}</span><div class="say"><b>Gym Bro</b><p>Skip? Then those muscles get nothing today. Do one of these instead. Same muscles, no ${esc(EX[orig].n.toLowerCase())}.</p></div></div>
     ${opts.slice(0, 3).map(a => `<button class="opt" data-a="swQuick" data-v="${a}"><b>${esc(EX[a].n)}</b><span>${EX[a].sets} × ${EX[a].lo}–${EX[a].hi} · tap to swap for today</span></button>`).join('') || '<p class="small">No safe swap for this one.</p>'}
     <button class="btn ghost block" data-a="swSkip2">No, I need to skip it</button></div>`;
   if (sw.step === 'skip2') {
     const r = sw.sk || {};
     return `<div class="in" role="dialog" aria-label="Skip report">${close}
       <h2>Skip report: ${esc(EX[cur].n)}</h2>
-      <p class="small muted">Tank wants a reason. If it's pain, this report helps you or a physio see a pattern.</p>
+      <p class="small muted">Gym Bro wants a reason. If it's pain, this report helps you or a physio see a pattern.</p>
       <div class="field"><span>Why are you skipping?</span><div class="pchips">${Object.entries(SKIP_REASONS).map(([v, l]) => `<button class="pchip ${r.reason === v ? 'on' : ''}" data-a="skReason" data-v="${v}">${l}</button>`).join('')}</div></div>
       ${r.reason === 'pain' ? `
         <div class="field"><span>Where?</span><div class="pchips">${Object.entries(AREAS).concat([['other', 'somewhere else']]).map(([v, l]) => `<button class="pchip ${r.area === v ? 'on' : ''}" data-a="skArea" data-v="${v}">${l[0].toUpperCase() + l.slice(1)}</button>`).join('')}</div></div>
@@ -2187,7 +2187,7 @@ function swapSheet() {
   }
   if (!sw.reason) return `<div class="in" role="dialog" aria-label="Swap exercise">${close}
     <h2>Why swap ${esc(EX[cur].n.toLowerCase())}?</h2>
-    ${[['busy', 'Machine busy or no equipment', 'Pick something that works the same muscles'], ['nope', 'I don\'t want to do it', 'Fine. Pick another one. It still has to be done.'], ['pain', 'It hurts', 'Knee, lower back or shoulder. Tank picks safe options.']].map(([v, t, d]) => `<button class="opt" data-a="swReason" data-v="${v}"><b>${t}</b><span>${d}</span></button>`).join('')}
+    ${[['busy', 'Machine busy or no equipment', 'Pick something that works the same muscles'], ['nope', 'I don\'t want to do it', 'Fine. Pick another one. It still has to be done.'], ['pain', 'It hurts', 'Knee, lower back or shoulder. Gym Bro picks safe options.']].map(([v, t, d]) => `<button class="opt" data-a="swReason" data-v="${v}"><b>${t}</b><span>${d}</span></button>`).join('')}
     <button class="btn ghost block" data-a="swSkip1" style="margin-top:6px">Skip it (last resort)</button></div>`;
   if (sw.reason === 'pain' && !sw.area) return `<div class="in" role="dialog" aria-label="Where does it hurt">${close}
     <h2>Where does it hurt?</h2>
@@ -2213,7 +2213,7 @@ function daySheet() {
     ${opt('HOME', 'Home workout instead', '25 minutes, no equipment. Still counts.')}
     ${opt('Z2', 'Easy ride instead', '45 minutes on the bike.')}
     ${opt('MOVE', 'Move it to tomorrow', 'Today becomes a rest day, tomorrow you do ' + esc(name) + '.')}
-    ${opt('REST', 'I can\'t train at all today', 'You\'ll have to say why. Tank keeps a record.')}
+    ${opt('REST', 'I can\'t train at all today', 'You\'ll have to say why. Gym Bro keeps a record.')}
     <button class="opt" data-a="moveOpen" data-v="${k}"><b>Move it to another time or day</b><span>Pick a new time today, or swap with another day this week.</span></button>
     ${S.core.overrides[k] ? opt('UNDO', 'Back to the original plan', esc(name) + ' today.') : ''}
     <p class="small muted">Feeling ill? Use the mode button at the top instead.</p>
@@ -2249,7 +2249,7 @@ function foodSheet() {
   const F = UI.sheet.food, close = `<div class="spread"><span class="lbl">Add food or drink</span><button class="btn small ghost" data-a="closeSheet">Close</button></div>`;
   if (F.view === 'custom') return `<div class="in" role="dialog" aria-label="Enter food yourself">${close}
     <h2>Enter it yourself</h2>
-    <p class="small muted">From the label, for the amount you had. Tank saves it so you can find it next time.</p>
+    <p class="small muted">From the label, for the amount you had. Gym Bro saves it so you can find it next time.</p>
     <label class="field"><span>Name</span><input id="fc-n" type="text" value="${esc(F.cn || '')}" placeholder="e.g. Mum's lasagne"></label>
     <div class="grid3">${[['k', 'kcal'], ['p', 'Protein g'], ['fat', 'Fat g'], ['c', 'Carbs g'], ['s', 'Sugar g']].map(([id, l]) => `<label class="field"><span>${l}</span><input id="fc-${id}" inputmode="decimal"></label>`).join('')}<label class="field"><span>Portion</span><input id="fc-por" type="text" placeholder="1 plate"></label></div>
     <button class="btn green block" data-a="fcAdd">Add</button>
@@ -2269,7 +2269,7 @@ function foodSheet() {
     <label class="field"><span>Type it like you'd say it</span><input id="fa-q" type="text" value="${esc(F.q)}" placeholder="e.g. 2 coffees with milk and a croissant" autocomplete="off"></label>
     <button class="btn green block" data-a="faParse">Count it</button>
     <div id="fa-sug" class="sug-list">${sugHTML(F.q)}</div>
-    ${F.miss && F.miss.length ? `<div class="banner warn"><p class="small">Tank doesn't know: <b>${F.miss.map(esc).join(', ')}</b></p><div class="row"><button class="btn small ghost" data-a="faView" data-v="custom">Enter it myself</button><button class="btn small ghost" data-a="faView" data-v="online">Search packaged food</button></div></div>` : ''}
+    ${F.miss && F.miss.length ? `<div class="banner warn"><p class="small">Gym Bro doesn't know: <b>${F.miss.map(esc).join(', ')}</b></p><div class="row"><button class="btn small ghost" data-a="faView" data-v="custom">Enter it myself</button><button class="btn small ghost" data-a="faView" data-v="online">Search packaged food</button></div></div>` : ''}
     ${F.items.length ? `<div>${F.items.map(foodItemRow).join('')}</div>
       <div class="spread"><b>Total</b><span class="num"><b>${fmt(tot.k)}</b> kcal · P ${Math.round(tot.p)} · sugar ${Math.round(tot.s)} g</span></div>
       <button class="btn green block" data-a="faSave">Add to today</button>` : ''}
@@ -2283,7 +2283,7 @@ function foodItemRow(it, i) {
   return `<div class="frow"><span class="t"><b>${esc(f.n)}</b><span>${fracTxt(it.q)} × ${esc(f.por)} · ${fmt(f.k * it.q)} kcal · P ${Math.round(f.p * it.q)}</span>${(it.alts || []).length > 1 ? `<button class="linkbtn" data-a="faAlt" data-v="${i}">Not this? Next match</button>` : ''}</span>
     <button class="qbtn" data-a="faQty" data-v="${i}|-1" aria-label="Less">−</button><span class="qn">${fracTxt(it.q)}</span><button class="qbtn" data-a="faQty" data-v="${i}|1" aria-label="More">+</button><button class="qbtn" data-a="faDel" data-v="${i}" aria-label="Remove">×</button></div>`;
 }
-const burnTxt = x => { const net = actNet(x.a, x.min, x.i); return `About <b>${fmt(actKcal(x.a, x.min, x.i))} kcal</b> burned, plus ${afterburn(net, x.i)} kcal afterburn. Tank adds about ${fmt(Math.min(x.ctx === 'log' ? 700 : 1000, round(net * (x.ctx === 'log' ? 0.6 : 0.7), 10)))} kcal to today's food.`; };
+const burnTxt = x => { const net = actNet(x.a, x.min, x.i); return `About <b>${fmt(actKcal(x.a, x.min, x.i))} kcal</b> burned, plus ${afterburn(net, x.i)} kcal afterburn. Gym Bro adds about ${fmt(Math.min(x.ctx === 'log' ? 700 : 1000, round(net * (x.ctx === 'log' ? 0.6 : 0.7), 10)))} kcal to today's food.`; };
 function actSheet() {
   const x = UI.sheet.act;
   return `<div class="in" role="dialog" aria-label="Activity">
@@ -2325,10 +2325,10 @@ function skipDaySheet() {
   const r = UI.sheet.skipday, name = SESS[planFor(TODAY())] ? SESS[planFor(TODAY())].n : 'today\'s session';
   return `<div class="in" role="dialog" aria-label="Skip today">
     <div class="spread"><span class="lbl">Skip today</span><button class="btn small ghost" data-a="closeSheet">Close</button></div>
-    <div class="hero angry"><span class="face">${tankSVG('angry')}</span><div class="say"><b>Tank</b><p>Skip ${esc(name)}? Moving it is better. Still no? Then tell me why.</p></div></div>
+    <div class="hero angry"><span class="face">${tankSVG('angry')}</span><div class="say"><b>Gym Bro</b><p>Skip ${esc(name)}? Moving it is better. Still no? Then tell me why.</p></div></div>
     <button class="btn blue block" data-a="moveOpen" data-v="${TODAY()}">Fine, I'll move it instead</button>
     <div class="field"><span>Why can't you train today?</span><div class="pchips">${Object.entries(DAY_REASONS).map(([v, l]) => `<button class="pchip ${r.reason === v ? 'on' : ''}" data-a="sdReason" data-v="${v}">${l}</button>`).join('')}</div></div>
-    ${r.reason === 'ill' ? '<div class="banner sick"><p class="small">Then switch to Ill mode at the top instead: your streak stays safe and Tank goes easy on you.</p><button class="btn small" data-a="sdMode" data-v="sick">Switch to Ill mode</button></div>' : ''}
+    ${r.reason === 'ill' ? '<div class="banner sick"><p class="small">Then switch to Ill mode at the top instead: your streak stays safe and Gym Bro goes easy on you.</p><button class="btn small" data-a="sdMode" data-v="sick">Switch to Ill mode</button></div>' : ''}
     ${r.reason === 'travel' ? '<div class="banner travel"><p class="small">Away mode gives you 25-minute hotel workouts and keeps your streak.</p><button class="btn small blue" data-a="sdMode" data-v="travel">Switch to Away mode</button></div>' : ''}
     <label class="field"><span>What happened?</span><input id="sd-note" type="text" value="${esc(r.note || '')}" placeholder="e.g. client meeting ran until 21:00"></label>
     <button class="btn block" data-a="sdConfirm">I confirm: I can't train today</button>
@@ -2391,7 +2391,7 @@ function ciQuestions(k) {
   Q.push({ id: 'water', title: 'How much water?', opts: [['lo', 'Under 2 L'], ['mid', '2–3 L'], ['hi', '3 L+']] });
   Q.push({ id: 'energy', title: 'How do you feel?', opts: [['lo', 'Wrecked'], ['mid', 'OK'], ['hi', 'Great']] });
   Q.push({ id: 'hunger', title: 'How hungry were you today?', opts: [['hi', 'Starving'], ['mid', 'Normal'], ['lo', 'Not hungry']] });
-  Q.push({ id: 'note', type: 'note', title: 'Anything else Tank should know?', opts: [] });
+  Q.push({ id: 'note', type: 'note', title: 'Anything else Gym Bro should know?', opts: [] });
   return Q;
 }
 function ciCard() {
@@ -2401,7 +2401,7 @@ function ciCard() {
     <p class="small">${esc(rep.headline)}</p><span class="linkbtn">Open report and tomorrow's plan</span></button>`;
   return `<div class="card" ${late ? 'style="background:var(--orange-soft)"' : ''}>
     <h3>Evening check-in</h3>
-    <p class="small">${late ? 'Tank wants to know how today went.' : 'Do it tonight after dinner.'} Quick questions, then your report and a plan for tomorrow.</p>
+    <p class="small">${late ? 'Gym Bro wants to know how today went.' : 'Do it tonight after dinner.'} Quick questions, then your report and a plan for tomorrow.</p>
     <button class="btn block" data-a="ciStart">Start check-in</button></div>`;
 }
 function viewCheckin() {
@@ -2409,7 +2409,7 @@ function viewCheckin() {
   if (!ci) { UI.tab = 'today'; return viewToday(); }
   const Q = ciQuestions(ci.k), q = Q[ci.step], a = ci.a[q.id] || {};
   const free = (q.type === 'meal' || q.type === 'extra' || q.type === 'act') && a.v === 'else', isAct = q.type === 'act';
-  return `<div class="hero grumpy"><span class="face">${tankSVG('grumpy')}</span><div class="say"><b>Tank</b><p>${ci.step === 0 ? 'Interrogation time. Be honest.' : ci.step > Q.length - 3 ? 'Nearly done. Keep going.' : 'Next question.'}</p></div></div>
+  return `<div class="hero grumpy"><span class="face">${tankSVG('grumpy')}</span><div class="say"><b>Gym Bro</b><p>${ci.step === 0 ? 'Interrogation time. Be honest.' : ci.step > Q.length - 3 ? 'Nearly done. Keep going.' : 'Next question.'}</p></div></div>
   <div class="card">
     <div class="spread"><span class="lbl">Question ${ci.step + 1} of ${Q.length}</span><button class="linkbtn" data-a="ciClose">Close</button></div>
     <div class="bar"><i style="width:${Math.round((ci.step + 1) / Q.length * 100)}%"></i></div>
@@ -2420,7 +2420,7 @@ function viewCheckin() {
          <button class="btn block" data-a="ciReport">Get my report</button>`
       : `<div class="tasks">${q.opts.map(([v, l]) => `<button class="opt ${a.v === v ? 'on' : ''}" data-a="ciAns" data-v="${v}"><b>${l}</b></button>`).join('')}</div>`}
     ${free ? `<label class="field"><span>${isAct ? 'What, how long, how hard?' : 'What was it?'}</span><input id="ci-text" type="text" placeholder="${isAct ? 'e.g. football 60 min, hard' : q.type === 'meal' ? 'e.g. 3 slices of pizza and a Coke' : 'e.g. 2 beers and crisps'}" value="${esc(a.text || '')}"></label>
-      ${isAct ? '' : `<p class="small muted">Name the foods and Tank counts them exactly. If he doesn't know one, he uses the size below.</p><div class="field"><span>How big?</span><div class="segs">${['small', 'normal', 'big'].map(s => `<button class="seg ${(a.size || 'normal') === s ? 'on' : ''}" data-a="ciSize" data-v="${s}">${SIZE_NAMES[s]}</button>`).join('')}</div></div>`}
+      ${isAct ? '' : `<p class="small muted">Name the foods and Gym Bro counts them exactly. If he doesn't know one, he uses the size below.</p><div class="field"><span>How big?</span><div class="segs">${['small', 'normal', 'big'].map(s => `<button class="seg ${(a.size || 'normal') === s ? 'on' : ''}" data-a="ciSize" data-v="${s}">${SIZE_NAMES[s]}</button>`).join('')}</div></div>`}
       <button class="btn block" data-a="ciNext">Next</button>` : ''}
     ${ci.step > 0 ? '<button class="btn ghost small" data-a="ciBack">Back</button>' : ''}
   </div>`;
@@ -2435,7 +2435,7 @@ function buildReport() {
   const { k, a } = UI.ci, d = getDay(k, true), meals = dayMeals(k);
   d.mode = d.mode || dayMode(k);
   d.ate = []; d.ateM = {}; d.food = (d.food || []).filter(f => !f.ci);
-  // foods Tank knows are counted exactly; anything else falls back to the size you picked
+  // foods Gym Bro knows are counted exactly; anything else falls back to the size you picked
   const toFood = (text, size, kind, slot) => {
     const parsed = parseFoodText(text);
     if (parsed.length && parsed.every(x => x.id)) { parsed.forEach(x => d.food.push(foodRec(foodById(x.id), x.q, { ci: 1, slot, exact: 1 }))); return; }
@@ -2479,7 +2479,7 @@ function computeReport(k, a) {
   if (tr === 'done') wins.push(dayMode(k) === 'sick' ? 'You actually rested. Good.' : 'Training done. All of it.');
   if (v('sleep') === 'hi') wins.push('Slept 7.5 hours or more.');
   const xk = ((getDay(k) || {}).extra || []).reduce((s2, x) => s2 + actKcal(x.a, x.min, x.i), 0);
-  if (xk) wins.push('Extra sport: about ' + fmt(xk) + ' kcal burned.' + (T.bonus ? ' Tank added ' + fmt(T.bonus) + ' kcal to your food for it.' : ''));
+  if (xk) wins.push('Extra sport: about ' + fmt(xk) + ' kcal burned.' + (T.bonus ? ' Gym Bro added ' + fmt(T.bonus) + ' kcal to your food for it.' : ''));
   if (dk > 150) fixes.push('About ' + fmt(dk) + ' kcal over target.');
   if (dk < -400) fixes.push('About ' + fmt(-dk) + ' kcal under target.' + (G.kcal > 0 ? ' You can\'t grow without food.' : ' Too little costs muscle.'));
   if (e.p < T.protein) fixes.push('Protein short by ' + (T.protein - e.p) + ' g.');
@@ -2521,7 +2521,7 @@ function viewReport() {
     pred = `You'd ${verb} about ${Math.abs(rep.weekly).toFixed(2)} kg a week and reach ${goal} kg on <b>${esc(longDate(rep.predDate))}</b>${rep.planDate ? ', ' + (Math.abs(diff) < 4 ? 'right on plan' : Math.abs(diff) + ' days ' + (diff > 0 ? 'later' : 'sooner') + ' than planned') : ''}.`;
   }
   return `
-  <div class="hero ${mood}"><span class="face">${tankSVG(mood)}</span><div class="say"><b>Tank's verdict · ${shortDate(k)}</b><p>${esc(rep.headline)}</p></div></div>
+  <div class="hero ${mood}"><span class="face">${tankSVG(mood)}</span><div class="say"><b>Gym Bro's verdict · ${shortDate(k)}</b><p>${esc(rep.headline)}</p></div></div>
   <div class="card">
     <div class="spread"><span class="lbl">Day score</span><span class="big">${rep.score}<small>/100</small></span></div>
     <div class="bar green"><i style="width:${rep.score}%"></i></div>
@@ -2530,7 +2530,7 @@ function viewReport() {
       <div><span class="lbl">Protein</span><div class="big" style="font-size:30px">${rep.p}</div><span class="small muted">of ${rep.tp} g</span></div>
       <div><span class="lbl">Sugar</span><div class="big" style="font-size:30px;${rep.s > rep.ts ? 'color:var(--red)' : ''}">${rep.s}</div><span class="small muted">limit ${rep.ts} g</span></div>
     </div>
-    ${free.length ? `<div class="small">${free.map(f => `<div class="spread" style="border-top:1px solid var(--line);padding-top:8px"><span style="flex:1;min-width:0">${esc(f.slot)}: <b>${esc(f.n)}</b></span><span class="muted">~${f.k} kcal</span></div>`).join('')}<p class="muted" style="margin-top:6px">${free.some(f => !f.exact) ? 'Foods Tank knows are counted exactly. The rest is a rough estimate from the size you picked.' : 'Counted from Tank\'s food list.'}</p></div>` : ''}
+    ${free.length ? `<div class="small">${free.map(f => `<div class="spread" style="border-top:1px solid var(--line);padding-top:8px"><span style="flex:1;min-width:0">${esc(f.slot)}: <b>${esc(f.n)}</b></span><span class="muted">~${f.k} kcal</span></div>`).join('')}<p class="muted" style="margin-top:6px">${free.some(f => !f.exact) ? 'Foods Gym Bro knows are counted exactly. The rest is a rough estimate from the size you picked.' : 'Counted from Gym Bro\'s food list.'}</p></div>` : ''}
   </div>
   <div class="card">
     <h3>Good</h3><ul class="small" style="margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px">${rep.wins.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
@@ -2557,7 +2557,7 @@ function viewReview() {
   const mood = gymPct >= 85 && right ? 'happy' : gymPct >= 60 ? 'neutral' : 'grumpy';
   const say = !st.gymPlan && st.days < 7 ? 'Too early to judge. Come back in a week or two.' : mood === 'happy' ? 'You actually did it. I\'m shocked. Proud, mostly shocked.' : mood === 'neutral' ? 'Decent. Not perfect. The next plan fixes what slipped.' : 'Lots of skipped sessions. New plan, same rule: show up.';
   return `
-  <div class="hero ${mood}"><span class="face">${tankSVG(mood)}</span><div class="say"><b>Tank · plan ${P.n} report</b><p>${esc(say)}</p></div></div>
+  <div class="hero ${mood}"><span class="face">${tankSVG(mood)}</span><div class="say"><b>Gym Bro · plan ${P.n} report</b><p>${esc(say)}</p></div></div>
   <div class="card">
     <div class="spread"><h2>Plan ${P.n}: ${esc(G.n)}</h2><button class="linkbtn" data-a="tab" data-v="me">Close</button></div>
     <p class="small muted">${esc(longDate(P.start))} – ${esc(longDate(P.end))} · ${planWeeks()} weeks${over ? '' : ' · ' + diffDays(P.end, TODAY()) + ' days left'}</p>
@@ -2577,7 +2577,7 @@ function viewReview() {
   <div class="card" style="background:var(--violet-soft)">
     <h2>Next plan</h2>
     <p>${esc(adv.why)}</p>
-    <div class="tasks">${Object.entries(GOALS).map(([v, x]) => `<button class="opt ${adv.type === v ? 'on' : ''}" data-a="npType" data-v="${v}"><b>${esc(x.n)}${v === nextPlanAdvice(st).type ? ' (Tank\'s pick)' : ''}</b><span>${esc(x.d)}</span></button>`).join('')}</div>
+    <div class="tasks">${Object.entries(GOALS).map(([v, x]) => `<button class="opt ${adv.type === v ? 'on' : ''}" data-a="npType" data-v="${v}"><b>${esc(x.n)}${v === nextPlanAdvice(st).type ? ' (Gym Bro\'s pick)' : ''}</b><span>${esc(x.d)}</span></button>`).join('')}</div>
     <div class="segs">${[2, 4, 8, 12, 16].map(w => `<button class="seg ${adv.wks === w ? 'on' : ''}" data-a="npWeeks" data-v="${w}">${w} weeks</button>`).join('')}</div>
     <label class="field"><span>Goal weight, kg</span><input id="np-gw" inputmode="decimal" value="${adv.gw}"></label>
     ${adv.adj ? `<p class="small">Calories: ${adv.adj > 0 ? '+' : ''}${adv.adj} kcal a day.</p>` : ''}
@@ -2796,7 +2796,7 @@ const A = {
     const w = num('wt'); if (!w || w < 30 || w > 250) { toast('Enter your weight in kg, e.g. 79.6'); return; }
     const before = currentWeight(), up = GOALS[S.core.goal.type].rate > 0; todayDay().w = w; touch();
     const good = up ? w > before + 0.05 : w < before - 0.05;
-    toast(good ? 'Tank: "Moving the right way. Keep going."' : Math.abs(w - before) > 0.5 ? 'Tank: "One day means nothing. Watch the line."' : 'Saved.', 3200); render();
+    toast(good ? 'Gym Bro: "Moving the right way. Keep going."' : Math.abs(w - before) > 0.5 ? 'Gym Bro: "One day means nothing. Watch the line."' : 'Saved.', 3200); render();
   },
   saveMeas() {
     const waist = num('m-waist'); if (!waist) { toast('Enter your waist in cm.'); return; }
@@ -2866,7 +2866,7 @@ const A = {
     UI.ci.step++; render(); window.scrollTo(0, 0);
   },
   ciSize(el) { const { a } = ciKeepText(); a.size = el.dataset.v; render(); },
-  ciNext() { const { a } = ciKeepText(); if (!a.text) { toast('Write what you ate. Tank wants details.'); return; } UI.ci.step++; render(); window.scrollTo(0, 0); },
+  ciNext() { const { a } = ciKeepText(); if (!a.text) { toast('Write what you ate. Gym Bro wants details.'); return; } UI.ci.step++; render(); window.scrollTo(0, 0); },
   ciBack() { ciKeepText(); UI.ci.step = Math.max(0, UI.ci.step - 1); render(); },
   ciReport() { ciKeepText(); buildReport(); UI.repKey = UI.ci.k; UI.ci = null; flush(); go('report'); },
   setSex(el) { S.core.profile.sex = el.dataset.v; saveCore(); tankSay('neutral', 'Noted. Calories and starting weights updated.', 8000); render(); },
@@ -2981,7 +2981,7 @@ const A = {
     let tot = 0;
     F.items.forEach(it => { const f = itemFood(it); if (!f) return; const rec = foodRec(f, it.q, { fid: it.id, exact: 1 }); tot += rec.k; d.food.push(rec); S.core.recentFoods = [it.id].concat(S.core.recentFoods.filter(x => x !== it.id)).slice(0, 12); });
     UI.sheet = null; touch(); saveCore(); render();
-    toast(tot > 600 ? 'Tank: "' + fmt(tot) + ' kcal? I saw that."' : '+' + fmt(tot) + ' kcal added', 3000);
+    toast(tot > 600 ? 'Gym Bro: "' + fmt(tot) + ' kcal? I saw that."' : '+' + fmt(tot) + ' kcal added', 3000);
   },
   // budget
   bRegion(el) { const b = S.core.budget, v = el.dataset.v; b.country = val('b-country') || b.country; if (b.region !== v) { b.region = v; b.weekly = 0; b.tier = ''; b.ref = null; b.alert = null; b.supp = 0; } saveCore(); render(); },
@@ -3033,7 +3033,7 @@ document.addEventListener('change', async e => {
     S.purl[id] = URL.createObjectURL(blob);
     const d = getDay(TODAY());
     S.core.photos.push({ id, d: TODAY(), pose: UI.pose, w: d && d.w ? d.w : null });
-    saveCore(); toast('Photo saved. Tank: "Looking less soft already. Slightly."', 3200);
+    saveCore(); toast('Photo saved. Gym Bro: "Looking less soft already. Slightly."', 3200);
   } catch (err) { toast('Could not save the photo. Try again.'); }
   UI.uploading = false; render();
 });

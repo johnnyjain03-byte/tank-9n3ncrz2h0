@@ -1,5 +1,5 @@
 // Network first so updates show up straight away; cached copy when offline.
-const CACHE = 'gym-bro-v8';
+const CACHE = 'gym-bro-v9';
 self.addEventListener('install', e => { self.skipWaiting(); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', e => {

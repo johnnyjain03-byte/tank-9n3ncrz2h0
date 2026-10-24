@@ -555,14 +555,13 @@ function parseAct(text) {
 const XSLOTS = [
   { t: '09:00', opts: [['ride', 120, 1], ['hike', 180, 1], ['run', 45, 1], ['swim', 60, 1], ['surf', 120, 1], ['ski', 180, 1]] },
   { t: '13:30', opts: [['swim', 45, 0], ['tennis', 60, 1], ['climb', 60, 1], ['kayak', 60, 0], ['walk', 60, 0]] },
-  { t: '16:30', opts: [['gym', 45, 1], ['football', 60, 1], ['basket', 60, 1], ['hiit', 30, 2], ['box', 45, 1]] },
+  { t: '16:30', opts: [['gym', 40, 0], ['football', 60, 1], ['tennis', 60, 1], ['basket', 60, 1], ['hiit', 30, 2], ['box', 45, 1]] },
   { t: '19:30', opts: [['yoga', 20, 0], ['walk', 30, 0]] },
 ];
 function extraPlan(k) {
   const d = getDay(k);
   if (d && d.xplan) return d.xplan;
-  const seed = parseKey(k).getDate();
-  return XSLOTS.map((s, i) => { const [a, min, it] = s.opts[i === 0 ? 0 : seed % s.opts.length]; return { id: 'b' + i, slot: i, a, min, i: it, t: s.t }; });
+  return XSLOTS.map((s, i) => { const [a, min, it] = s.opts[0]; return { id: 'b' + i, slot: i, a, min, i: it, t: s.t }; });
 }
 const xplanFor = k => { const d = getDay(k, true); if (!d.xplan) d.xplan = extraPlan(k).map(b => ({ ...b })); return d.xplan; };
 // extra sport you log isn't in your base calories, so Tank feeds some of it back (trackers overestimate, so not all)
@@ -570,7 +569,7 @@ function activityBonus(k, mode) {
   const d = getDay(k), w = currentWeight();
   let net = ((d && d.extra) || []).reduce((s, x) => s + actNet(x.a, x.min, x.i, w), 0);
   if (mode === 'extra') net += extraPlan(k).filter(b => !b.skip).reduce((s, b) => s + actNet(b.a, b.min, b.i, w), 0);
-  return Math.round(net * (mode === 'extra' ? 0.7 : 0.6));
+  return Math.min(mode === 'extra' ? 1000 : 700, Math.round(net * (mode === 'extra' ? 0.7 : 0.6)));
 }
 const MUSCLES = {
   Chest: ['bench', 'dbbench', 'idb', 'incb', 'machpress', 'inclinemach', 'fly', 'pecdeck', 'pushup', 'dip', 'floorpress'],
@@ -746,23 +745,31 @@ function weekCostWith(pools, c = priceCtx()) {
   return tot;
 }
 const basePools = () => ({ b: ranked('b'), l: ranked('l'), d: ranked('d'), s: ranked('s') });
-// tight = only the cheapest recipes in each meal, normal = drop the priciest, comfort = everything
+// Pricey recipes (salmon, prawns, steak, cod) are treats, not the base of the menu. A bigger budget
+// never means steak every night: the menu is picked for your goal first, and money only limits it.
+const LUX = new Set(['salmontoast', 'prawnmango', 'harissasalmon', 'steaksalad', 'cod', 'prawnpasta', 'salmontray', 'gambas', 'steak']);
+const LUX_MAX = { tight: { b: 0, l: 0, d: 0 }, normal: { b: 1, l: 1, d: 1 }, comfort: { b: 1, l: 1, d: 2 } };
 function tierPools(tier, c) {
-  const P = basePools();
-  if (tier === 'comfort' || !c) return P;
-  const keep = tier === 'tight' ? { b: 3, l: 3, d: 4, s: 3 } : { b: 4, l: 5, d: 6, s: 4 }, out = {};
-  for (const k in P) { const cheap = P[k].slice().sort((a, b) => recipeCost(a, 1, c) - recipeCost(b, 1, c)).slice(0, keep[k]); out[k] = P[k].filter(id => cheap.includes(id)); }
+  const P = basePools(), out = {};
+  for (const k in P) {
+    let list = P[k];
+    if (tier === 'tight' && c) { const cheap = list.slice().sort((a, b) => recipeCost(a, 1, c) - recipeCost(b, 1, c)).slice(0, { b: 3, l: 3, d: 4, s: 3 }[k]); list = list.filter(id => cheap.includes(id)); }
+    let lux = 0;
+    const kept = list.filter(id => !LUX.has(id) || lux++ < (LUX_MAX[tier][k] ?? 9));
+    out[k] = kept.length >= 2 ? kept : list; // if you've crossed out lots of foods, keep enough recipes to eat
+  }
   return out;
 }
-const TIERS = { tight: ['Tight', 'Cheapest recipes: chicken, eggs, mince, tuna'], normal: ['Normal', 'Most recipes, fewest steaks and prawns'], comfort: ['Comfort', 'Every recipe: salmon, steak, prawns'] };
+const TIERS = { tight: ['Tight', 'Cheapest recipes: chicken, eggs, mince, tuna. Still hits your protein.'], normal: ['Smart (recommended)', 'Best value. Salmon, prawns or steak a couple of times a week.'], comfort: ['Treat', 'A bit more salmon, prawns and steak. Nicer, not better for your goal.'] };
 function tierCosts() { const c = priceCtx(); if (!c) return null; const o = {}; for (const t in TIERS) o[t] = weekCostWith(tierPools(t, c), c); return o; }
 let BP = null;
 function budgetPools() {
   const b = S.core.budget, c = priceCtx();
-  const key = JSON.stringify([TODAY(), S.core.goal, S.core.food.focus, S.core.food.exclude, b.region, b.like, b.cur, b.weekly, S.prices && S.prices.updated]);
+  const key = JSON.stringify([TODAY(), S.core.goal, S.core.food.focus, S.core.food.exclude, b.region, b.like, b.cur, b.weekly, b.tier, S.prices && S.prices.updated]);
   if (BP && BP.key === key) return BP.v;
-  let v = basePools();
-  if (c && b.weekly > 0) v = ['comfort', 'normal', 'tight'].map(t => tierPools(t, c)).find(p => weekCostWith(p, c) <= b.weekly * 1.02) || tierPools('tight', c);
+  // Smart is the default. Treat only if you picked it; a big budget alone doesn't buy more steak.
+  let v = tierPools('normal', c);
+  if (c && b.weekly > 0) v = (b.tier === 'comfort' ? ['comfort', 'normal', 'tight'] : ['normal', 'tight']).map(t => tierPools(t, c)).find(p => weekCostWith(p, c) <= b.weekly * 1.02) || tierPools('tight', c);
   BP = { key, v }; return v;
 }
 // a fixed basket (every recipe once) shows how prices moved, whatever the menu is this week
@@ -805,7 +812,7 @@ function suppPlan() {
   const b = S.core.budget, c = priceCtx(), mo = new Date().getMonth(), ws = weekStart(TODAY());
   const fishMeals = [0, 1, 2, 3, 4, 5, 6].reduce((n, i) => n + dayMeals(addDays(ws, i)).filter(m => /salmon|tuna|cod/i.test(R[m.id].ing.map(x => x[0]).join(' '))).length, 0);
   const longRides = Object.values(weekPlan()).includes('LONG');
-  const want = { creatine: 1, vitd: mo >= 9 || mo <= 2 ? 1 : 0.5, caffeine: 0.6, electrolytes: longRides ? 0.5 : 0, omega3: fishMeals >= 2 ? 0 : 0.5, magnesium: 0.2, multi: 0.1 };
+  const want = { creatine: 1, vitd: mo >= 9 || mo <= 2 ? 1 : 0.3, caffeine: 0.3, electrolytes: S.core.mode.type === 'extra' ? 0.6 : longRides ? 0.3 : 0, omega3: fishMeals >= 2 ? 0 : 0.5, magnesium: 0.2, multi: 0.1 };
   let left = b.supp > 0 ? b.supp : Infinity;
   return SUPPS.filter(s => want[s.id] > 0).map(s => {
     const cost = c && S.prices.supps && S.prices.supps[s.id] ? S.prices.supps[s.id][c.i] * c.fx : 0;
@@ -1070,7 +1077,7 @@ async function loadPrices() {
   try { const r = await fetch('prices.json?t=' + Date.now(), { cache: 'no-store' }); if (r.ok) { const p = await r.json(); if (p && p.items) { S.prices = p; try { localStorage.setItem('gymbro-prices', JSON.stringify(p)); } catch (e) {} } } } catch (e) {}
 }
 // the app updates itself: when a newer version is online, reload into it (your data stays on the phone)
-const APP_VERSION = '8';
+const APP_VERSION = '9';
 async function checkUpdate() {
   try {
     const v = (await (await fetch('version.txt?t=' + Date.now(), { cache: 'no-store' })).text()).trim();
@@ -1480,6 +1487,7 @@ function parseFoodText(text) {
     const m = rest.match(/^(\d+(?:[.,]\d+)?)\s*x?\s+/i);
     if (m) { q = parseFloat(m[1].replace(',', '.')); rest = rest.slice(m[0].length); }
     else { const w = rest.toLowerCase().split(/\s+/)[0]; if (NUMW[w] !== undefined) { q = NUMW[w]; rest = rest.slice(w.length); } }
+    if (q < 1) { const whole = foodMatches(rest + ' whole', 1)[0]; if (whole && /whole/i.test(whole.n)) rest += ' whole'; }
     const hits = foodMatches(rest || part, 5);
     return { text: part, q: Math.max(0.5, Math.min(20, q || 1)), id: hits[0] ? hits[0].id : null, alts: hits.map(h => h.id) };
   });
@@ -1812,6 +1820,7 @@ function foodBudget() {
     ${Object.entries(TIERS).map(([t, [n, d]]) => `<button class="opt ${b.tier === t ? 'on' : ''}" data-a="bTier" data-v="${t}"><b>${n}: about ${money(up5(tc[t]))} a week</b><span>${d}</span></button>`).join('')}
     <div class="row" style="flex-wrap:nowrap"><label class="field" style="flex:1"><span>Or your own amount a week (${esc(c.cur)})</span><input id="b-weekly" inputmode="decimal" value="${b.weekly || ''}" placeholder="${Math.round(tc.normal)}"></label><button class="btn green" data-a="bSave" style="align-self:flex-end">Save</button></div>
     ${b.weekly > 0 ? `<p class="small">Budget <b>${money(b.weekly)}</b>. This week's menu: about <b class="${over ? 'up' : ''}">${money(now)}</b>.${over ? ' Even the cheapest menu costs more. Try the swaps below.' : ' Tank picked recipes that fit.'}</p>` : '<p class="small">Pick one and Tank builds your menu to fit it.</p>'}
+    ${b.weekly > up5(tc.comfort) * 1.2 ? `<p class="small muted">You don't need to spend more than about ${money(up5(tc.normal))}. Your menu is built for your goal; a bigger budget only adds treats if you pick Treat.</p>` : ''}
     <p class="small muted">Prices checked ${longDate(P.updated)}. Tank checks them every 2 weeks and tells you if your food gets more expensive. Change your budget any time.</p>
   </div>
   <div class="card"><h2>Where the money goes</h2>
@@ -2199,7 +2208,7 @@ function foodItemRow(it, i) {
   return `<div class="frow"><span class="t"><b>${esc(f.n)}</b><span>${fracTxt(it.q)} × ${esc(f.por)} · ${fmt(f.k * it.q)} kcal · P ${Math.round(f.p * it.q)}</span>${(it.alts || []).length > 1 ? `<button class="linkbtn" data-a="faAlt" data-v="${i}">Not this? Next match</button>` : ''}</span>
     <button class="qbtn" data-a="faQty" data-v="${i}|-1" aria-label="Less">−</button><span class="qn">${fracTxt(it.q)}</span><button class="qbtn" data-a="faQty" data-v="${i}|1" aria-label="More">+</button><button class="qbtn" data-a="faDel" data-v="${i}" aria-label="Remove">×</button></div>`;
 }
-const burnTxt = x => { const net = actNet(x.a, x.min, x.i); return `About <b>${fmt(actKcal(x.a, x.min, x.i))} kcal</b> burned, plus ${afterburn(net, x.i)} kcal afterburn. Tank adds about ${fmt(round(net * (x.ctx === 'log' ? 0.6 : 0.7), 10))} kcal to today's food.`; };
+const burnTxt = x => { const net = actNet(x.a, x.min, x.i); return `About <b>${fmt(actKcal(x.a, x.min, x.i))} kcal</b> burned, plus ${afterburn(net, x.i)} kcal afterburn. Tank adds about ${fmt(Math.min(x.ctx === 'log' ? 700 : 1000, round(net * (x.ctx === 'log' ? 0.6 : 0.7), 10)))} kcal to today's food.`; };
 function actSheet() {
   const x = UI.sheet.act;
   return `<div class="in" role="dialog" aria-label="Activity">

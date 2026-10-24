@@ -1,18 +1,24 @@
 {
   "updated": "2026-10-24",
   "note": "Typical supermarket prices, own-brand or mid-range. UK: Tesco, Sainsbury's and Aldi average (GBP). EU: Germany and France average (EUR). US: national average, Walmart and Kroger (USD). Per kg for grams, per litre for ml, per tsp or tbsp for spices, otherwise per item. Each price is [UK, EU, US].",
-  "cur": { "UK": "GBP", "EU": "EUR", "US": "USD" },
-  "fx": { "USD": 1, "GBP": 0.75, "EUR": 0.86, "CHF": 0.8, "PLN": 3.65, "CZK": 21, "HUF": 335, "SEK": 9.4, "NOK": 10, "DKK": 6.4, "CAD": 1.38, "AUD": 1.52, "NZD": 1.7, "JPY": 150, "INR": 88, "AED": 3.67, "SAR": 3.75, "TRY": 42, "UAH": 41.5, "KZT": 520, "ZAR": 17.5, "BRL": 5.4, "MXN": 18.5, "SGD": 1.29, "HKD": 7.8 },
+  "cur": {
+    "UK": "GBP",
+    "EU": "EUR",
+    "US": "USD"
+  },
+  "fx": {"USD": 1, "GBP": 0.75, "EUR": 0.86, "CHF": 0.8, "PLN": 3.65, "CZK": 21, "HUF": 335, "SEK": 9.4, "NOK": 10, "DKK": 6.4, "CAD": 1.38, "AUD": 1.52, "NZD": 1.7, "JPY": 150, "INR": 88, "AED": 3.67, "SAR": 3.75, "TRY": 42, "UAH": 41.5, "KZT": 520, "ZAR": 17.5, "BRL": 5.4, "MXN": 18.5, "SGD": 1.29, "HKD": 7.8},
   "items": {
     "Almonds": [11, 12, 14],
     "Apple": [0.3, 0.35, 0.8],
     "Avocado": [0.8, 0.9, 1.1],
     "Baby potatoes": [1.6, 2.2, 4.5],
     "Balsamic vinegar": [4, 4, 8],
+    "Banana": [0.18, 0.25, 0.27],
     "Basmati rice": [2.4, 2.6, 4.5],
     "Butter": [8.8, 9, 10],
     "Cannellini beans (tin)": [2.5, 3, 5],
     "Capers": [15, 15, 25],
+    "Carrots": [0.8, 1.2, 2.2],
     "Cherry tomatoes": [4.8, 5, 8],
     "Chicken breast": [7, 10.5, 9.5],
     "Chicken thigh fillets": [6.5, 8, 7.5],
@@ -33,8 +39,8 @@
     "Feta": [10, 11, 13],
     "Fresh basil": [0.85, 1, 1.2],
     "Fresh dill": [0.85, 1, 2],
-    "Fresh parsley & mint": [0.85, 1, 1.2],
     "Fresh parsley": [0.85, 1, 1.2],
+    "Fresh parsley & mint": [0.85, 1, 1.2],
     "Frozen berries": [4, 4.5, 7.5],
     "Garlic": [0.04, 0.05, 0.07],
     "Gochujang paste": [13, 14, 15],
@@ -59,6 +65,7 @@
     "Orzo": [2.6, 3, 4.5],
     "Parmesan": [18, 20, 26],
     "Passata": [1.3, 1.6, 3],
+    "Peanut butter": [4.7, 6, 7],
     "Quinoa": [5.5, 7, 8],
     "Red chilli": [0.2, 0.25, 0.25],
     "Red onion": [0.2, 0.2, 0.75],
@@ -95,6 +102,7 @@
     "omega3": [6, 7, 9],
     "electrolytes": [6, 7, 8],
     "magnesium": [5, 6, 7],
-    "multi": [2, 3, 4]
+    "multi": [2, 3, 4],
+    "whey": [18, 20, 22]
   }
 }

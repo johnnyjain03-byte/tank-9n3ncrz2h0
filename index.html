@@ -256,6 +256,8 @@ details[open] summary{margin-bottom:12px}
 .sug-list button b{font-weight:800} .sug-list button span{font-size:14px;color:var(--muted);white-space:nowrap}
 .up{color:var(--red);font-weight:800} .down{color:var(--green);font-weight:800}
 .sexpick{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mface{flex:none;line-height:0} .mface svg{width:52px;height:52px}
+.buy{background:var(--surface);border-radius:10px;padding:8px 10px;font-size:14px}
 @media (max-width:380px){.face svg{width:84px;height:84px}.hero .say p{font-size:17px}.minis{gap:6px}}
 </style>
 </head>
@@ -306,13 +308,13 @@ const VAPID_PUBLIC = 'BJN2ANHuN3BmTt-84niUfexGISrFjCs_ro6WCMS8-v4ujxeinsQt2WSgy3
 const GOALS = {
   lose: { n: 'Lose fat', d: 'Fastest fat loss. Heavy lifting and high protein keep your muscle.', kcal: -500, prot: 2.2, rate: -0.5, steps: 10000, cardio: 'high', w: -5 },
   recomp: { n: 'Lose fat, build muscle', d: 'Slower fat loss while you build muscle. Best if you\'re "skinny-fat".', kcal: -300, prot: 2.2, rate: -0.3, steps: 9000, cardio: 'normal', w: -4 },
-  muscle: { n: 'Build muscle', d: 'Small surplus. You gain slowly and stay lean.', kcal: 250, prot: 2.0, rate: 0.25, steps: 8000, cardio: 'low', w: 3 },
-  gain: { n: 'Gain weight', d: 'Bigger surplus for faster weight gain. Some fat comes with it.', kcal: 500, prot: 1.8, rate: 0.5, steps: 7000, cardio: 'low', w: 6 },
-  maintain: { n: 'Stay in shape', d: 'Eat at maintenance and keep training.', kcal: 0, prot: 1.8, rate: 0, steps: 9000, cardio: 'normal', w: 0 },
+  muscle: { n: 'Build muscle', d: 'Small surplus. You gain slowly and stay lean.', kcal: 250, prot: 1.8, rate: 0.25, steps: 8000, cardio: 'low', w: 3 },
+  gain: { n: 'Gain weight', d: 'Bigger surplus for faster weight gain. Some fat comes with it.', kcal: 500, prot: 1.6, rate: 0.5, steps: 7000, cardio: 'low', w: 6 },
+  maintain: { n: 'Stay in shape', d: 'Eat at maintenance and keep training.', kcal: 0, prot: 1.6, rate: 0, steps: 9000, cardio: 'normal', w: 0 },
 };
 const FOCUS = {
   normal: { n: 'Balanced', d: 'A bit of everything' },
-  protein: { n: 'More protein', d: 'More protein and high-protein recipes first' },
+  protein: { n: 'More protein', d: 'High-protein recipes first, protein at the top of the useful range' },
   lowsugar: { n: 'Less sugar', d: 'Lowest-sugar recipes first and a lower sugar limit' },
 };
 
@@ -494,18 +496,22 @@ const R = {
     ing: [['Skyr', 250, 'g', 'Dairy & eggs'], ['Frozen berries', 80, 'g', 'Frozen'], ['Honey', 5, 'g', 'Cupboard']], steps: ['Berries and a little honey on the skyr.'] },
   cottage: { n: 'Cottage cheese & tomatoes on rice cakes', tag: 'cold', d: 'Snack', k: 235, p: 24, fat: 5, c: 23, s: 8, min: 3,
     ing: [['Cottage cheese', 200, 'g', 'Dairy & eggs'], ['Cherry tomatoes', 80, 'g', 'Fruit & veg'], ['Rice cakes', 2, 'pcs', 'Bread & grains']], steps: ['Cottage cheese on the rice cakes, halved tomatoes, black pepper, oregano.'] },
-  shake: { n: 'Chocolate protein shake', tag: 'cold', d: 'After training', k: 255, p: 34, fat: 6, c: 16, s: 15, min: 1,
+  shake: { n: 'Chocolate protein shake', tag: 'cold', d: 'Drink it within an hour after the gym', k: 255, p: 34, fat: 6, c: 16, s: 15, min: 1,
     ing: [['Chocolate whey', 30, 'g', 'Cupboard'], ['Semi-skimmed milk', 300, 'ml', 'Dairy & eggs']], steps: ['Shake with ice. Drink within an hour after the gym.'] },
   edamame: { n: 'Chilli-lime edamame', tag: 'hot', d: 'Snack', k: 190, p: 17, fat: 8, c: 13, s: 3, min: 5,
     ing: [['Edamame (frozen)', 150, 'g', 'Frozen'], ['Lime', 0.5, 'pcs', 'Fruit & veg'], ['Chilli flakes', 0.5, 'tsp', 'Cupboard']], steps: ['Boil 4 min, drain.', 'Toss with chilli flakes, flaky salt and lime.'] },
   applenuts: { n: 'Apple & almonds', tag: 'cold', d: 'Snack', k: 265, p: 6, fat: 15, c: 26, s: 16, min: 0,
     ing: [['Apple', 1, 'pcs', 'Fruit & veg'], ['Almonds', 30, 'g', 'Cupboard']], steps: ['Slice the apple, eat with the almonds.'] },
+  pbtoast: { n: 'Peanut butter & banana toast', tag: 'cold', d: 'Snack, good before the gym', k: 325, p: 10, fat: 9, c: 55, s: 16, min: 3,
+    ing: [['Sourdough bread', 50, 'g', 'Bread & grains'], ['Peanut butter', 15, 'g', 'Cupboard'], ['Banana', 1, 'pcs', 'Fruit & veg']], steps: ['Toast the bread, spread the peanut butter.', 'Slice the banana on top. Pinch of cinnamon if you like.'] },
+  hummuspitta: { n: 'Hummus, carrots & warm pitta', tag: 'cold', d: 'Snack', k: 350, p: 10, fat: 14, c: 45, s: 7, min: 3,
+    ing: [['Hummus', 50, 'g', 'Dairy & eggs'], ['Carrots', 100, 'g', 'Fruit & veg'], ['Wholemeal pitta', 1, 'pcs', 'Bread & grains']], steps: ['Warm the pitta in the toaster, cut into strips.', 'Carrot sticks and hummus to dip.'] },
 };
 const POOLS = {
   b: ['omelette', 'yog', 'shakshuka', 'turkish', 'salmontoast', 'appleoats'],
   l: ['prawnmango', 'greekchicken', 'tabbouleh', 'nicoise', 'harissasalmon', 'steaksalad', 'shawarma'],
   d: ['cod', 'souvlaki', 'prawnpasta', 'kofta', 'salmontray', 'meatballs', 'gambas', 'steak', 'gochujang'],
-  s: ['skyr', 'cottage', 'shake', 'edamame', 'applenuts'],
+  s: ['skyr', 'cottage', 'shake', 'edamame', 'applenuts', 'pbtoast', 'hummuspitta'],
 };
 const SLOTS = ['Breakfast', 'Lunch', 'Dinner', 'Snack', 'Snack', 'Snack'];
 const SLOT_POOL = ['b', 'l', 'd', 's', 's', 's'];
@@ -793,6 +799,7 @@ function costDrivers(c = priceCtx()) {
 /* ---------- supplements: evidence (ISSN, AIS framework), safety and cost per month ---------- */
 const SUPPS = [
   { id: 'creatine', n: 'Creatine monohydrate', dose: '3–5 g a day, every day, any time', why: 'More strength and muscle. The most-tested supplement there is.', ev: 'Strong', safe: 'Safe long-term for healthy people.', side: 'About 1 kg of water in your muscles at first. Big single doses can upset your stomach. Kidney problems? Ask a doctor first.' },
+  { id: 'whey', n: 'Protein shake (whey)', dose: '1 shake after the gym: 30 g powder in 300 ml milk or water. On rest days only if you\'re short of protein. Max 2 a day, food first', why: 'It\'s just food, not magic. Your menu already uses some, so it\'s on your shopping list.', ev: 'Strong for hitting your protein, nothing extra beyond that', safe: 'Safe for healthy people.', side: 'Bloating if milk upsets you: pick whey isolate or pea/soy protein.' },
   { id: 'vitd', n: 'Vitamin D3', dose: '10–25 µg (400–1,000 IU) a day', why: 'Bones, muscles and immunity when there\'s little sun.', ev: 'Strong if you\'re low', safe: 'Don\'t go over 100 µg (4,000 IU) a day.', side: 'None at this dose.' },
   { id: 'caffeine', n: 'Caffeine', dose: '1–2 coffees (about 3 mg per kg) 30–60 min before training', why: 'Stronger, more focused sessions.', ev: 'Strong', safe: 'Max 400 mg a day, about 4 coffees.', side: 'Bad sleep if you have it after 15:00. Jitters, fast heartbeat.' },
   { id: 'electrolytes', n: 'Electrolytes', dose: '1 tablet in your bottle on rides over 90 min or in heat', why: 'Replaces the salt you sweat out. Fewer cramps.', ev: 'Good for long sessions', safe: 'Safe.', side: 'None. Skip them on normal days.' },
@@ -800,6 +807,19 @@ const SUPPS = [
   { id: 'magnesium', n: 'Magnesium glycinate', dose: '200–300 mg in the evening', why: 'Only if you eat few nuts, seeds and greens.', ev: 'Weak for sleep and muscle', safe: 'Max 350 mg a day from supplements.', side: 'Loose stools, mostly with the citrate and oxide kinds.' },
   { id: 'multi', n: 'Multivitamin', dose: '1 a day', why: 'Not needed on this menu. Cheap insurance for bad weeks.', ev: 'Weak', safe: 'Safe.', side: 'None.' },
 ];
+// what to look for and example products (check the tested logo on the tub: labels change)
+const SUPP_BUY = {
+  whey: { tip: 'Look for: 20 g+ protein per 25–30 g scoop, a tested logo (Informed Sport, Informed Choice or NSF), a flavour you like. Buy 2–2.5 kg bags on sale: whey is on offer most weeks.',
+    UK: 'Value: Myprotein Impact Whey, The Protein Works Whey 80, Bulk Pure Whey, about £15–20 per kg on sale (a month of 1 shake a day ≈ £14–18). Premium: Optimum Nutrition Gold Standard, about £25–30 per kg. Milk upsets you? Take an isolate version.',
+    EU: 'Value: Myprotein Impact Whey, ESN Designer Whey, about €18–25 per kg on sale. Premium: Optimum Nutrition Gold Standard, about €30 per kg.',
+    US: 'Optimum Nutrition Gold Standard or Dymatize ISO100 (isolate), about $1–1.50 per scoop at Costco, Walmart or Amazon. Check for the NSF Certified for Sport or Informed Choice logo.' },
+  creatine: { tip: 'Plain creatine monohydrate. Creapure is a German-made, high-purity monohydrate. Skip "HCl", "buffered" or "ethyl ester": pricier, not better.',
+    UK: 'Bulk Creapure 500 g about £10–13, Myprotein Creatine Monohydrate about the same. 500 g lasts 100 days.', EU: 'ESN, Myprotein or any Creapure 500 g, about €12–20.', US: 'Optimum Nutrition Micronized Creatine or Thorne Creatine (NSF Certified for Sport), about $20–35 for 3–4 months.' },
+  vitd: { tip: 'D3 (cholecalciferol), 10–25 µg (400–1,000 IU). Supermarket own-brand is fine.', UK: 'Tesco, Boots or Holland & Barrett own-brand D3, about £1–3 for 3 months.', EU: 'Any pharmacy or dm/Rossmann own-brand D3, a few euros for months.', US: 'Kirkland, Nature Made (USP Verified), about $5–10 for a year.' },
+  omega3: { tip: 'Look at EPA + DHA on the back, not "fish oil 1,000 mg". You want 1 g or more of EPA + DHA a day.', UK: 'Own-brand high-strength omega-3, about £5–8 a month.', EU: 'Pharmacy or own-brand high-strength omega-3, about €6–9 a month.', US: 'Nature Made or Kirkland (USP Verified), about $8–12 a month.' },
+  electrolytes: { tip: 'Tablets you drop in a bottle, sugar-free unless you\'re riding 2+ hours.', UK: 'SiS Go Hydro, High5 Zero or Nuun, about £5–7 a tube.', EU: 'SiS, High5 or Nuun, about €6–8 a tube.', US: 'Nuun or LMNT, about $7–20 a box.' },
+  magnesium: { tip: 'Glycinate or bisglycinate, 200–300 mg. Skip oxide: it mostly goes straight through.', UK: 'Own-brand or Myprotein magnesium glycinate, about £5 a month.', EU: 'Pharmacy magnesium glycinate, about €6 a month.', US: 'Doctor\'s Best or Thorne magnesium bisglycinate, about $7–12 a month.' },
+};
 const SUPP_SKIP = [['BCAAs and EAAs', 'Pointless if you eat enough protein. You do.'], ['Fat burners', 'Barely work. Some contain dangerous stimulants or banned drugs.'], ['Testosterone boosters', 'Don\'t raise testosterone in healthy people.'], ['Pre-workout blends', 'Mostly caffeine at 3× the price. Some contain banned stimulants.'], ['SARMs and prohormones', 'Not legal as supplements, real side effects, banned in sport.'], ['Glutamine, CLA, collagen', 'No real effect on muscle or fat loss.']];
 const SUPP_REGION = {
   UK: 'UK: the NHS advises 10 µg of vitamin D a day from October to March. Pick products tested by Informed Sport.',
@@ -812,11 +832,12 @@ function suppPlan() {
   const b = S.core.budget, c = priceCtx(), mo = new Date().getMonth(), ws = weekStart(TODAY());
   const fishMeals = [0, 1, 2, 3, 4, 5, 6].reduce((n, i) => n + dayMeals(addDays(ws, i)).filter(m => /salmon|tuna|cod/i.test(R[m.id].ing.map(x => x[0]).join(' '))).length, 0);
   const longRides = Object.values(weekPlan()).includes('LONG');
-  const want = { creatine: 1, vitd: mo >= 9 || mo <= 2 ? 1 : 0.3, caffeine: 0.3, electrolytes: S.core.mode.type === 'extra' ? 0.6 : longRides ? 0.3 : 0, omega3: fishMeals >= 2 ? 0 : 0.5, magnesium: 0.2, multi: 0.1 };
+  const wheyG = shopList('week').filter(x => /whey/i.test(x.n)).reduce((a, x) => a + x.q, 0);
+  const want = { whey: wheyG ? 0.6 : 0.2, creatine: 1, vitd: mo >= 9 || mo <= 2 ? 1 : 0.3, caffeine: 0.3, electrolytes: S.core.mode.type === 'extra' ? 0.6 : longRides ? 0.3 : 0, omega3: fishMeals >= 2 ? 0 : 0.5, magnesium: 0.2, multi: 0.1 };
   let left = b.supp > 0 ? b.supp : Infinity;
   return SUPPS.filter(s => want[s.id] > 0).map(s => {
     const cost = c && S.prices.supps && S.prices.supps[s.id] ? S.prices.supps[s.id][c.i] * c.fx : 0;
-    const coffee = s.id === 'caffeine';
+    const coffee = s.id === 'caffeine' || s.id === 'whey'; // coffee you already drink; whey is already in the food budget
     const take = want[s.id] >= 0.5 && (coffee || cost <= left);
     if (take && !coffee) left -= cost;
     return { ...s, cost, coffee, take, fishMeals, season: s.id === 'vitd' && want.vitd === 1 };
@@ -839,6 +860,8 @@ const TANK = {
   break: ['Maintenance week. Eat normally, train lighter. Don\'t turn it into a pizza week.', 'Diet break. Look at me: this is what a pizza week does. Don\'t.'],
   extra: ['Sports day. Move, eat, drink, repeat. The sofa is closed.', 'Big day. Carbs are your friends today. Don\'t skip lunch.', 'Full day of sport. Water bottle. Now. Salt in it if you sweat.'],
   fat: ['Look what your skipping did to me. I\'m round now. Fix it.', 'Two missed sessions and I already need bigger trousers.'],
+  skinny: ['Two days of not eating enough. Look at me, I\'m wasting away. Eat your meals.', 'Muscle needs food. You\'re starving us both. Protein in every meal today.'],
+  strong: ['7 days in a row. Look at these arms. That\'s you in a few months.', 'Streak going strong, and so am I. Don\'t you dare break it.'],
 };
 const TALK = {
   motivate: { mood: 'happy', lines: ['Every rep today is one your future self doesn\'t have to do.', 'You\'ve done harder things than 70 minutes in a gym.', 'The mirror changes slowly, then suddenly. Keep stacking days.', 'Discipline is doing it when you don\'t feel like it. So, today.', 'One good day is luck. Ten in a row is a new body.'] },
@@ -869,7 +892,10 @@ function tankMood() {
   if (mode === 'extra') return { mood: 'neutral', msg: pick(TANK.extra, seed) };
   if (mode === 'travel') return { mood: 'neutral', msg: pick(TANK.travel, seed) };
   if (mode === 'break') return { mood: 'neutral', msg: pick(TANK.break, seed) };
-  if (tankLook() === 'fat' && h >= 9) return { mood: 'grumpy', msg: pick(TANK.fat, seed) };
+  const lk = tankLook();
+  if (lk === 'fat' && h >= 9) return { mood: 'grumpy', msg: pick(TANK.fat, seed) };
+  if (lk === 'skinny' && h >= 9) return { mood: 'soft', msg: pick(TANK.skinny, seed) };
+  if (lk === 'strong' && h >= 9 && h < 12) return { mood: 'happy', msg: pick(TANK.strong, seed) };
   const train = tasks.find(t => t.id === 'train');
   if (train && !isDone(k, train) && mins > toMin(planTime(k)) + 60) return { mood: 'angry', msg: pick(TANK.gymlate, seed) };
   if (h < 11) return { mood: 'neutral', msg: pick(TANK.morning, seed) };
@@ -891,15 +917,35 @@ function tankLook() {
   if (m === 'extra') return 'sporty';
   if (m === 'travel') return 'holiday';
   if (m === 'break') return 'chill';
-  return quietGap() || missedThisWeek() >= 2 ? 'fat' : 'fit';
+  if (quietGap() || missedThisWeek() >= 2) return 'fat';
+  if (underEating()) return 'skinny';
+  return streak() >= 7 ? 'strong' : 'fit';
+}
+// two checked-in days in a row well under your calories or protein: Tank wastes away
+function underEating() {
+  for (const k of [addDays(TODAY(), -1), addDays(TODAY(), -2)]) {
+    const d = getDay(k); if (!d || !d.ci || (d.mode || 'normal') !== 'normal') return false;
+    const e = eaten(k), T = targets('normal', k); if (e.kcal >= T.kcal * 0.75 && e.p >= T.protein * 0.7) return false;
+  }
+  return true;
 }
 // front-on capybara: boxy head, sleepy eyes, big dark nose, two front teeth when he's cross
 function tankSVG(mood, look) {
   look = look || (S.core && !S.core.needsSetup ? tankLook() : 'fit');
-  const ill = look === 'ill', fat = ['fat', 'chill', 'holiday'].includes(look);
+  const ill = look === 'ill', fat = ['fat', 'chill', 'holiday'].includes(look), strong = look === 'strong' || look === 'sporty', skinny = look === 'skinny' || ill;
   if (ill) mood = 'soft';
   const fur = ill ? '#B9A383' : '#A86B3C', dark = ill ? '#8C7558' : '#7B4A26', light = ill ? '#DCCDB2' : '#D59D66', ink = '#2B1D14', nose = '#3A2416';
-  const body = fat
+  // flexed arms behind the head layer, so they show either side of the face
+  const arm = `<ellipse cx="17" cy="97" rx="14" ry="8.5" transform="rotate(-18 17 97)" fill="${fur}" stroke="${dark}" stroke-width="1.5"/><circle cx="17" cy="87" r="10.5" fill="${fur}" stroke="${dark}" stroke-width="1.5"/><rect x="2" y="64" width="12" height="28" rx="6" transform="rotate(-10 8 78)" fill="${fur}" stroke="${dark}" stroke-width="1.5"/><circle cx="9" cy="63" r="7.5" fill="${dark}"/>`;
+  const body = strong
+    ? `<path d="M10 120 C10 100 24 89 42 87 L78 87 C96 89 110 100 110 120 Z" fill="${fur}"/>${arm}<g transform="translate(120 0) scale(-1 1)">${arm}</g>
+       <path d="M40 101 Q50 109 59 103 M61 103 Q70 109 80 101" stroke="${dark}" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+       <path d="M60 106 V120 M52 111 H68 M52 116.5 H68" stroke="${dark}" stroke-width="2.2" stroke-linecap="round" opacity=".6"/>`
+    : skinny
+    ? `<path d="M40 120 C40 104 46 95 54 94 L66 94 C74 95 80 104 80 120 Z" fill="${fur}"/>
+       <rect x="31" y="96" width="7" height="24" rx="3.5" fill="${fur}" stroke="${dark}" stroke-width="1.2"/><rect x="82" y="96" width="7" height="24" rx="3.5" fill="${fur}" stroke="${dark}" stroke-width="1.2"/>
+       <path d="M51 104 Q60 107 69 104 M52 109 Q60 112 68 109 M53 114 Q60 117 67 114" stroke="${dark}" stroke-width="1.4" fill="none" opacity=".6"/>`
+    : fat
     ? `<ellipse cx="60" cy="124" rx="52" ry="38" fill="${fur}"/><ellipse cx="60" cy="126" rx="32" ry="25" fill="${light}"/><ellipse cx="21" cy="106" rx="9" ry="7" fill="${dark}"/><ellipse cx="99" cy="106" rx="9" ry="7" fill="${dark}"/>`
     : `<path d="M22 120 C22 103 31 93 44 91 L76 91 C89 93 98 103 98 120 Z" fill="${fur}"/>
        <path d="M45 102 Q52 107 59 103 M61 103 Q68 107 75 102" stroke="${dark}" stroke-width="2.2" fill="none" stroke-linecap="round"/>
@@ -920,7 +966,7 @@ function tankSVG(mood, look) {
     soft: `<path d="M51 73 Q60 70 69 73" stroke="${ink}" stroke-width="2.4" fill="none" stroke-linecap="round"/>`,
   }[mood] || '';
   const teeth = mood === 'grumpy' || mood === 'angry' ? `<rect x="56" y="70.5" width="3.8" height="5.5" rx="1" fill="#fff" stroke="${ink}" stroke-width=".8"/><rect x="60.2" y="70.5" width="3.8" height="5.5" rx="1" fill="#fff" stroke="${ink}" stroke-width=".8"/>` : '';
-  const band = look === 'fit' || look === 'sporty' ? `<path d="M31 12 Q60 7 89 12 L89.6 18.5 Q60 13.5 30.4 18.5 Z" fill="#E5263B"/><path d="M30.7 15.3 Q60 10.3 89.3 15.3" stroke="#fff" stroke-width="1.6" fill="none" opacity=".6"/>` : '';
+  const band = look === 'fit' || strong ? `<path d="M31 12 Q60 7 89 12 L89.6 18.5 Q60 13.5 30.4 18.5 Z" fill="#E5263B"/><path d="M30.7 15.3 Q60 10.3 89.3 15.3" stroke="#fff" stroke-width="1.6" fill="none" opacity=".6"/>` : '';
   const extras = (look === 'sporty' ? `<path d="M102 30 q4 6 0 9 q-4 -3 0 -9z M14 44 q3.5 5 0 8 q-3.5 -3 0 -8z" fill="#5B8BFF"/>` : '')
     + (look === 'chill' ? `<circle cx="60" cy="5" r="7" fill="#FFA41B"/><path d="M60 -1 q4 -3 7 0" stroke="#2E9B4F" stroke-width="2.5" fill="none" stroke-linecap="round"/>` : '')
     + (ill ? `<rect x="43" y="1" width="34" height="11" rx="5" fill="#A9D8FF" stroke="#5B8BFF" stroke-width="1.5"/>
@@ -931,6 +977,7 @@ function tankSVG(mood, look) {
     + (mood === 'soft' && !ill ? '<path d="M98 28 q4 6 0 9 q-4 -3 0 -9z" fill="#5B8BFF"/>' : '')
     + (mood === 'angry' ? '<path d="M101 20 l7 -6 M105 28 l8 -2 M96 12 l1 -8" stroke="#D9192E" stroke-width="3" stroke-linecap="round"/>' : '');
   const cheeks = fat ? `<ellipse cx="27" cy="63" rx="10" ry="13" fill="${fur}"/><ellipse cx="93" cy="63" rx="10" ry="13" fill="${fur}"/>` : '';
+  const hollow = look === 'skinny' ? `<path d="M34 60 Q37 70 35 78 M86 60 Q83 70 85 78" stroke="${dark}" stroke-width="1.6" fill="none" opacity=".55"/>` : '';
   return `<svg viewBox="0 0 120 120" role="img" aria-label="Tank the capybara looks ${look === 'ill' ? 'ill' : mood}">
     ${body}
     <ellipse cx="31" cy="15" rx="6.5" ry="5.5" fill="${dark}"/><ellipse cx="89" cy="15" rx="6.5" ry="5.5" fill="${dark}"/>
@@ -942,7 +989,7 @@ function tankSVG(mood, look) {
     <path d="M60 62 V69.5" stroke="${ink}" stroke-width="2.2" stroke-linecap="round"/>
     ${band}
     <g stroke="${ink}" stroke-width="3.2" stroke-linecap="round" fill="none">${brows ? `<path d="${brows}"/>` : ''}</g>
-    ${eyes}${mouth}${teeth}${extras}
+    ${hollow}${eyes}${mouth}${teeth}${extras}
   </svg>`;
 }
 
@@ -1077,7 +1124,7 @@ async function loadPrices() {
   try { const r = await fetch('prices.json?t=' + Date.now(), { cache: 'no-store' }); if (r.ok) { const p = await r.json(); if (p && p.items) { S.prices = p; try { localStorage.setItem('gymbro-prices', JSON.stringify(p)); } catch (e) {} } } } catch (e) {}
 }
 // the app updates itself: when a newer version is online, reload into it (your data stays on the phone)
-const APP_VERSION = '9';
+const APP_VERSION = '10';
 async function checkUpdate() {
   try {
     const v = (await (await fetch('version.txt?t=' + Date.now(), { cache: 'no-store' })).text()).trim();
@@ -1125,6 +1172,7 @@ function weeklyRate() {
   const avg = a => a.reduce((s, x) => s + x.w, 0) / a.length;
   return avg(cur) - avg(prev);
 }
+const proteinWeight = (w = currentWeight()) => Math.min(w, 25 * Math.pow(S.core.profile.height / 100, 2));
 // Mifflin-St Jeor resting burn × 1.55 for 4 sessions a week. Women: −161, men: +5.
 const bmrOf = (w = currentWeight()) => { const p = S.core.profile; return 10 * w + 6.25 * p.height - 5 * p.age + (p.sex === 'female' ? -161 : 5); };
 function targets(mode, k) {
@@ -1132,7 +1180,8 @@ function targets(mode, k) {
   const bmr = bmrOf(w), tdee = bmr * 1.55, bonus = k ? activityBonus(k, mode) : 0;
   const base = ['sick', 'travel', 'break'].includes(mode) ? tdee : Math.max(tdee + g.kcal + (S.core.goal.adj || 0), bmr, p.sex === 'female' ? 1200 : 1500);
   const kcal = round(base + bonus, 50);
-  const protein = round(w * (g.prot + (focus === 'protein' ? 0.4 : 0)), 5), fat = round(w * 0.9, 5);
+  // g/kg from the goal (1.6–2.2, research range), on your weight but capped at a BMI-25 weight so heavier people aren't told to eat 250 g
+  const refW = proteinWeight(w), protein = round(refW * Math.min(2.4, g.prot + (focus === 'protein' ? 0.2 : 0)), 5), fat = round(w * 0.9, 5);
   return { kcal, protein, fat, carbs: Math.max(100, round((kcal - protein * 4 - fat * 9) / 4, 5)), sugar: round(kcal * (focus === 'lowsugar' ? 0.022 : 0.035), 5), steps: g.steps, tdee: round(tdee, 50), bonus };
 }
 function goalInfo() {
@@ -1164,7 +1213,7 @@ function ranked(poolKey) {
   return list.map((id, i) => [id, score(id), i]).sort((a, b) => a[1] - b[1] || a[2] - b[2]).map(x => x[0]);
 }
 // real-kitchen amounts: whole eggs, ¼ of a lemon, ½ a tin, grams in 5–25 g steps. Never "3.25 eggs".
-const HALVES = ['Avocado', 'Mango', 'Cucumber', 'Red pepper', 'Onion', 'Red onion', 'Lemon', 'Lime', 'Courgette', 'Red chilli', 'Tomato', 'Apple'];
+const HALVES = ['Banana', 'Avocado', 'Mango', 'Cucumber', 'Red pepper', 'Onion', 'Red onion', 'Lemon', 'Lime', 'Courgette', 'Red chilli', 'Tomato', 'Apple'];
 function scaleQty(q, u, f, name) {
   const x = q * f;
   if (u === 'g' || u === 'ml') return Math.max(5, x < 100 ? round(x, 5) : x < 250 ? round(x, 10) : round(x, 25));
@@ -1197,15 +1246,24 @@ function dayMealsWith(k, pools) {
   const wd = (parseKey(k).getDay() + 6) % 7, wk = weekStart(k), seed = Math.floor(diffDays(wk, '2026-01-05') / 7);
   const B = pools.b.slice(0, 4), L = pools.l.slice(0, 4), D = pools.d.slice(0, 5), Sn = pools.s;
   const rot = (arr, i) => arr[((i + seed) % arr.length + arr.length) % arr.length];
-  const training = !!SESS[planFor(k)];
-  const s2 = training && Sn.includes('shake') ? 'shake' : (Sn.find(x => x !== Sn[0] && x !== 'shake') || Sn[1] || Sn[0]);
-  let ids = [rot(B, wd), rot(L, Math.floor(wd / 2)), rot(D, wd), Sn[0], s2];
-  if (S.core.goal.type === 'gain') ids.push(Sn.find(x => !ids.includes(x)) || Sn[0]);
-  const sw = S.core.food.swaps[wk] || {};
-  ids = ids.map((id, i) => (sw[wd + '-' + i] && R[sw[wd + '-' + i]]) ? sw[wd + '-' + i] : id);
-  const T = targets(dayMode(k), k);
-  const snackK = ids.slice(3).reduce((s, id) => s + R[id].k, 0), mainK = ids.slice(0, 3).reduce((s, id) => s + R[id].k, 0);
-  const f = Math.round(Math.max(0.7, Math.min(1.6, (T.kcal - snackK) / mainK)) * 20) / 20;
+  const training = !!SESS[planFor(k)], T = targets(dayMode(k), k), sw = S.core.food.swaps[wk] || {};
+  const pickSw = (id, i) => (sw[wd + '-' + i] && R[sw[wd + '-' + i]]) ? sw[wd + '-' + i] : id;
+  const mains = [rot(B, wd), rot(L, Math.floor(wd / 2)), rot(D, wd)].map(pickSw);
+  const mainK = mains.reduce((s, id) => s + R[id].k, 0), mainP = mains.reduce((s, id) => s + R[id].p, 0);
+  // Snacks top up protein only as far as your target (more than ~2.2 g/kg builds nothing), the rest is fuel.
+  const hiP = Sn.filter(id => R[id].p / R[id].k >= 0.08), loP = Sn.filter(id => R[id].p / R[id].k < 0.08);
+  if (training && hiP.includes('shake')) hiP.unshift(...hiP.splice(hiP.indexOf('shake'), 1));
+  const n = S.core.goal.type === 'gain' ? 3 : 2, snacks = [];
+  let gap = T.protein - mainP * Math.max(0.55, Math.min(1.6, (T.kcal - 500) / mainK));
+  for (let j = 0; j < n; j++) {
+    const pool = ((gap > 12 || (training && j === 0)) && hiP.length ? hiP : loP.length ? loP : hiP).filter(x => !snacks.includes(x));
+    const id = pickSw((training && pool[0] === 'shake') ? 'shake' : rot(pool.length ? pool : Sn, wd + j), 3 + j);
+    snacks.push(id); gap -= R[id].p;
+  }
+  let ids = mains.concat(snacks), snackK = snacks.reduce((s, id) => s + R[id].k, 0);
+  // light eaters: drop a snack instead of serving more food than the target
+  while (ids.length > 4 && (T.kcal - snackK) / mainK < 0.6) { ids.pop(); snackK = ids.slice(3).reduce((s, id) => s + R[id].k, 0); }
+  const f = Math.round(Math.max(0.55, Math.min(1.6, (T.kcal - snackK) / mainK)) * 20) / 20;
   return ids.map((id, i) => { const r = R[id], ff = i < 3 ? f : 1; return { id, i, key: id + '#' + i, slot: SLOTS[i], f: ff, k: Math.round(r.k * ff), p: Math.round(r.p * ff), fat: Math.round(r.fat * ff), c: Math.round(r.c * ff), s: Math.round(r.s * ff) }; });
 }
 function eaten(k) {
@@ -1252,7 +1310,7 @@ function tasksFor(k) {
   } else if (mode === 'sick') {
     L.push({ id: 'rest', label: 'Rest. No gym' });
     L.push({ id: 'fluids', label: '3 L fluids' });
-    L.push({ id: 'protein', label: 'Protein 120 g+', sub: 'Shakes, yogurt, eggs, soup' });
+    L.push({ id: 'protein', label: 'Protein ' + round(proteinWeight() * 1.4, 5) + ' g+', sub: 'Shakes, yogurt, eggs, soup' });
     L.push({ id: 'sleep', label: 'Sleep 8 h+' });
   } else {
     L.push({ id: 'train', label: 'Optional light session', sub: 'Any session at 70%', go: 'train' });
@@ -1265,7 +1323,7 @@ function tasksFor(k) {
 function autoDone(k, a) {
   if (a === 'steps') { const h = healthDay(k); return !!(h && h.steps >= targets(dayMode(k)).steps); }
   const d = getDay(k); if (!d) return false;
-  if (a === 'protein') return eaten(k).p >= targets(dayMode(k), k).protein;
+  if (a === 'protein') return eaten(k).p >= targets(dayMode(k), k).protein * 0.95; // within 5% is a hit
   if (a === 'weigh') return d.w > 0;
   return false;
 }
@@ -1844,9 +1902,10 @@ function suppCard(open) {
     <p class="small">${esc(SUPP_REGION[b.region || 'OT'])}${S.core.profile.sex === 'female' ? ' Heavy periods? Get your iron checked before you take iron.' : ''}</p>
     ${c ? `<div class="row" style="flex-wrap:nowrap"><label class="field" style="flex:1"><span>Supplement budget a month (${esc(c.cur)})</span><input id="b-supp" inputmode="decimal" value="${b.supp || ''}" placeholder="${Math.ceil(tot)}"></label><button class="btn ghost" data-a="bSupp" style="align-self:flex-end">Save</button></div>` : '<p class="small muted">Set where you shop in Food → Budget to see prices.</p>'}
     ${list.map(x => `<div class="ex ${x.take ? 'main' : ''}">
-      <div class="spread"><b>${esc(x.n)}</b><span class="small">${x.coffee ? 'Just coffee' : c ? money(x.cost) + ' a month' : ''}</span></div>
+      <div class="spread"><b>${esc(x.n)}</b><span class="small">${x.id === 'whey' ? 'In your food budget' : x.coffee ? 'Just coffee' : c ? money(x.cost) + ' a month' : ''}</span></div>
       <p class="small"><b>${x.take ? 'Take' : 'Optional'}:</b> ${esc(x.dose)}. ${esc(x.why)}${x.id === 'omega3' ? ' Your menu has ' + x.fishMeals + ' fish meals this week.' : ''}</p>
-      <p class="small muted">Evidence: ${esc(x.ev)}. Safety: ${esc(x.safe)} Side effects: ${esc(x.side)}</p></div>`).join('')}
+      <p class="small muted">Evidence: ${esc(x.ev)}. Safety: ${esc(x.safe)} Side effects: ${esc(x.side)}</p>
+      ${SUPP_BUY[x.id] ? `<details class="buy"><summary class="small">What to buy</summary><p class="small">${esc(SUPP_BUY[x.id].tip)}</p><p class="small" style="margin-top:6px"><b>${esc(b.region && b.region !== 'OT' ? b.region : 'UK')}:</b> ${esc(SUPP_BUY[x.id][b.region && b.region !== 'OT' ? b.region : 'UK'])}</p></details>` : ''}</div>`).join('')}
     ${c ? `<p class="small"><b>Your stack: about ${money(tot)} a month</b>${b.supp > 0 ? ', budget ' + money(b.supp) : ''}. Whey is already in your food budget.</p>` : ''}
     <h3>Don't bother</h3>
     <ul class="small" style="margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px">${SUPP_SKIP.map(([n, w]) => `<li><b>${esc(n)}:</b> ${esc(w)}</li>`).join('')}</ul>
@@ -2025,7 +2084,8 @@ function chart(series, goal) {
 /* ---------- sheets: mode, goal, how-to ---------- */
 function modeSheet() {
   const m = S.core.mode;
-  const opt = (v, t, s) => `<button class="opt ${m.type === v ? 'on' : ''}" data-a="setMode" data-v="${v}"><b>${t}</b><span>${s}</span></button>`;
+  const LOOK = { normal: 'fit', travel: 'holiday', sick: 'ill', break: 'chill', extra: 'sporty' };
+  const opt = (v, t, s) => `<button class="opt ${m.type === v ? 'on' : ''}" data-a="setMode" data-v="${v}" style="flex-direction:row;align-items:center;gap:12px"><span class="mface">${tankSVG(v === 'sick' ? 'soft' : 'neutral', LOOK[v])}</span><span style="display:flex;flex-direction:column;gap:2px;min-width:0"><b>${t}</b><span>${s}</span></span></button>`;
   return `<div class="in" role="dialog" aria-label="Choose mode">
     <div class="spread"><h2>Mode</h2><button class="btn small ghost" data-a="closeSheet">Close</button></div>
     ${opt('normal', 'Normal', 'Full plan.')}
@@ -2033,6 +2093,7 @@ function modeSheet() {
     ${opt('sick', 'Ill', 'Rest first. Streak protected. Easy comeback after.')}
     ${opt('break', 'Diet break', '1–2 weeks at maintenance.')}
     ${opt('extra', 'Extra: sports day', 'A full day of sport. Tank plans it, you swap, skip or add. More food.')}
+    <p class="small muted">In Normal mode Tank's body follows you: strong after a 7-day streak, round when you skip the gym, skinny when you don't eat enough.</p>
     ${m.type === 'sick' ? `<h3>Where are the symptoms?</h3>
       ${[['above', 'Above the neck', 'Runny nose, mild sore throat'], ['below', 'Below the neck', 'Chest, body aches, stomach'], ['fever', 'Fever', 'Hot, chills, 38 °C+']].map(x => `<button class="opt ${m.sick === x[0] ? 'on' : ''}" data-a="setSick" data-v="${x[0]}"><b>${x[1]}</b><span>${x[2]}</span></button>`).join('')}
       ${m.sick ? `<div class="banner sick"><p class="small">${esc(SICK_ADVICE[m.sick])}</p></div>` : ''}` : ''}

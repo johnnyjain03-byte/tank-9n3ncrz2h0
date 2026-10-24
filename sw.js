@@ -1,16 +1,17 @@
 // Network first so updates show up straight away; cached copy when offline.
-const CACHE = 'gym-bro-v7';
+const CACHE = 'gym-bro-v8';
 self.addEventListener('install', e => { self.skipWaiting(); });
-self.addEventListener('activate', e => { e.waitUntil(self.clients.claim()); });
+self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET') return;
-  if (e.request.url.includes('version.txt')) return;
+  const u = new URL(e.request.url);
+  // only the app's own files; the Gym Bro server and the food database are always fetched live
+  if (e.request.method !== 'GET' || u.origin !== location.origin || u.pathname.endsWith('version.txt')) return;
+  const key = u.origin + u.pathname; // one cached copy per file, whatever the ?t= on the end
   e.respondWith(
     fetch(e.request).then(res => {
-      const copy = res.clone();
-      caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
+      if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(key, copy)).catch(() => {}); }
       return res;
-    }).catch(() => caches.match(e.request))
+    }).catch(() => caches.match(key))
   );
 });
 // Tank's reminders from the push server

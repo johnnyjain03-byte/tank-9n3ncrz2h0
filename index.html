@@ -1124,7 +1124,7 @@ async function loadPrices() {
   try { const r = await fetch('prices.json?t=' + Date.now(), { cache: 'no-store' }); if (r.ok) { const p = await r.json(); if (p && p.items) { S.prices = p; try { localStorage.setItem('gymbro-prices', JSON.stringify(p)); } catch (e) {} } } } catch (e) {}
 }
 // the app updates itself: when a newer version is online, reload into it (your data stays on the phone)
-const APP_VERSION = '10';
+const APP_VERSION = '11';
 async function checkUpdate() {
   try {
     const v = (await (await fetch('version.txt?t=' + Date.now(), { cache: 'no-store' })).text()).trim();
@@ -2003,13 +2003,27 @@ function healthCard() {
       <button class="btn violet block" data-a="help" data-v="shortcut">Connect Apple Health & Calendar</button>`}
   </div>`;
 }
+// Apple Calendar subscribes with webcal://; Google Calendar adds the same feed "From URL" (it refreshes it less often)
+const calHttps = () => PUSH_URL + '/cal/' + S.core.sid + '.ics';
+const googleCalURL = () => 'https://calendar.google.com/calendar/r?cid=' + encodeURIComponent(calURL());
 function calendarCard() {
   if (!PUSH_URL) return '';
+  const app = S.core.calApp || 'apple', clash = S.core.health.at ? 'Your own events come in through the Shortcut, so Tank spots clashes with the gym and finds you a free slot.' : 'Want Tank to spot clashes with your own events? Set up the Shortcut in Apple Health & Watch above.';
   return `<div class="card"><h2>Calendar</h2>
-    <p class="small">Your gym sessions and rides in the iPhone Calendar, 2 weeks ahead. Move a session in Gym and the calendar follows. You can't delete them in Calendar: only Tank can, after you confirm in Gym that you can't train.</p>
-    <a class="btn violet block" href="${calURL()}" data-a="calOn">Add Gym Bro to my Calendar</a>
-    <p class="small muted">Tap Subscribe when asked. Then iPhone Settings → Apps → Calendar → Calendar Accounts → Fetch New Data → every 15 minutes, so moves show up fast.</p>
-    <p class="small">${S.core.health.at ? 'Your own events come in through the Shortcut, so Tank spots clashes with the gym and finds you a free slot.' : 'Want Tank to spot clashes with your own events? Set up the Shortcut in Apple Health & Watch.'}</p>
+    <p class="small">Your gym sessions and rides in your calendar, 2 weeks ahead. Move a session in Gym and the calendar follows. You can't delete them in the calendar: only Tank can, after you confirm in Gym that you can't train.</p>
+    <div class="segs">${[['apple', 'Apple Calendar'], ['google', 'Google Calendar']].map(([v, l]) => `<button class="seg ${app === v ? 'on' : ''}" data-a="calApp" data-v="${v}">${l}</button>`).join('')}</div>
+    ${app === 'apple' ? `<a class="btn violet block" href="${calURL()}" data-a="calOn">Add Gym Bro to Apple Calendar</a>
+      <p class="small muted">Tap Subscribe when asked. Then iPhone Settings → Apps → Calendar → Calendar Accounts → Fetch New Data → every 15 minutes, so moves show up fast.</p>
+      <p class="small">${clash}</p>`
+    : `<ol class="steps">
+        <li><span><b>Copy your calendar link.</b></span></li>
+        <li><span>On a computer (the Google Calendar iPhone app can't do this), open <b>calendar.google.com</b> → <b>Other calendars +</b> → <b>From URL</b> → paste → <b>Add calendar</b>. Or tap the button below.</span></li>
+        <li><span>It shows up in the Google Calendar app on your phone within a few minutes, as "Gym Bro".</span></li>
+      </ol>
+      <div class="code">${esc(calHttps())}</div>
+      <div class="row"><button class="btn violet" data-a="calCopy">Copy link</button><a class="btn ghost" href="${googleCalURL()}" target="_blank" rel="noopener" data-a="calOn">Open Google Calendar</a></div>
+      <p class="small muted">Google refreshes linked calendars every few hours, not instantly. A session you move today can take a while to move there. Gym Bro and its notifications are always up to date.</p>
+      <p class="small"><b>Clashes with your Google events:</b> add your Google account to the iPhone once (Settings → Apps → Calendar → Calendar Accounts → Add Account → Google, Calendars on). You keep using the Google app; the Shortcut can then read your events. ${S.core.health.at ? '' : 'Set up the Shortcut in Apple Health & Watch above.'}</p>`}
   </div>`;
 }
 function skipLogCard() {
@@ -2213,7 +2227,7 @@ function shortcutSheet() {
     'Add <b>Find Health Samples</b>: Type <b>Active Energy</b>, Start Date <b>is today</b>. Then <b>Calculate Statistics</b> → <b>Sum</b>.',
     'Add <b>Find Health Samples</b>: Type <b>Resting Heart Rate</b>, Sort by <b>Start Date</b>, <b>Latest First</b>, Limit <b>1</b>.',
     'Add <b>Find Health Samples</b>: Type <b>Weight</b>, Start Date <b>is today</b>, <b>Latest First</b>, Limit <b>1</b>.',
-    'Add <b>Find Calendar Events</b>: Start Date <b>is in the next 7 days</b>.',
+    'Add <b>Find Calendar Events</b>: Start Date <b>is in the next 7 days</b>. Use Google Calendar? First add your Google account in iPhone Settings → Apps → Calendar → Calendar Accounts, so its events are included.',
     'Add <b>Repeat with Each</b> on those events. Inside it add a <b>Text</b> action: <b>Start Date | End Date | Title</b>. Tap each date and set Date Format to <b>ISO 8601</b>.',
     'After <b>End Repeat</b>, add <b>Combine Text</b> with <b>New Lines</b>.',
     'Add <b>Get Contents of URL</b>, paste your link (below). Method <b>POST</b>, Request Body <b>JSON</b>. Add fields: <b>steps</b> (Number) = first Statistics, <b>active</b> (Number) = second Statistics, <b>rhr</b> (Number) = Resting Heart Rate samples, <b>weight</b> (Number) = Weight samples, <b>events</b> (Text) = Combined Text.',
@@ -2988,6 +3002,8 @@ const A = {
   async healthRefresh() { toast('Checking…'); syncPlan(true); await fetchHealth(); render(); toast(S.core.health.at ? 'Last sync ' + ago(S.core.health.at) + '.' : 'Nothing yet. Run the Shortcut once, then try again.', 3500); },
   copyLink() { try { navigator.clipboard.writeText(shortcutURL()).then(() => toast('Link copied. Paste it into Get Contents of URL.'), () => toast('Could not copy. Press and hold the link to copy it.')); } catch (e) { toast('Could not copy. Press and hold the link to copy it.'); } },
   calOn() { S.core.calOn = true; saveCore(); syncPlan(true); },
+  calApp(el) { S.core.calApp = el.dataset.v; saveCore(); render(); },
+  calCopy() { A.calOn(); try { navigator.clipboard.writeText(calHttps()).then(() => toast('Link copied. Paste it in Google Calendar → From URL.', 3500), () => toast('Press and hold the link to copy it.')); } catch (e) { toast('Press and hold the link to copy it.'); } },
 };
 async function importBackup(file) {
   try {

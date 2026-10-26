@@ -254,6 +254,9 @@ details[open] summary{margin-bottom:12px}
 .sug-list{display:flex;flex-direction:column;gap:6px}
 .sug-list button{border:2px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 12px;text-align:left;display:flex;justify-content:space-between;gap:10px;align-items:center}
 .sug-list button b{font-weight:800} .sug-list button span{font-size:14px;color:var(--muted);white-space:nowrap}
+.bc-box{position:relative;border-radius:14px;overflow:hidden;background:#000;aspect-ratio:4/3;margin:8px 0}
+.bc-box video{width:100%;height:100%;object-fit:cover;display:block}
+.bc-box i{position:absolute;left:12%;right:12%;top:30%;bottom:30%;border:3px solid #fff;border-radius:10px;box-shadow:0 0 0 999px rgba(0,0,0,.35)}
 .up{color:var(--red);font-weight:800} .down{color:var(--green);font-weight:800}
 .sexpick{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .mface{flex:none;line-height:0} .mface svg{width:52px;height:52px}
@@ -1138,7 +1141,7 @@ async function loadPrices() {
   try { const r = await fetch('prices.json?t=' + Date.now(), { cache: 'no-store' }); if (r.ok) { const p = await r.json(); if (p && p.items) { S.prices = p; try { localStorage.setItem('gymbro-prices', JSON.stringify(p)); } catch (e) {} } } } catch (e) {}
 }
 // the app updates itself: when a newer version is online, reload into it (your data stays on the phone)
-const APP_VERSION = '16';
+const APP_VERSION = '17';
 async function checkUpdate() {
   try {
     const v = (await (await fetch('version.txt?t=' + Date.now(), { cache: 'no-store' })).text()).trim();
@@ -2433,6 +2436,62 @@ function shortcutSheet() {
     <button class="btn block" data-a="healthRefresh">I ran it, check now</button>
   </div>`;
 }
+/* ---------- barcode scanner: the phone's own BarcodeDetector, or the open-source ZXing one on iPhone ---------- */
+// the camera picture stays on the phone; only the barcode number goes to Open Food Facts
+const BC = { stream: null, det: null, timer: 0, run: 0 };
+const BC_FORMATS = ['ean_13', 'ean_8', 'upc_a', 'upc_e'];
+async function bcDetector() {
+  if (BC.det) return BC.det;
+  try { if ('BarcodeDetector' in window && (await BarcodeDetector.getSupportedFormats()).includes('ean_13')) return (BC.det = new BarcodeDetector({ formats: BC_FORMATS })); } catch (e) {}
+  const m = await import('https://cdn.jsdelivr.net/npm/barcode-detector@3.2.2/dist/es/ponyfill.js');
+  return (BC.det = new m.BarcodeDetector({ formats: BC_FORMATS }));
+}
+// EAN/UPC check digit, so a half-read barcode never gets looked up
+function bcValid(code) {
+  if (!/^(\d{8}|\d{12,13})$/.test(code)) return false;
+  const d = code.split('').map(Number), last = d.pop();
+  return (10 - d.reverse().reduce((s, x, i) => s + x * (i % 2 ? 1 : 3), 0) % 10) % 10 === last;
+}
+async function bcStart() {
+  const F = UI.sheet && UI.sheet.food, run = ++BC.run; if (!F) return;
+  bcStop(); F.scanErr = '';
+  try { BC.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false }); }
+  catch (e) { F.scanErr = 'No camera. Allow the camera for Gym Bro, or type the number under the barcode.'; if (UI.sheet && UI.sheet.food === F) render(); return; }
+  if (run !== BC.run) return bcStop();
+  bcAttach();
+  let det; try { det = await bcDetector(); }
+  catch (e) { bcStop(); F.scanErr = 'The scanner didn\'t load. Check your connection, or type the number.'; if (UI.sheet && UI.sheet.food === F) render(); return; }
+  const tick = async () => {
+    if (!BC.stream || run !== BC.run) return;
+    const v = $('#bc-video');
+    if (v && v.readyState >= 2) {
+      try { const hit = (await det.detect(v)).find(x => x.format === 'upc_e' || bcValid(x.rawValue)); if (hit && run === BC.run) { bcStop(); A.bcLookup(hit.rawValue); return; } } catch (e) {}
+    }
+    BC.timer = setTimeout(tick, 200);
+  };
+  tick();
+}
+// every render rebuilds the sheet: hand the camera to the new video, or turn it off when the scanner is gone
+function bcAttach() {
+  if (!BC.stream) return;
+  const v = $('#bc-video'); if (!v) return bcStop();
+  if (v.srcObject !== BC.stream) { v.srcObject = BC.stream; v.play().catch(() => {}); }
+}
+function bcStop() { clearTimeout(BC.timer); if (BC.stream) BC.stream.getTracks().forEach(t => t.stop()); BC.stream = null; }
+function bcProduct(code, x) {
+  const nu = x.nutriments || {}, per = k => +nu[k + '_100g'] || 0, k100 = per('energy-kcal') || per('energy') / 4.184;
+  if (!x.product_name || !(k100 > 0)) return null;
+  const unit = x.serving_quantity_unit || x.product_quantity_unit || 'g', ok = q => +q > 0 && +q <= 3000 ? Math.round(+q) : 0;
+  const brand = (x.brands || '').split(',')[0].trim();
+  return { code, n: x.product_name + (brand && !x.product_name.toLowerCase().includes(brand.toLowerCase()) ? ' · ' + brand : ''), k100, p100: per('proteins'), f100: per('fat'), c100: per('carbohydrates'), s100: per('sugars'), unit: unit === 'ml' ? 'ml' : 'g', sq: ok(x.serving_quantity), ss: x.serving_size || '', pq: ok(x.product_quantity) };
+}
+function bcPortions(P) {
+  const out = [];
+  if (P.sq) out.push([P.sq, '1 serving (' + P.sq + ' ' + P.unit + ')']);
+  if (P.pq && P.pq !== P.sq) out.push([P.pq, 'Whole pack (' + P.pq + ' ' + P.unit + ')']);
+  if (P.sq !== 100 && P.pq !== 100) out.push([100, '100 ' + P.unit]);
+  return out;
+}
 function foodSheet() {
   const F = UI.sheet.food, close = `<div class="spread"><span class="lbl">Add food or drink</span><button class="btn small ghost" data-a="closeSheet">Close</button></div>`;
   if (F.view === 'custom') return `<div class="in" role="dialog" aria-label="Enter food yourself">${close}
@@ -2442,6 +2501,24 @@ function foodSheet() {
     <div class="grid3">${[['k', 'kcal'], ['p', 'Protein g'], ['fat', 'Fat g'], ['c', 'Carbs g'], ['s', 'Sugar g']].map(([id, l]) => `<label class="field"><span>${l}</span><input id="fc-${id}" inputmode="decimal"></label>`).join('')}<label class="field"><span>Portion</span><input id="fc-por" type="text" placeholder="1 plate"></label></div>
     <button class="btn green block" data-a="fcAdd">Add</button>
     <button class="btn ghost block" data-a="faView" data-v="main">Back</button></div>`;
+  if (F.view === 'scan') return `<div class="in" role="dialog" aria-label="Scan a barcode">${close}
+    <h2>Scan a barcode</h2>
+    <div class="bc-box"><video id="bc-video" playsinline muted autoplay></video><i></i></div>
+    <p class="small ${F.scanErr ? '' : 'muted'}">${esc(F.scanErr || 'Hold the barcode inside the box. It scans by itself.')}</p>
+    <div class="row" style="flex-wrap:nowrap"><input id="bc-code" inputmode="numeric" placeholder="Or type the number under it" autocomplete="off"><button class="btn green small" data-a="bcLookup">Look up</button></div>
+    <button class="btn ghost block" data-a="faView" data-v="main">Back</button></div>`;
+  if (F.view === 'product') {
+    const P = F.prod;
+    return `<div class="in" role="dialog" aria-label="Scanned food">${close}
+    ${F.loading ? '<p class="small muted">Looking it up…</p>' : F.err ? `<p class="small">${esc(F.err)}</p>` : !P ? `<h2>Not in the database yet</h2><p class="small muted">Barcode ${esc(F.code)}. Copy the numbers from the label once and Gym Bro remembers it.</p>
+      <button class="btn green block" data-a="faView" data-v="custom">Enter it from the label</button>` : `<h2>${esc(P.n)}</h2>
+      <p class="small muted">Per 100 ${P.unit}: ${fmt(P.k100)} kcal · protein ${Math.round(P.p100)} g · sugar ${Math.round(P.s100)} g</p>
+      <div class="sug-list">${bcPortions(P).map(([q, l]) => `<button data-a="bcAdd" data-v="${q}"><b>${esc(l)}</b><span>${fmt(P.k100 * q / 100)} kcal</span></button>`).join('')}</div>
+      <div class="row" style="flex-wrap:nowrap;margin-top:8px"><input id="bc-g" inputmode="decimal" placeholder="Or how many ${P.unit}"><button class="btn green small" data-a="bcAdd" data-v="custom">Add</button></div>
+      <p class="small muted">From Open Food Facts, a free food database.</p>`}
+    <button class="btn ghost block" data-a="faView" data-v="scan">Scan another</button>
+    <button class="btn ghost block" data-a="faView" data-v="main">Back</button></div>`;
+  }
   if (F.view === 'online') return `<div class="in" role="dialog" aria-label="Search packaged food">${close}
     <h2>Search packaged food</h2>
     <div class="row" style="flex-wrap:nowrap"><input id="fo-q" type="text" value="${esc(F.oq || '')}" placeholder="e.g. Fage 0% or Grenade bar"><button class="btn green small" data-a="foSearch">Search</button></div>
@@ -2462,6 +2539,7 @@ function foodSheet() {
       <div class="spread"><b>Total</b><span class="num"><b>${fmt(tot.k)}</b> kcal · P ${Math.round(tot.p)} · sugar ${Math.round(tot.s)} g</span></div>
       <button class="btn green block" data-a="faSave">Add to today</button>` : ''}
     ${recent.length && !F.items.length ? `<div class="field"><span>Recent</span><div class="pchips">${recent.map(f => `<button class="pchip" data-a="faPick" data-v="${esc(f.id)}">${esc(f.n)}</button>`).join('')}</div></div>` : ''}
+    <button class="btn ghost block" data-a="faView" data-v="scan">Scan a barcode</button>
     <div class="meal-act"><button class="linkbtn" data-a="faView" data-v="custom">Enter it myself</button><button class="linkbtn" data-a="faView" data-v="online">Search packaged food</button></div>
   </div>`;
 }
@@ -2795,6 +2873,7 @@ function render() {
     sh.innerHTML = x === 'mode' ? modeSheet() : x === 'goal' ? goalSheet() : x === 'day' ? daySheet() : x === 'addEx' ? addExSheet() : x.swap ? swapSheet() : x.food ? foodSheet() : x.act ? actSheet() : x.move ? moveSheet(x.move) : x.skipday ? skipDaySheet() : helpSheet(x.help);
     sh.hidden = false;
   } else { sh.hidden = true; sh.innerHTML = ''; }
+  bcAttach();
 }
 function ensureTodayMode() {
   const k = TODAY(), d = getDay(k);
@@ -3156,13 +3235,50 @@ const A = {
   faQty(el) { const [i, dlt] = el.dataset.v.split('|').map(Number), it = UI.sheet.food.items[i]; it.q = dlt > 0 ? it.q + (it.q < 1 ? 0.5 : 1) : Math.max(0.5, it.q - (it.q <= 1 ? 0.5 : 1)); render(); },
   faDel(el) { UI.sheet.food.items.splice(+el.dataset.v, 1); render(); },
   faAlt(el) { const it = UI.sheet.food.items[+el.dataset.v], i = it.alts.indexOf(it.id); it.id = it.alts[(i + 1) % it.alts.length]; render(); },
-  faView(el) { const F = UI.sheet.food; F.q = val('fa-q') || F.q; F.view = el.dataset.v; if (F.view === 'custom') F.cn = (F.miss || [])[0] || F.q; if (F.view === 'online') F.oq = F.oq || (F.miss || [])[0] || F.q; render(); },
+  faView(el) {
+    const F = UI.sheet.food; F.q = val('fa-q') || F.q; F.view = el.dataset.v;
+    if (F.view === 'custom') F.cn = F.code && !F.prod ? '' : (F.miss || [])[0] || F.q;
+    if (F.view === 'online') F.oq = F.oq || (F.miss || [])[0] || F.q;
+    render(); if (F.view === 'scan') bcStart();
+  },
+  // a code from the camera, or typed in
+  async bcLookup(x) {
+    const F = UI.sheet && UI.sheet.food; if (!F) return;
+    const code = String(typeof x === 'string' ? x : val('bc-code')).replace(/\D/g, '');
+    if (code.length < 8) { toast('Type the numbers under the barcode.'); return; }
+    bcStop(); try { if (navigator.vibrate) navigator.vibrate(60); } catch (e) {}
+    F.view = 'product'; F.code = code; F.err = '';
+    // scanned before: no need to ask the database again
+    const seen = S.core.myFoods.find(f => f.bc === code && f.per100);
+    if (seen) { F.prod = seen.per100; F.loading = false; render(); return; }
+    const typed = S.core.myFoods.find(f => f.bc === code);
+    if (typed) { F.items.push({ id: typed.id, q: 1, alts: [typed.id] }); F.view = 'main'; F.code = ''; render(); toast('Found it: ' + typed.n); return; }
+    F.prod = null; F.loading = true; render();
+    try {
+      const r = await fetch(`https://world.openfoodfacts.org/api/v2/product/${code}.json?fields=product_name,brands,nutriments,serving_quantity,serving_quantity_unit,serving_size,product_quantity,product_quantity_unit`);
+      const o = await r.json();
+      F.prod = o && o.product ? bcProduct(code, o.product) : null;
+    } catch (e) { F.err = 'No connection to the food database. Enter it from the label instead.'; }
+    F.loading = false; if (UI.sheet && UI.sheet.food === F) render();
+  },
+  bcAdd(el) {
+    const F = UI.sheet.food, P = F.prod, q = el.dataset.v === 'custom' ? num('bc-g') : +el.dataset.v;
+    if (!(q > 0 && q <= 5000)) { toast('How many ' + P.unit + '?'); return; }
+    const m = q / 100, lbl = (bcPortions(P).find(x => x[0] === q) || [0, q + ' ' + P.unit])[1];
+    let f = S.core.myFoods.find(x => x.bc === P.code && x.por === lbl);
+    if (!f) {
+      f = { id: 'my:' + Date.now().toString(36), n: P.n, por: lbl, k: Math.round(P.k100 * m), p: Math.round(P.p100 * m), fat: Math.round(P.f100 * m), c: Math.round(P.c100 * m), s: Math.round(P.s100 * m), bc: P.code, per100: P };
+      S.core.myFoods.push(f); if (S.core.myFoods.length > 200) S.core.myFoods.shift();
+    }
+    F.items.push({ id: f.id, q: 1, alts: [f.id] }); F.view = 'main'; F.miss = []; saveCore(); render();
+  },
   fcAdd() {
     const F = UI.sheet.food, n = val('fc-n'), k = num('fc-k');
     if (!n || k === null) { toast('Add a name and the calories.'); return; }
     const f = { id: 'my:' + Date.now().toString(36), n, por: val('fc-por') || '1 portion', k: Math.round(k), p: Math.round(num('fc-p') || 0), fat: Math.round(num('fc-fat') || 0), c: Math.round(num('fc-c') || 0), s: Math.round(num('fc-s') || 0) };
+    if (F.code && !F.prod) f.bc = F.code; // a barcode the database didn't know: next scan finds this
     S.core.myFoods.push(f); if (S.core.myFoods.length > 200) S.core.myFoods.shift();
-    F.items.push({ id: f.id, q: 1, alts: [f.id] }); F.miss = (F.miss || []).filter(x => x !== F.cn); F.view = 'main'; saveCore(); render();
+    F.items.push({ id: f.id, q: 1, alts: [f.id] }); F.miss = (F.miss || []).filter(x => x !== F.cn); F.view = 'main'; F.code = ''; saveCore(); render();
   },
   async foSearch() {
     const F = UI.sheet.food, q = val('fo-q'); if (!q) return;

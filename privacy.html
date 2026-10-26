@@ -18,7 +18,7 @@ p,li{color:var(--muted)} a{color:#1F5BEF}
 <p>Gym Bro is a personal training and food planner. This page explains what it stores and where.</p>
 
 <h2>On your phone</h2>
-<p>Your profile, logs, meals, weights and photos are stored only on your phone. Photos never leave it. You can back up and delete everything from the app.</p>
+<p>Your profile, logs, meals, weights and photos are stored only on your phone. Photos leave it only when you ask Gym Bro to analyse one (see below). You can back up and delete everything from the app.</p>
 
 <h2>On the Gym Bro server</h2>
 <ul>
@@ -29,6 +29,9 @@ p,li{color:var(--muted)} a{color:#1F5BEF}
 
 <h2>Food lookups</h2>
 <p>When you scan a barcode, the camera picture stays on your phone and only the barcode number is sent to <a href="https://world.openfoodfacts.org">Open Food Facts</a>, a free food database, to find the calories. Searching for packaged food sends your search words there too.</p>
+
+<h2>Photo analysis (optional)</h2>
+<p>When you tap to analyse a meal photo, estimate body fat from photos or run a physique check, a smaller copy of the photo (about 1024 pixels) is sent to the Gym Bro server and passed straight to Claude, an AI made by <a href="https://www.anthropic.com">Anthropic</a>, together with what the analysis needs: your sex, age, height, weight, waist and goal for body photos, or the description you typed for a meal. The Gym Bro server doesn't store or log the photo. Anthropic handles it under its <a href="https://www.anthropic.com/legal/commercial-terms">commercial terms</a> and <a href="https://www.anthropic.com/legal/privacy">privacy policy</a>. Only the result (calories, a body fat range, suggested focus areas) is saved, on your phone. The server counts how many analyses each phone asks for per day, to keep the costs down.</p>
 
 <h2>Weather (optional)</h2>
 <p>If you set your town, Gym Bro keeps its location rounded to about 10 km and asks <a href="https://open-meteo.com">Open-Meteo</a>, a free weather service, for the forecast. With notifications on, the rounded location is also stored on the Gym Bro server so reminders can mention rain or cold. Turn it off in the app and it's deleted at the next sync.</p>

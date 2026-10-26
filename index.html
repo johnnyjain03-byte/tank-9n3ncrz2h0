@@ -259,6 +259,11 @@ details[open] summary{margin-bottom:12px}
 .gym-rest{font:700 64px/1 var(--display);text-align:center;font-variant-numeric:tabular-nums;color:var(--blue);margin:8px 0}
 .gym-w{display:flex;gap:8px;align-items:center} .gym-w input{text-align:center;font-weight:800;font-size:22px}
 .gym-w .btn{min-width:52px}
+.ai-ph{width:100%;max-height:220px;object-fit:cover;border-radius:14px;display:block}
+.ai-row{display:flex;align-items:center;gap:8px;border-top:1px solid var(--line);padding:8px 0}
+.ai-row .t{flex:1;min-width:0} .ai-row .t span{display:block;font-size:14px;color:var(--muted)}
+.ai-row input[type=checkbox]{width:22px;height:22px;flex:none}
+.ai-row input.ai-g{width:76px;text-align:right;flex:none}
 .bc-box{position:relative;border-radius:14px;overflow:hidden;background:#000;aspect-ratio:4/3;margin:8px 0}
 .bc-box video{width:100%;height:100%;object-fit:cover;display:block}
 .bc-box i{position:absolute;left:12%;right:12%;top:30%;bottom:30%;border:3px solid #fff;border-radius:10px;box-shadow:0 0 0 999px rgba(0,0,0,.35)}
@@ -1041,6 +1046,7 @@ const DEFAULT_CORE = () => ({
   push: { on: false, id: '' }, sid: '',
   health: { days: {}, events: [], at: 0, seen: 0 },
   loc: null,
+  aiOk: {}, physique: null,
 });
 const S = { core: null, months: {}, timer: null, purl: {}, prices: null };
 function photoDB() {
@@ -1155,7 +1161,7 @@ async function loadPrices() {
   try { const r = await fetch('prices.json?t=' + Date.now(), { cache: 'no-store' }); if (r.ok) { const p = await r.json(); if (p && p.items) { S.prices = p; try { localStorage.setItem('gymbro-prices', JSON.stringify(p)); } catch (e) {} } } } catch (e) {}
 }
 // the app updates itself: when a newer version is online, reload into it (your data stays on the phone)
-const APP_VERSION = '20';
+const APP_VERSION = '21';
 async function checkUpdate() {
   try {
     const v = (await (await fetch('version.txt?t=' + Date.now(), { cache: 'no-store' })).text()).trim();
@@ -1548,11 +1554,22 @@ function navyBF(sex, h, waist, neck, hips) {
 }
 // neck and hips barely change: a weekly waist uses the last neck and hips you measured
 function lastMeas(field, d) { const m = S.core.measurements.filter(x => x[field] > 0 && x.d <= d).sort((a, b) => a.d < b.d ? -1 : 1).pop(); return m ? m[field] : 0; }
-// a value you typed in (DEXA, BodPod) wins over the tape estimate
+// a value you typed in (DEXA, BodPod) wins over the tape, and the tape over an AI photo estimate
 function bodyFatOf(m) {
   if (m.bf > 0) return { v: m.bf, src: 'typed' };
   const p = S.core.profile, v = navyBF(p.sex, p.height, m.waist, m.neck || lastMeas('neck', m.d), m.hips || lastMeas('hips', m.d));
-  return v === null ? null : { v, src: 'tape' };
+  if (v !== null) return { v, src: 'tape' };
+  return m.bfp ? { v: m.bfp.v, src: 'photo', lo: m.bfp.lo, hi: m.bfp.hi } : null;
+}
+// your newest progress photo of each pose from the last few days
+function latestPhotos(days) {
+  const since = addDays(TODAY(), -days);
+  return ['front', 'side', 'back'].map(pose => (S.core.photos || []).filter(x => x.pose === pose && x.d >= since).sort((a, b) => a.d < b.d ? 1 : -1)[0]).filter(Boolean);
+}
+async function photoJpegs(list) {
+  const imgs = [], poses = [];
+  for (const x of list) { const b = await photoOp('readonly', st => st.get(x.id)); if (b) { imgs.push(await aiJpeg(b)); poses.push(x.pose); } }
+  return { imgs, poses };
 }
 function weightOn(d) { const s = weightSeries().filter(x => !x.ex && x.k <= d); return s.length ? trendAt(s[s.length - 1].k, s) : currentWeight(); }
 // ACE ranges
@@ -2299,6 +2316,7 @@ function viewMe() {
     ${chart(series, p.goalWeight)}
   </div>
   ${reqCard()}
+  ${phyCard()}
   ${photoCard()}
   ${skipLogCard()}
   ${bodyCard()}
@@ -2314,7 +2332,7 @@ function bodyCard() {
     const w = weightOn(b1.d), fat = w * b1.v / 100, dv = b0 ? b1.v - b0.v : null;
     const lean0 = b0 ? weightOn(b0.d) * (1 - b0.v / 100) : 0, dl = b0 ? (w - fat) - lean0 : null;
     res = `<div class="stats" style="margin-top:4px">
-      ${stat('Body fat', '≈ ' + Math.round(b1.v) + '%', bfBand(b1.v) + ' · ' + (dv !== null ? (dv > 0 ? '+' : '') + dv.toFixed(1) + '% since ' + shortDate(b0.d) : b1.src === 'tape' ? 'tape, ±3–4%' : 'your value'))}
+      ${stat('Body fat', '≈ ' + Math.round(b1.v) + '%', bfBand(b1.v) + ' · ' + (dv !== null ? (dv > 0 ? '+' : '') + dv.toFixed(1) + '% since ' + shortDate(b0.d) : b1.src === 'tape' ? 'tape, ±3–4%' : b1.src === 'photo' ? 'photo, ' + b1.lo + '–' + b1.hi + '%' : 'your value'))}
       ${stat('Fat / lean', Math.round(fat) + ' / ' + Math.round(w - fat) + ' kg', dl !== null ? 'lean ' + (dl > 0 ? '+' : '') + dl.toFixed(1) + ' kg since ' + shortDate(b0.d) : 'at ' + w.toFixed(1) + ' kg')}
     </div>`;
   }
@@ -2330,6 +2348,7 @@ function bodyCard() {
       <label class="field" style="margin-top:6px"><span>Body fat %</span><input id="m-bf" inputmode="decimal" placeholder="e.g. 18"></label>
       <p class="small muted">A scan beats the tape. Bathroom scales and handheld gadgets guess from water and can be 5–8% off, so the tape is better than those.</p>
     </details>
+    <details ${UI.bfai ? 'open' : ''} style="margin-top:8px"><summary class="small">Estimate from photos (AI)</summary>${bfAiHTML()}</details>
     <button class="btn ghost" data-a="saveMeas" style="margin-top:10px">Save</button>
     ${!p.sex ? '<p class="small muted">Add your sex in Settings and Gym Bro works out your body fat from the tape.</p>' : ''}
     ${res}
@@ -2341,6 +2360,34 @@ function bodyCard() {
       ${fem ? '<li>Hips: the widest part of your bum, feet together.</li>' : ''}
       <li>Same time, same tape. The trend matters more than any one number.</li>
     </ul></details>
+  </div>`;
+}
+function bfAiHTML() {
+  const U = UI.bfai || {}, ph = latestPhotos(14).filter(x => x.pose !== 'back');
+  const res = U.res ? (U.hi ? `<div class="banner good"><p class="small"><b>About ${U.lo}–${U.hi}% body fat</b> (${esc(bfBand((U.lo + U.hi) / 2))}). ${esc(U.res.note || '')}</p>${U.res.tip ? `<p class="small muted">${esc(U.res.tip)}</p>` : ''}</div>`
+    : `<div class="banner warn"><p class="small">${esc(U.res.tip || 'These photos didn\'t work for an estimate. Try clearer ones.')}</p></div>`) : '';
+  return `<div style="display:flex;flex-direction:column;gap:8px;margin-top:6px">
+    <p class="small muted">Fitted clothes or shirtless, good light, standing relaxed. Photo estimates are about ±4–6%, so the tape stays your main number and this is a second opinion.</p>
+    ${U.loading ? '<p class="small muted">Gym Bro is looking…</p>' : U.err ? `<div class="banner warn"><p class="small">${esc(U.err)}</p></div>` : res}
+    ${ph.length ? `<button class="btn ghost block" data-a="bfAi" ${U.loading ? 'disabled' : ''}>Use my ${ph.map(x => x.pose).join(' + ')} photo${ph.length > 1 ? 's' : ''} from ${shortDate(ph[0].d)}</button>` : ''}
+    <label class="btn ghost block filebtn">Take a photo now<input id="bfai-in" type="file" accept="image/*" ${U.loading ? 'disabled' : ''}></label>
+    <p class="small muted">${AI_NOTE}</p></div>`;
+}
+// what the AI coach saw in your progress photos, and the focus it suggests
+function phyCard() {
+  const P = S.core.physique, ph = latestPhotos(14), U = UI.phy || {}, due = P ? addDays(P.d, 28) : TODAY(), on = reqs();
+  const applied = P && P.focus.length && P.focus.every(f => on.includes(f.area));
+  return `<div class="card"><h2>Physique check (AI)</h2>
+    ${P ? `<p class="small muted">Last check ${esc(longDate(P.d))}.${due > TODAY() ? ' Next one from ' + esc(shortDate(due)) + ': muscle takes weeks to show.' : ''}</p>
+      <p>${esc(P.summary)}</p>
+      ${P.strengths.length ? `<p class="small"><b>Going well:</b> ${P.strengths.map(esc).join(' · ')}</p>` : ''}
+      ${P.focus.length ? `<div class="banner good">${P.focus.map(f => `<p class="small"><b>${esc(REQS[f.area].n)}:</b> ${esc(f.why)}</p>`).join('')}
+        ${applied ? '<p class="small">These are in your special requests.</p>' : `<button class="btn small green" data-a="phyApply">Train these${(old => old.length ? ' instead of ' + old.map(r => REQS[r].n.toLowerCase()).join(' and ') : ': add them to my special requests')(on.filter(r => !REQS[r].fat && !P.focus.some(f => f.area === r)))}</button>`}</div>` : '<p class="small">Nothing to add right now: keep doing what you\'re doing.</p>'}`
+      : '<p class="small muted">Every 4–6 weeks Gym Bro\'s AI coach looks at your progress photos and suggests up to two areas to train more. You decide whether to use them.</p>'}
+    ${U.loading ? '<p class="small muted">The coach is looking at your photos…</p>' : U.err ? `<div class="banner warn"><p class="small">${esc(U.err)}</p></div>` : ''}
+    ${ph.some(x => x.pose === 'front') ? `<button class="btn violet block" data-a="phyRun" ${U.loading ? 'disabled' : ''}>${P && due > TODAY() ? 'Check again anyway' : 'Run a physique check'}</button>
+      <p class="small muted">Uses your ${ph.map(x => x.pose).join(', ')} photo${ph.length > 1 ? 's' : ''} from the last 2 weeks. ${AI_NOTE}</p>`
+      : '<p class="small">First add a front photo in Before & after below (side and back help too). Same light, fitted clothes or shirtless.</p>'}
   </div>`;
 }
 // the honest test of a program is your own numbers: strength up, weight moving at the planned pace, waist down, sessions done
@@ -2737,6 +2784,43 @@ function bcPortions(P) {
   if (P.sq !== 100 && P.pq !== 100) out.push([100, '100 ' + P.unit]);
   return out;
 }
+/* ---------- photo analysis: Claude through the Gym Bro server, only when you tap, never stored ---------- */
+// meals go to Claude Haiku (the check step below catches its mistakes), body photos to Claude Opus
+async function aiJpeg(blob) {
+  const bmp = await createImageBitmap(blob, { imageOrientation: 'from-image' });
+  const sc = Math.min(1, 1024 / Math.max(bmp.width, bmp.height)); // plenty to see a meal or a physique, and cheap
+  const c = document.createElement('canvas'); c.width = Math.round(bmp.width * sc); c.height = Math.round(bmp.height * sc);
+  c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+  return c.toDataURL('image/jpeg', 0.8).split(',')[1];
+}
+const AI_ERR = { not_set_up: 'Photo analysis isn\'t switched on yet.', limit: 'That\'s today\'s limit for this one. Try again tomorrow.', busy: 'Too many photos right now. Try again later.', declined: 'The AI couldn\'t analyse this photo. Try another one.', bad_photo: 'That photo didn\'t work. Try another one.', ai_down: 'The AI didn\'t answer. Try again in a minute.', offline: 'No connection. Try again when you\'re online.' };
+async function aiAsk(kind, imgs, ctx) {
+  try {
+    const r = await fetch(PUSH_URL + '/ai/' + kind, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: S.core.sid, imgs, ctx }) });
+    const o = await r.json(); return o.ok ? o.data : { error: o.error || 'ai_down' };
+  } catch (e) { return { error: 'offline' }; }
+}
+const AI_NOTE = 'Your photo goes to the Gym Bro server and to Claude (Anthropic) for this one answer. Neither keeps it.';
+// the AI's guess, scaled to the amount you set
+function aiScaled(x) { const g = x.g > 0 ? x.g : x.amount, m = x.amount > 0 ? g / x.amount : 1; return { n: x.name, por: Math.round(g) + ' ' + x.unit, k: Math.round(x.kcal * m), p: Math.round(x.protein * m), fat: Math.round(x.fat * m), c: Math.round(x.carbs * m), s: Math.round(x.sugar * m) }; }
+function mealAiView(F, close) {
+  const M = F.ai;
+  const head = `<div class="in" role="dialog" aria-label="Meal photo">${close}<h2>Meal photo</h2>${M.url ? `<img class="ai-ph" src="${M.url}" alt="Your meal">` : ''}`;
+  if (M.loading) return head + `<p class="small muted">Gym Bro is looking at your plate…</p></div>`;
+  if (M.res) {
+    const on = M.res.items.filter(x => x.on), tot = on.reduce((a, x) => { const v = aiScaled(x); a.k += v.k; a.p += v.p; return a; }, { k: 0, p: 0 });
+    return head + (M.res.items.length ? `<p class="small">Check it: untick what isn't there and fix the amounts. ${esc(M.res.note || '')}</p>
+      <div>${M.res.items.map((x, i) => { const v = aiScaled(x); return `<div class="ai-row"><input type="checkbox" data-a="aiTick" data-v="${i}" ${x.on ? 'checked' : ''} aria-label="Include ${esc(x.name)}"><span class="t"><b>${esc(x.name)}</b><span id="aik-${i}">${fmt(v.k)} kcal · P ${v.p}${x.likely ? ' · probably there' : ''}</span></span><input class="ai-g" id="aig-${i}" data-ai="${i}" inputmode="decimal" value="${Math.round(x.g || x.amount)}"><span class="small">${x.unit}</span></div>`; }).join('')}</div>
+      <div class="spread"><b>Total</b><span class="num" id="ai-tot"><b>${fmt(tot.k)}</b> kcal · P ${Math.round(tot.p)}</span></div>
+      <button class="btn green block" data-a="aiMealAdd" ${on.length ? '' : 'disabled'}>Add these</button>` : `<p class="small">${esc(M.res.note || 'No food found in this photo.')}</p>`)
+      + `<button class="btn ghost block" data-a="faView" data-v="main">Back</button></div>`;
+  }
+  return head + `${M.err ? `<div class="banner warn"><p class="small">${esc(M.err)}</p></div>` : ''}
+    <label class="field"><span>What is it? (optional, helps a lot)</span><input id="ai-hint" type="text" value="${esc(M.hint || '')}" placeholder="e.g. chicken katsu curry" autocomplete="off"></label>
+    <button class="btn green block" data-a="aiMeal">Count it</button>
+    <p class="small muted">${AI_NOTE} A fork or your hand in the picture helps it judge size.</p>
+    <button class="btn ghost block" data-a="faView" data-v="main">Back</button></div>`;
+}
 function foodSheet() {
   const F = UI.sheet.food, close = `<div class="spread"><span class="lbl">Add food or drink</span><button class="btn small ghost" data-a="closeSheet">Close</button></div>`;
   if (F.view === 'custom') return `<div class="in" role="dialog" aria-label="Enter food yourself">${close}
@@ -2746,6 +2830,7 @@ function foodSheet() {
     <div class="grid3">${[['k', 'kcal'], ['p', 'Protein g'], ['fat', 'Fat g'], ['c', 'Carbs g'], ['s', 'Sugar g']].map(([id, l]) => `<label class="field"><span>${l}</span><input id="fc-${id}" inputmode="decimal"></label>`).join('')}<label class="field"><span>Portion</span><input id="fc-por" type="text" placeholder="1 plate"></label></div>
     <button class="btn green block" data-a="fcAdd">Add</button>
     <button class="btn ghost block" data-a="faView" data-v="main">Back</button></div>`;
+  if (F.view === 'ai' && F.ai) return mealAiView(F, close);
   if (F.view === 'scan') return `<div class="in" role="dialog" aria-label="Scan a barcode">${close}
     <h2>Scan a barcode</h2>
     <div class="bc-box"><video id="bc-video" playsinline muted autoplay></video><i></i></div>
@@ -2784,7 +2869,7 @@ function foodSheet() {
       <div class="spread"><b>Total</b><span class="num"><b>${fmt(tot.k)}</b> kcal · P ${Math.round(tot.p)} · sugar ${Math.round(tot.s)} g</span></div>
       <button class="btn green block" data-a="faSave">Add to today</button>` : ''}
     ${recent.length && !F.items.length ? `<div class="field"><span>Recent</span><div class="pchips">${recent.map(f => `<button class="pchip" data-a="faPick" data-v="${esc(f.id)}">${esc(f.n)}</button>`).join('')}</div></div>` : ''}
-    <button class="btn ghost block" data-a="faView" data-v="scan">Scan a barcode</button>
+    <div class="row" style="flex-wrap:nowrap"><label class="btn ghost filebtn" style="flex:1">Photo of my meal<input id="meal-in" type="file" accept="image/*" capture="environment"></label><button class="btn ghost" style="flex:1" data-a="faView" data-v="scan">Scan a barcode</button></div>
     <div class="meal-act"><button class="linkbtn" data-a="faView" data-v="custom">Enter it myself</button><button class="linkbtn" data-a="faView" data-v="online">Search packaged food</button></div>
   </div>`;
 }
@@ -3153,6 +3238,42 @@ const A = {
   },
   mode() { UI.sheet = 'mode'; render(); },
   closeSheet() { UI.sheet = null; render(); },
+  async bfAi(el, file) {
+    UI.bfai = { loading: true }; render();
+    S.core.aiOk.body = TODAY(); saveCore();
+    let J = { imgs: [], poses: [] };
+    try { J = file ? { imgs: [await aiJpeg(file)], poses: ['front'] } : await photoJpegs(latestPhotos(14).filter(x => x.pose !== 'back')); } catch (e) {}
+    if (!J.imgs.length) { UI.bfai = { err: AI_ERR.bad_photo }; render(); return; }
+    // no tape number here: the photo estimate should be a second opinion, not an echo
+    const p = S.core.profile, r = await aiAsk('bodyfat', J.imgs, { sex: p.sex, age: ageNow(), height: p.height, weight: currentWeight(), waist: lastMeas('waist', TODAY()), poses: J.poses });
+    if (r.error) UI.bfai = { err: AI_ERR[r.error] || AI_ERR.ai_down };
+    else if (!r.ok || !(r.high > 0)) UI.bfai = { res: r };
+    else {
+      const lo = Math.max(3, Math.round(Math.min(r.low, r.high))), hi = Math.min(60, Math.round(Math.max(r.low, r.high)));
+      const ms = S.core.measurements; let m = ms.find(x => x.d === TODAY()); if (!m) { m = { d: TODAY() }; ms.push(m); }
+      m.bfp = { lo, hi, v: Math.round((lo + hi) * 5) / 10 }; saveCore();
+      UI.bfai = { res: r, lo, hi };
+    }
+    render();
+  },
+  async phyRun() {
+    UI.phy = { loading: true }; render();
+    S.core.aiOk.body = TODAY(); saveCore();
+    let J = { imgs: [] }; try { J = await photoJpegs(latestPhotos(14)); } catch (e) {}
+    if (!J.imgs.length) { UI.phy = { err: AI_ERR.bad_photo }; render(); return; }
+    const p = S.core.profile, b = bfChange(bfSeries()).b1;
+    const r = await aiAsk('physique', J.imgs, { sex: p.sex, age: ageNow(), height: p.height, weight: currentWeight(), waist: lastMeas('waist', TODAY()), bf: b && b.v, goal: GOALS[S.core.goal.type].n, exp: p.exp, req: reqs().filter(x => !REQS[x].fat), poses: J.poses });
+    if (r.error) UI.phy = { err: AI_ERR[r.error] || AI_ERR.ai_down };
+    else if (!r.ok) UI.phy = { err: r.tip || 'These photos didn\'t work for a check. Try clearer ones.' };
+    else { S.core.physique = { d: TODAY(), summary: String(r.summary || ''), strengths: (r.strengths || []).slice(0, 3).map(String), focus: (r.focus || []).filter(f => f && REQS[f.area] && !REQS[f.area].fat).slice(0, 2).map(f => ({ area: f.area, why: String(f.why || '') })) }; UI.phy = null; saveCore(); }
+    render();
+  },
+  // the coach's areas become your special requests; your fat requests stay, and only 2 add exercises
+  phyApply() {
+    const G = S.core.goal, P = S.core.physique, next = reqs().filter(r => REQS[r].fat);
+    P.focus.forEach(f => { if (!next.includes(f.area) && next.filter(r => REQS[r].ex.length).length < REQ_MAX) next.push(f.area); });
+    G.req = next; saveCore(); syncPlan(); render(); toast('Added to your sessions. Check again in 4–6 weeks.');
+  },
   reqToggle(el) {
     const G = S.core.goal, k = el.dataset.v, on = reqs();
     if (on.includes(k)) G.req = on.filter(x => x !== k);
@@ -3559,6 +3680,23 @@ const A = {
     if (F.view === 'online') F.oq = F.oq || (F.miss || [])[0] || F.q;
     render(); if (F.view === 'scan') bcStart();
   },
+  // meal photo
+  async aiMeal() {
+    const F = UI.sheet.food, M = F.ai; M.hint = val('ai-hint'); M.err = ''; M.loading = true; render();
+    S.core.aiOk.meal = TODAY(); saveCore();
+    let r; try { r = await aiAsk('meal', [await aiJpeg(M.blob)], { hint: M.hint }); } catch (e) { r = { error: 'bad_photo' }; }
+    M.loading = false;
+    if (r.error) M.err = AI_ERR[r.error] || AI_ERR.ai_down;
+    else M.res = { note: r.note, items: (r.items || []).filter(x => x && x.name && x.amount > 0).slice(0, 12).map(x => ({ ...x, unit: x.unit === 'ml' ? 'ml' : 'g', g: Math.round(x.amount), on: true })) };
+    if (UI.sheet && UI.sheet.food === F) render();
+  },
+  aiTick(el) { const x = UI.sheet.food.ai.res.items[+el.dataset.v]; x.on = el.checked; render(); },
+  aiMealAdd() {
+    const F = UI.sheet.food;
+    F.ai.res.items.filter(x => x.on).forEach(x => F.items.push({ custom: aiScaled(x), q: 1 }));
+    if (F.ai.url) URL.revokeObjectURL(F.ai.url);
+    F.ai = null; F.view = 'main'; render(); toast('Added. Check the total, then Add to today.');
+  },
   // a code from the camera, or typed in
   async bcLookup(x) {
     const F = UI.sheet && UI.sheet.food; if (!F) return;
@@ -3621,7 +3759,7 @@ const A = {
   faSave() {
     const F = UI.sheet.food, d = todayDay(); d.food = d.food || [];
     let tot = 0;
-    F.items.forEach(it => { const f = itemFood(it); if (!f) return; const rec = foodRec(f, it.q, { fid: it.id, exact: 1 }); tot += rec.k; d.food.push(rec); S.core.recentFoods = [it.id].concat(S.core.recentFoods.filter(x => x !== it.id)).slice(0, 12); });
+    F.items.forEach(it => { const f = itemFood(it); if (!f) return; const rec = foodRec(f, it.q, { fid: it.id, exact: 1 }); tot += rec.k; d.food.push(rec); if (it.id) S.core.recentFoods = [it.id].concat(S.core.recentFoods.filter(x => x !== it.id)).slice(0, 12); });
     UI.sheet = null; touch(); saveCore(); render();
     toast(tot > 600 ? 'Gym Bro: "' + fmt(tot) + ' kcal? I saw that."' : '+' + fmt(tot) + ' kcal added', 3000);
   },
@@ -3673,6 +3811,11 @@ async function compress(file) {
 }
 document.addEventListener('change', async e => {
   if (e.target.id === 'import-in' && e.target.files.length) { importBackup(e.target.files[0]); return; }
+  if (e.target.id === 'meal-in' && e.target.files.length && UI.sheet && UI.sheet.food) {
+    const F = UI.sheet.food, f = e.target.files[0]; F.q = val('fa-q') || F.q;
+    F.ai = { blob: f, url: URL.createObjectURL(f), hint: F.q || '' }; F.view = 'ai'; render(); return;
+  }
+  if (e.target.id === 'bfai-in' && e.target.files.length) { A.bfAi(null, e.target.files[0]); return; }
   if (e.target.id !== 'photo-in' || !e.target.files.length) return;
   const file = e.target.files[0]; UI.uploading = true; render();
   try {
@@ -3693,6 +3836,12 @@ document.addEventListener('click', e => {
 document.addEventListener('input', e => {
   const el = e.target;
   if (el.id === 'fa-q' && UI.sheet && UI.sheet.food) { UI.sheet.food.q = el.value; const box = $('#fa-sug'); if (box) box.innerHTML = sugHTML(el.value); return; }
+  if (el.dataset.ai !== undefined && UI.sheet && UI.sheet.food && UI.sheet.food.ai && UI.sheet.food.ai.res) {
+    const R2 = UI.sheet.food.ai.res, x = R2.items[+el.dataset.ai], g = num(el.id); if (!(g > 0)) return;
+    x.g = g; const v = aiScaled(x), k = $('#aik-' + el.dataset.ai); if (k) k.textContent = fmt(v.k) + ' kcal · P ' + v.p + (x.likely ? ' · probably there' : '');
+    const tot = R2.items.filter(y => y.on).reduce((a, y) => { const w = aiScaled(y); a.k += w.k; a.p += w.p; return a; }, { k: 0, p: 0 }), t = $('#ai-tot'); if (t) t.innerHTML = `<b>${fmt(tot.k)}</b> kcal · P ${Math.round(tot.p)}`;
+    return;
+  }
   if (el.id === 'ac-min' && UI.sheet && UI.sheet.act) { const v = num('ac-min'); if (v > 0) { UI.sheet.act.min = v; const b = $('#ac-burn'); if (b) b.innerHTML = burnTxt(UI.sheet.act); } return; }
   if (!el.dataset.ex) return;
   const dr = UI.draft[el.dataset.ex] = UI.draft[el.dataset.ex] || {}; dr.w = num(el.id);

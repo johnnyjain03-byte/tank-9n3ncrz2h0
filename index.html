@@ -917,6 +917,7 @@ function tankMood() {
   if (lk === 'fat' && h >= 9) return { mood: 'grumpy', msg: pick(TANK.fat, seed) };
   if (lk === 'skinny' && h >= 9) return { mood: 'soft', msg: pick(TANK.skinny, seed) };
   if (lk === 'strong' && h >= 9 && h < 12) return { mood: 'happy', msg: pick(TANK.strong, seed) };
+  if (lk === 'rain') { const v = wxToday(); return { mood: 'neutral', msg: v.txt + '. ' + (v.ride ? 'Your ride goes indoors today. Same effort, none of the weather.' : pick(WX_GYM, seed)) }; }
   const train = tasks.find(t => t.id === 'train');
   if (train && !isDone(k, train) && mins > toMin(planTime(k)) + 60) return { mood: 'angry', msg: pick(TANK.gymlate, seed) };
   if (h < 11) return { mood: 'neutral', msg: pick(TANK.morning, seed) };
@@ -940,7 +941,7 @@ function tankLook() {
   if (m === 'break') return 'chill';
   if (quietGap() || missedThisWeek() >= 2) return 'fat';
   if (underEating()) return 'skinny';
-  return streak() >= 7 ? 'strong' : 'fit';
+  return wxToday() ? 'rain' : streak() >= 7 ? 'strong' : 'fit';
 }
 // two checked-in days in a row well under your calories or protein: Gym Bro wastes away
 function underEating() {
@@ -989,6 +990,9 @@ function tankSVG(mood, look) {
   const teeth = mood === 'grumpy' || mood === 'angry' ? `<rect x="56" y="70.5" width="3.8" height="5.5" rx="1" fill="#fff" stroke="${ink}" stroke-width=".8"/><rect x="60.2" y="70.5" width="3.8" height="5.5" rx="1" fill="#fff" stroke="${ink}" stroke-width=".8"/>` : '';
   const band = look === 'fit' || strong ? `<path d="M31 12 Q60 7 89 12 L89.6 18.5 Q60 13.5 30.4 18.5 Z" fill="#E5263B"/><path d="M30.7 15.3 Q60 10.3 89.3 15.3" stroke="#fff" stroke-width="1.6" fill="none" opacity=".6"/>` : '';
   const extras = (look === 'sporty' ? `<path d="M102 30 q4 6 0 9 q-4 -3 0 -9z M14 44 q3.5 5 0 8 q-3.5 -3 0 -8z" fill="#5B8BFF"/>` : '')
+    + (look === 'rain' ? `<path d="M22 120 C22 103 31 93 44 91 L76 91 C89 93 98 103 98 120 Z" fill="#FFC21A" stroke="#D99A00" stroke-width="1.5"/><path d="M60 92 V120" stroke="#D99A00" stroke-width="1.5"/><circle cx="55" cy="101" r="1.8" fill="#D99A00"/><circle cx="55" cy="111" r="1.8" fill="#D99A00"/>
+       <path d="M22 40 Q20 -2 60 -1 Q100 -2 98 40 L91 30 Q90 9 60 9 Q30 9 29 30 Z" fill="#FFC21A" stroke="#D99A00" stroke-width="1.5"/>
+       <path d="M8 8 q3 5 0 7 q-3 -2 0 -7z M108 6 q3 5 0 7 q-3 -2 0 -7z M104 44 q3 5 0 7 q-3 -2 0 -7z M12 52 q3 5 0 7 q-3 -2 0 -7z M112 78 q3 5 0 7 q-3 -2 0 -7z" fill="#5B8BFF"/>` : '')
     + (look === 'chill' ? `<circle cx="60" cy="5" r="7" fill="#FFA41B"/><path d="M60 -1 q4 -3 7 0" stroke="#2E9B4F" stroke-width="2.5" fill="none" stroke-linecap="round"/>` : '')
     + (ill ? `<rect x="43" y="1" width="34" height="11" rx="5" fill="#A9D8FF" stroke="#5B8BFF" stroke-width="1.5"/>
        <path d="M27 84 Q60 99 93 84 L95 95 Q60 110 25 95 Z" fill="#5B8BFF"/><path d="M40 90 L42 101 M56 93 L57 105 M72 92 L71 104 M86 88 L84 99" stroke="#fff" stroke-width="3" opacity=".6"/>
@@ -1032,6 +1036,7 @@ const DEFAULT_CORE = () => ({
   measurements: [], photos: [], shop: {}, quietHandled: '',
   push: { on: false, id: '' }, sid: '',
   health: { days: {}, events: [], at: 0, seen: 0 },
+  loc: null,
 });
 const S = { core: null, months: {}, timer: null, purl: {}, prices: null };
 function photoDB() {
@@ -1094,6 +1099,7 @@ function pushStatus() {
       extra: dayMode(k) === 'extra' ? extraPlan(k).filter(b => !b.skip && !d.t['x:' + b.id]).map(b => ({ t: b.t, n: actOf(b.a).n })) : [] },
     meas: S.core.measurements.some(m => m.d >= ws),
     alerts: S.core.budget.alert && !S.core.budget.alert.down ? ['price'] : [],
+    loc: S.core.loc ? { lat: S.core.loc.lat, lon: S.core.loc.lon } : null,
   };
 }
 async function syncPush() {
@@ -1139,13 +1145,13 @@ function pushCard(compact) {
   return `<div class="card" ${compact ? 'style="background:var(--orange-soft)"' : ''}><h2>Notifications</h2>${body}</div>`;
 }
 function markDirty() { clearTimeout(S.timer); S.timer = setTimeout(flush, 250); }
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush(); else { if (UI.tab === 'gym') { gymLock(true); gymTick(); } checkUpdate(); fetchHealth(); fetchGcal(); if (UI.tab === 'today' && !UI.sheet) render(); } });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush(); else { if (UI.tab === 'gym') { gymLock(true); gymTick(); } checkUpdate(); fetchHealth(); fetchGcal(); fetchWx(); if (UI.tab === 'today' && !UI.sheet) render(); } });
 // prices come from prices.json; the last copy is kept so the budget works offline
 async function loadPrices() {
   try { const r = await fetch('prices.json?t=' + Date.now(), { cache: 'no-store' }); if (r.ok) { const p = await r.json(); if (p && p.items) { S.prices = p; try { localStorage.setItem('gymbro-prices', JSON.stringify(p)); } catch (e) {} } } } catch (e) {}
 }
 // the app updates itself: when a newer version is online, reload into it (your data stays on the phone)
-const APP_VERSION = '18';
+const APP_VERSION = '19';
 async function checkUpdate() {
   try {
     const v = (await (await fetch('version.txt?t=' + Date.now(), { cache: 'no-store' })).text()).trim();
@@ -1333,7 +1339,7 @@ function tasksFor(k) {
   } else if (mode === 'normal') {
     if (plan === 'HOME') L.push({ id: 'travelTrain', label: 'Home workout, 25 min', sub: 'Instead of the gym today', go: 'train' });
     else if (SESS[plan]) L.push({ id: 'train', label: 'Gym: ' + SESS[plan].n, sub: SESS[plan].sub, go: 'train' });
-    else if (CARDIO[plan]) L.push({ id: 'cardio', label: CARDIO[plan].n, sub: CARDIO[plan].sub });
+    else if (CARDIO[plan]) { const ind = (getDay(k) || {}).indoor; L.push(ind && INDOOR[ind] ? { id: 'cardio', label: 'Indoors: ' + indoorTxt(ind, plan), sub: 'Instead of the ride, because of the weather' } : { id: 'cardio', label: CARDIO[plan].n, sub: CARDIO[plan].sub }); }
     else L.push({ id: 'recover', label: '20-min walk', sub: 'Rest day' });
     L.push({ id: 'creatine', label: 'Creatine 5 g' });
     L.push({ id: 'protein', label: 'Protein ' + T.protein + ' g', sub: 'Ticks itself when you tick meals', auto: 'protein' });
@@ -1408,6 +1414,73 @@ function applyProfileDefaults() {
   if (ageRule().days === 3) S.core.goal.days = 3;
   if (band === 'senior' || band === 'teen') { sw.dl = sw.dl || 'tbdl'; sw.wpull = sw.wpull || 'latpd'; sw.dip = sw.dip || 'ohext'; }
   if (band === 'senior') { sw.squat = sw.squat || 'lpress'; sw.bss = sw.bss || 'stepup'; sw.hlr = sw.hlr || 'deadbug'; }
+}
+/* ---------- weather (Open-Meteo, free, no account): bad weather never cancels a session, it moves it indoors ---------- */
+const WX_KEY = 'gymbro-wx';
+// the worst weather in the hours of a session; rides mind cold, wind and heat more than a trip to the gym does
+function wxVerdict(H, date, startMin, durMin, ride) {
+  for (let m = Math.floor(startMin / 60) * 60; m < startMin + durMin; m += 60) {
+    const key = date + 'T' + String(Math.floor(m / 60)).padStart(2, '0') + ':00', i = H.time.indexOf(key); if (i < 0) continue;
+    const t = H.t[i], pp = H.pp[i] === null || H.pp[i] === undefined ? 100 : H.pp[i], pr = H.pr[i] || 0, ws = H.ws[i] || 0, wc = H.wc[i] || 0;
+    let why = '';
+    if (wc >= 95) why = 'Thunderstorm';
+    else if ((wc >= 71 && wc <= 77) || wc === 85 || wc === 86) why = 'Snow';
+    else if (pr >= 0.5 && pp >= 50) why = pr >= 4 ? 'Heavy rain' : 'Rain';
+    else if (t <= (ride ? 3 : -2)) why = t <= 0 ? 'Freezing' : 'Cold';
+    else if (ws >= (ride ? 35 : 55)) why = 'Strong wind';
+    else if (ride && t >= 30) why = 'Heat';
+    if (why) return { why, at: key.slice(11), t: Math.round(t), txt: why + ' at ' + key.slice(11) + ', ' + Math.round(t) + ' °C' };
+  }
+  return null;
+}
+let WXC; // the forecast, read once from storage
+function wxCache() { if (WXC === undefined) { try { WXC = JSON.parse(localStorage.getItem(WX_KEY) || 'null'); } catch (e) { WXC = null; } } return WXC; }
+async function fetchWx(force) {
+  const L = S.core.loc; if (!L) return;
+  const c = wxCache(); if (!force && c && c.lat === L.lat && c.lon === L.lon && Date.now() - c.at < 3600e3) return;
+  try {
+    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${L.lat}&longitude=${L.lon}&hourly=temperature_2m,precipitation_probability,precipitation,wind_speed_10m,weather_code&forecast_days=3&timezone=auto`);
+    const h = (await r.json()).hourly; if (!h || !h.time) return;
+    WXC = { at: Date.now(), lat: L.lat, lon: L.lon, H: { time: h.time, t: h.temperature_2m, pp: h.precipitation_probability, pr: h.precipitation, ws: h.wind_speed_10m, wc: h.weather_code } };
+    try { localStorage.setItem(WX_KEY, JSON.stringify(WXC)); } catch (e) {}
+    if (UI.tab === 'today' && !UI.sheet) render();
+  } catch (e) {}
+}
+// today's session in bad weather: the trip there and back for the gym, the whole ride for a ride
+function wxToday() {
+  const L = S.core.loc, c = wxCache(), k = TODAY(), p = planFor(k);
+  if (!L || !c || c.lat !== L.lat || dayMode(k) !== 'normal' || !(SESS[p] || CARDIO[p])) return null;
+  const d = getDay(k) || { t: {} }, start = toMin(planTime(k)), dur = planDur(p), now = new Date(), nowMin = now.getHours() * 60 + now.getMinutes();
+  if ((d.t || {}).train || (d.t || {}).cardio || d.session || nowMin > start + dur) return null;
+  const v = SESS[p] ? wxVerdict(c.H, k, start - 30, dur + 60, false) : wxVerdict(c.H, k, start, dur, true);
+  return v ? { ...v, ride: !!CARDIO[p] } : null;
+}
+const RIDE_MIN = { Z2: 45, LONG: 60, EASY: 30 };
+const INDOOR = { bike: 'Exercise bike, {m} min, same easy pace', row: 'Rower, {r} min', walk: 'Incline treadmill walk, {m} min', home: 'Home circuit, 25 min' };
+const indoorTxt = (key, p) => INDOOR[key].replace('{m}', RIDE_MIN[p] || 45).replace('{r}', Math.round((RIDE_MIN[p] || 45) * 2 / 3 / 5) * 5);
+const WX_GYM = ['The gym has a roof. Jacket on, bag packed, go.', 'Rain is a reason to take a jacket, not a reason to skip.', 'Everyone else stays in. That\'s why they look like everyone else.', 'Can\'t face the trip? Gym mode has a short version: Main lifts and two more.'];
+function wxCard() {
+  const v = wxToday(); if (!v) return '';
+  const k = TODAY(), d = getDay(k) || {}, p = planFor(k), seed = parseKey(k).getDate();
+  if (v.ride) {
+    if (d.indoor) return `<div class="banner travel"><p class="small"><b>${esc(v.txt)}.</b> Indoors today: ${esc(indoorTxt(d.indoor, p))}. <button class="linkbtn" data-a="wxIndoor" data-v="">Ride outside after all</button></p></div>`;
+    if (d.wxOk) return '';
+    return `<div class="banner travel"><h3>${esc(v.txt)}</h3><p class="small">Same workout, none of the weather. Do it indoors today:</p>
+      <div class="pchips">${Object.keys(INDOOR).map(x => `<button class="pchip" data-a="wxIndoor" data-v="${x}">${esc(indoorTxt(x, p))}</button>`).join('')}</div>
+      <button class="linkbtn" data-a="wxOk">I'll ride in it anyway</button></div>`;
+  }
+  if (d.wxOk) return '';
+  return `<div class="banner travel"><h3>${esc(v.txt)}</h3><p class="small">${esc(pick(WX_GYM, seed))}</p><button class="linkbtn" data-a="wxOk">Got it</button></div>`;
+}
+function wxSetCard() {
+  const L = S.core.loc, F = UI.wxf || {};
+  return `<div class="card"><h2>Weather</h2>
+    <p class="small muted">${L ? 'Weather for <b>' + esc(L.n) + '</b>. ' : ''}When rain, snow, cold or wind hit a ride or your trip to the gym, Gym Bro moves the session indoors and tells you in the reminder.</p>
+    <div class="row" style="flex-wrap:nowrap"><input id="wx-q" type="text" placeholder="${L ? 'Change town' : 'Your town, e.g. Leeds'}" value="${esc(F.q || '')}" autocomplete="off"><button class="btn small green" data-a="wxFind">Find</button></div>
+    ${F.loading ? '<p class="small muted">Looking…</p>' : F.err ? `<p class="small">${esc(F.err)}</p>` : ''}
+    ${F.res ? `<div class="sug-list">${F.res.map((r, i) => `<button data-a="wxPick" data-v="${i}"><b>${esc(r.n)}</b><span>${esc(r.c)}</span></button>`).join('') || '<p class="small">No town by that name.</p>'}</div>` : ''}
+    <div class="meal-act"><button class="linkbtn" data-a="wxHere">Use my location</button>${L ? '<button class="linkbtn" data-a="wxOff">Turn off</button>' : ''}</div>
+  </div>`;
 }
 const planDur = p => SESS[p] ? 75 : p === 'LONG' ? 90 : p === 'Z2' ? 45 : p === 'EASY' ? 30 : p === 'HOME' ? 25 : 0;
 function planTime(k, p = planFor(k)) {
@@ -1653,6 +1726,7 @@ function viewToday() {
   ${sexCard()}${planEndCard()}${budgetAlertCard(true)}
   ${modeBanner()}
   ${clashCard()}
+  ${wxCard()}
   ${late ? ciCard() : ''}
   ${S.core.mode.type === 'extra' ? extraCard() : ''}
   ${SESS[planFor(k)] && S.core.mode.type === 'normal' && !(getDay(k) || {}).session ? gymButton(planFor(k)) : ''}
@@ -2185,6 +2259,7 @@ function viewMe() {
   ${photoCard()}
   ${skipLogCard()}
   ${bodyCard()}
+  ${wxSetCard()}
   ${S.core.plans.length ? `<details class="card"><summary>Past plans (${S.core.plans.length})</summary>${S.core.plans.slice().reverse().map(x => `<div style="border-top:1px solid var(--line);padding:8px 0"><div class="spread small"><b>Plan ${x.n}: ${esc((GOALS[x.type] || {}).n || '')}</b><span class="muted">${shortDate(x.start)}–${shortDate(x.end)}</span></div><p class="small muted">${x.stats ? `${x.stats.w0 ? (+x.stats.w0).toFixed(1) : '?'} → ${(+x.stats.w1).toFixed(1)} kg${x.stats.waist0 && x.stats.waist1 ? ' · waist ' + x.stats.waist0 + ' → ' + x.stats.waist1 + ' cm' : ''}${x.stats.bf0 && x.stats.bf1 ? ' · body fat ' + Math.round(x.stats.bf0) + ' → ' + Math.round(x.stats.bf1) + '%' : ''} · gym ${x.stats.gym}${x.stats.score ? ' · score ' + x.stats.score : ''}` : ''}</p></div>`).join('')}</details>` : ''}
   ${settingsCard()}`;
 }
@@ -3023,6 +3098,26 @@ const A = {
   },
   mode() { UI.sheet = 'mode'; render(); },
   closeSheet() { UI.sheet = null; render(); },
+  // weather
+  wxIndoor(el) { const d = todayDay(); if (el.dataset.v) d.indoor = el.dataset.v; else { delete d.indoor; d.wxOk = 1; } touch(); render(); if (el.dataset.v) toast('Indoors today. Same effort.'); },
+  wxOk() { todayDay().wxOk = 1; touch(); render(); },
+  async wxFind() {
+    const q = val('wx-q'); if (q.length < 2) { toast('Type your town.'); return; }
+    UI.wxf = { q, loading: true }; render();
+    try {
+      const o = await (await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=5&language=en&format=json`)).json();
+      UI.wxf = { q, res: (o.results || []).map(r => ({ n: r.name, c: [r.admin1, r.country].filter(Boolean).join(', '), lat: r.latitude, lon: r.longitude })) };
+    } catch (e) { UI.wxf = { q, err: 'No connection. Try again in a moment.' }; }
+    render();
+  },
+  wxPick(el) { const r = UI.wxf.res[+el.dataset.v]; A.wxSet(r.n + (r.c ? ', ' + r.c.split(', ').pop() : ''), r.lat, r.lon); },
+  wxHere() {
+    if (!navigator.geolocation) { toast('No location on this phone. Type your town.'); return; }
+    navigator.geolocation.getCurrentPosition(pos => A.wxSet('your area', pos.coords.latitude, pos.coords.longitude), () => toast('No location access. Type your town instead.'), { timeout: 10000, maximumAge: 3600e3 });
+  },
+  // town level is enough: 0.1° is about 10 km
+  wxSet(n, lat, lon) { S.core.loc = { n, lat: Math.round(lat * 10) / 10, lon: Math.round(lon * 10) / 10 }; UI.wxf = null; saveCore(); syncPush(); fetchWx(true); render(); toast('Weather for ' + n + ' is on.'); },
+  wxOff() { S.core.loc = null; WXC = null; try { localStorage.removeItem(WX_KEY); } catch (e) {} saveCore(); syncPush(); render(); },
   // gym mode
   gymStart(el) {
     const sess = el.dataset.v || UI.sess; if (!SESS[sess]) return;
@@ -3543,6 +3638,7 @@ document.addEventListener('input', e => {
 
 document.addEventListener('keydown', e => {
   if (e.key !== 'Enter') return;
+  if (e.target.id === 'wx-q') { e.preventDefault(); A.wxFind(); }
   if (e.target.id === 'fa-q') { e.preventDefault(); A.faParse(); }
   if (e.target.id === 'fo-q') { e.preventDefault(); A.foSearch(); }
 });
@@ -3558,6 +3654,7 @@ if ('serviceWorker' in navigator) window.addEventListener('load', () => navigato
   loadPrices().then(() => { BP = null; priceCheck(); if (!UI.sheet && (UI.tab === 'food' || UI.tab === 'today')) render(); });
   fetchHealth();
   fetchGcal();
+  fetchWx();
   let lastDay = TODAY();
   setInterval(gymTick, 1000);
   setInterval(() => { if (TODAY() !== lastDay) { lastDay = TODAY(); ensureTodayMode(); } if (UI.tab === 'today' && !UI.sheet) render(); }, 5 * 60000);

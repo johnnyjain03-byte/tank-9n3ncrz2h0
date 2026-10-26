@@ -254,6 +254,10 @@ details[open] summary{margin-bottom:12px}
 .sug-list{display:flex;flex-direction:column;gap:6px}
 .sug-list button{border:2px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 12px;text-align:left;display:flex;justify-content:space-between;gap:10px;align-items:center}
 .sug-list button b{font-weight:800} .sug-list button span{font-size:14px;color:var(--muted);white-space:nowrap}
+.gym-big{font:700 30px/1.15 var(--display);margin:4px 0}
+.gym-rest{font:700 64px/1 var(--display);text-align:center;font-variant-numeric:tabular-nums;color:var(--blue);margin:8px 0}
+.gym-w{display:flex;gap:8px;align-items:center} .gym-w input{text-align:center;font-weight:800;font-size:22px}
+.gym-w .btn{min-width:52px}
 .bc-box{position:relative;border-radius:14px;overflow:hidden;background:#000;aspect-ratio:4/3;margin:8px 0}
 .bc-box video{width:100%;height:100%;object-fit:cover;display:block}
 .bc-box i{position:absolute;left:12%;right:12%;top:30%;bottom:30%;border:3px solid #fff;border-radius:10px;box-shadow:0 0 0 999px rgba(0,0,0,.35)}
@@ -1135,13 +1139,13 @@ function pushCard(compact) {
   return `<div class="card" ${compact ? 'style="background:var(--orange-soft)"' : ''}><h2>Notifications</h2>${body}</div>`;
 }
 function markDirty() { clearTimeout(S.timer); S.timer = setTimeout(flush, 250); }
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush(); else { checkUpdate(); fetchHealth(); fetchGcal(); if (UI.tab === 'today' && !UI.sheet) render(); } });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush(); else { if (UI.tab === 'gym') { gymLock(true); gymTick(); } checkUpdate(); fetchHealth(); fetchGcal(); if (UI.tab === 'today' && !UI.sheet) render(); } });
 // prices come from prices.json; the last copy is kept so the budget works offline
 async function loadPrices() {
   try { const r = await fetch('prices.json?t=' + Date.now(), { cache: 'no-store' }); if (r.ok) { const p = await r.json(); if (p && p.items) { S.prices = p; try { localStorage.setItem('gymbro-prices', JSON.stringify(p)); } catch (e) {} } } } catch (e) {}
 }
 // the app updates itself: when a newer version is online, reload into it (your data stays on the phone)
-const APP_VERSION = '17';
+const APP_VERSION = '18';
 async function checkUpdate() {
   try {
     const v = (await (await fetch('version.txt?t=' + Date.now(), { cache: 'no-store' })).text()).trim();
@@ -1651,6 +1655,7 @@ function viewToday() {
   ${clashCard()}
   ${late ? ciCard() : ''}
   ${S.core.mode.type === 'extra' ? extraCard() : ''}
+  ${SESS[planFor(k)] && S.core.mode.type === 'normal' && !(getDay(k) || {}).session ? gymButton(planFor(k)) : ''}
   <div class="card">
     <div class="spread"><h2>Today</h2>${st ? `<span class="streak">${st}-day streak</span>` : ''}</div>
     <div class="tasks">${tasks.map(t => taskRow(k, t)).join('')}</div>
@@ -1789,7 +1794,7 @@ function viewTrain() {
   const injury = av.length ? `<div class="banner warn"><h3>${av.map(a => AREAS[a][0].toUpperCase() + AREAS[a].slice(1)).join(' + ')}-friendly mode</h3><p class="small">Exercises that load your ${av.map(a => AREAS[a]).join(' or ')} are swapped automatically. Pain for more than a week, or sharp pain? See a physio.</p><button class="btn ghost small" data-a="avoidOff">My ${av.map(a => AREAS[a]).join(' and ')} feel${av.length > 1 ? '' : 's'} fine again</button></div>` : '';
   const exs = sessionExercises(UI.sess, k), b = sessBurn(UI.sess);
   return `
-  ${modeBanner()}${tankTip('gym')}${segs}${todayNote}${injury}${UI.sess === plan ? resultCard(k) : ''}
+  ${modeBanner()}${tankTip('gym')}${segs}${todayNote}${injury}${UI.sess === plan ? resultCard(k) : ''}${d.session === UI.sess ? '' : gymButton(UI.sess)}
   <div class="card">
     <div><h2>${ss.n}: ${esc(ss.sub)}</h2><p class="muted">About ${b.min} min${UI.sess === plan ? ' at <button class="linkbtn" data-a="moveOpen" data-v="' + k + '">' + planTime(k) + '</button>' : ''} · <button class="linkbtn" data-a="help" data-v="sess:${UI.sess}">What to do at the gym</button>${UI.sess === plan ? ' · <button class="linkbtn" data-a="dayOpen">Can\'t train today?</button>' : ''}</p></div>
     <div class="burn">You burn about <b>${fmt(b.kcal)} kcal</b> in this session, plus about <b>${b.epoc} kcal</b> of afterburn over the next day. It's already in your calories.</div>
@@ -1884,6 +1889,116 @@ function exCard(id, d, x = {}) {
       <label class="field"><span>kg (${esc(goal)})</span><input id="w-${id}" data-ex="${id}" inputmode="decimal" value="${w}"></label>
       <button class="hit ${st}" data-a="hit" data-v="${id}">${st === 'ok' ? '✓ All reps' : st === 'miss' ? '✗ Missed some' : 'Tap when done'}</button>
     </div>
+  </div>`;
+}
+
+/* ---------- gym mode: "I'm at the gym, need help" walks you through today's session ---------- */
+// saved as you go, so a locked phone or a closed app between sets loses nothing
+const GYM_KEY = 'gymbro-gym', GYMX = { beep: [], ctx: null, lock: null };
+function gymSave() { try { localStorage.setItem(GYM_KEY, JSON.stringify({ d: TODAY(), g: UI.gym, draft: UI.draft })); } catch (e) {} }
+function gymLoad() {
+  try { const o = JSON.parse(localStorage.getItem(GYM_KEY) || 'null'); if (o && o.d === TODAY() && o.g && SESS[o.g.sess]) { UI.gym = o.g; UI.draft = Object.assign(o.draft || {}, UI.draft); } } catch (e) {}
+}
+function gymClear() { UI.gym = null; try { localStorage.removeItem(GYM_KEY); } catch (e) {} gymBeepStop(); gymLock(false); }
+// short on time: every Main lift and the next two exercises, one set less each
+function gymQueue(G) {
+  const all = sessionExercises(G.sess, TODAY()).filter(x => x.id);
+  if (!G.short) return all;
+  const keep = new Set(all.filter(x => EX[x.id].main).concat(all.filter(x => !EX[x.id].main).slice(0, 2)));
+  return all.filter(x => keep.has(x));
+}
+const gymSets = (G, id) => G.short ? Math.max(2, EX[id].sets - 1) : EX[id].sets;
+const gymRestSec = id => EX[id].main ? 150 : 75;
+function gymW(id) { const dr = UI.draft[id] || {}, d = getDay(TODAY()) || {}, saved = d.lifts && d.lifts[id]; return dr.w !== undefined && dr.w !== null ? dr.w : saved ? saved.w : suggestion(id).w; }
+// warm-up sets before a heavy lift: lighter and fewer reps, so they never tire you
+function warmups(id, w) {
+  if (!EX[id].main || !(w > 0)) return [];
+  const r = x => round(x, 2.5), list = BARBELL.includes(id) ? [[20, 10], [r(w * 0.5), 5], [r(w * 0.75), 3]] : [[r(w * 0.5), 8]];
+  return list.filter(([x], i) => x > 0 && x < w - 1 && (i === 0 || x > list[i - 1][0]));
+}
+const mmss = sec => Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
+// a beep when the rest is over (scheduled on the tap, so the phone allows the sound)
+function gymBeep(sec) {
+  gymBeepStop();
+  try {
+    const C = window.AudioContext || window.webkitAudioContext; if (!C) return;
+    const ctx = GYMX.ctx = GYMX.ctx || new C(); ctx.resume();
+    [0, 0.35].forEach(dt => { const o = ctx.createOscillator(), g = ctx.createGain(); o.frequency.value = 880; g.gain.value = 0.25; o.connect(g); g.connect(ctx.destination); o.start(ctx.currentTime + sec + dt); o.stop(ctx.currentTime + sec + dt + 0.2); GYMX.beep.push(o); });
+  } catch (e) {}
+}
+function gymBeepStop() { GYMX.beep.forEach(o => { try { o.stop(); } catch (e) {} }); GYMX.beep = []; }
+// keep the screen on while you train
+async function gymLock(on) {
+  try {
+    if (!on) { if (GYMX.lock) await GYMX.lock.release(); GYMX.lock = null; return; }
+    if (!GYMX.lock && navigator.wakeLock && document.visibilityState === 'visible') { GYMX.lock = await navigator.wakeLock.request('screen'); GYMX.lock.addEventListener('release', () => { GYMX.lock = null; }); }
+  } catch (e) {}
+}
+function gymTick() {
+  const G = UI.gym; if (UI.tab !== 'gym' || !G || !G.restEnd) return;
+  const left = Math.ceil((G.restEnd - Date.now()) / 1000), el = $('#gym-rest');
+  if (left <= 0) { G.restEnd = 0; gymSave(); try { if (navigator.vibrate) navigator.vibrate([200, 100, 200]); } catch (e) {} render(); return; }
+  if (el) el.textContent = mmss(left);
+}
+function gymButton(sess) {
+  const G = UI.gym;
+  if (G && G.sess === sess) { const q = gymQueue(G), x = q[G.i]; return `<button class="btn blue block" data-a="gymResume">Back to gym mode${x ? ': ' + esc(EX[x.id].n) + ', set ' + G.set : ''}</button>`; }
+  return `<button class="btn blue block" data-a="gymStart" data-v="${sess}">I'm at the gym, need help</button>`;
+}
+function viewGym() {
+  const G = UI.gym; if (!G || !SESS[G.sess]) { UI.tab = 'train'; return viewTrain(); }
+  gymLock(true);
+  const ss = SESS[G.sess], q = gymQueue(G), n = q.length;
+  const top = `<div class="spread"><span class="lbl">Gym mode · ${esc(ss.n)}${G.short ? ' · short' : ''}</span><button class="btn small ghost" data-a="gymExit">Pause</button></div>
+    <div class="bar"><i style="width:${Math.round(Math.max(0, Math.min(n, G.i)) / Math.max(1, n) * 100)}%;background:var(--blue)"></i></div>`;
+  if (G.i < 0) {
+    const mins = Math.round(q.reduce((m, x) => m + gymSets(G, x.id) * (gymRestSec(x.id) + 45), 0) / 60) + 8;
+    return `<div class="hero neutral"><span class="face">${tankSVG('neutral')}</span><div class="say"><b>Gym Bro</b><p>Right, you made it. Warm up first, then I'll take you through every set.</p></div></div>
+    <div class="card">${top}
+      <h2>Warm up, ${ageNow() >= 40 ? '10–12' : '8'} min</h2>
+      <ol class="steps">
+        <li><span><b>5 min easy</b> on the bike or rower. Breathing a bit faster, not out of breath.</span></li>
+        <li><span><b>10 arm circles</b> each way, <b>10 bodyweight squats</b>, <b>10 hip swings</b> each leg.</span></li>
+        <li><span>Warm-up sets for the heavy lifts come later, Gym Bro tells you when.</span></li>
+      </ol>
+      <p class="small muted">Today: ${n} exercises, about ${mins} min.</p>
+      <button class="btn ghost block" data-a="gymShort">${G.short ? 'Full session after all' : 'Short on time? Main lifts + 2 more, one set less'}</button>
+      <button class="btn blue block" data-a="gymGo">Warm-up done, start</button>
+    </div>`;
+  }
+  if (G.i >= n) {
+    const rows = q.map(x => { const dr = UI.draft[x.id] || {}; return `<tr><td>${esc(EX[x.id].n)}</td><td class="num">${dr.st ? gymW(x.id) + ' kg ' + (dr.st === 'ok' ? '✓' : '✗') : '<span class="muted">skipped</span>'}</td></tr>`; }).join('');
+    return `<div class="hero happy"><span class="face">${tankSVG('happy')}</span><div class="say"><b>Gym Bro</b><p>Done. That's how it's done. Save it and go eat your protein.</p></div></div>
+    <div class="card">${top}<h2>Session done</h2><table>${rows}</table>
+      <button class="btn green block" data-a="gymFinish">Save session</button>
+      <button class="btn ghost block" data-a="gymPrev">Back to the last exercise</button></div>`;
+  }
+  const x = q[G.i], id = x.id, E = EX[id], dr = UI.draft[id] || {}, sets = gymSets(G, id), w = gymW(id), reps = repsOf(E).join('–');
+  const resting = G.restEnd > Date.now(), warm = G.set === 1 && !dr.warm && !resting ? warmups(id, w) : [];
+  const alts = G.swap ? [x.orig].concat(ALTS[x.orig] || []).filter(a => EX[a] && a !== id && safeFor(a, S.core.gym.avoid) && !q.some(y => y.id === a)) : [];
+  const step = E.inc || 2.5, bw = !E.inc && !w;
+  let main;
+  if (G.ask) main = `<p class="gym-big">All ${repsOf(E)[1]} reps on every set?</p>
+      <div class="row" style="flex-wrap:nowrap"><button class="btn green" style="flex:1" data-a="gymRes" data-v="ok">✓ Yes, all</button><button class="btn ghost" style="flex:1" data-a="gymRes" data-v="miss">✗ Missed some</button></div>
+      <p class="small muted">All of them: Gym Bro adds weight next time. Missed some: same weight, beat it next time.</p>`;
+  else if (resting) main = `<p class="small" style="text-align:center;font-weight:800">Rest. Next: set ${G.set} of ${sets}</p><div class="gym-rest" id="gym-rest">${mmss(Math.ceil((G.restEnd - Date.now()) / 1000))}</div>
+      <button class="btn ghost block" data-a="gymSkipRest">Ready, skip the rest</button>`;
+  else if (warm.length) main = `<p class="gym-big">Warm-up sets first</p>
+      <ol class="steps">${warm.map(([kg, r]) => `<li><span><b>${kg} kg × ${r}</b>${kg === 20 && BARBELL.includes(id) ? ' (empty bar)' : ''}</span></li>`).join('')}</ol>
+      <p class="small muted">Easy and quick, about a minute's rest between them. They don't count as sets.</p>
+      <button class="btn blue block" data-a="gymWarm">Warm-ups done</button>`;
+  else main = `<p class="gym-big">Set ${G.set} of ${sets}: ${reps} reps${bw ? '' : ` at ${w} kg`}</p>
+      ${bw ? '' : `<div class="gym-w"><button class="btn ghost" data-a="gymW" data-v="-${step}">−</button><input id="gym-w" data-ex="${id}" inputmode="decimal" value="${w}"><button class="btn ghost" data-a="gymW" data-v="${step}">+</button></div>`}
+      <p class="small muted">Stop with 1–2 reps left in the tank. Rest ${E.main ? '2–3 min' : '60–90 s'} after.</p>
+      <button class="btn blue block" data-a="gymSet">Set done</button>`;
+  return `<div class="card">${top}
+    <p class="small muted">Exercise ${G.i + 1} of ${n}${E.main ? ' · Main lift' : ''}</p>
+    <h2>${esc(E.n)}</h2>
+    ${x.why ? `<p class="small" style="font-weight:700;color:var(--blue)">Instead of ${esc(EX[x.orig].n)}</p>` : ''}
+    ${main}
+    <details ${G.how || !lastLog(id, TODAY()) ? 'open' : ''}><summary>How to do it</summary><div class="how">${exHowHTML(id)}</div></details>
+    ${G.swap ? `<div class="field"><span>Machine taken? Do one of these instead:</span><div class="pchips">${alts.map(a => `<button class="pchip" data-a="gymSwap" data-v="${a}">${esc(EX[a].n)}</button>`).join('') || '<span class="small muted">No swap left. Ask "how many sets left?", or skip it.</span>'}</div></div>` : ''}
+    <div class="meal-act">${G.i > 0 ? '<button class="linkbtn" data-a="gymPrev">Back</button>' : ''}<button class="linkbtn" data-a="gymSwapOpen">${G.swap ? 'Keep this one' : 'Machine taken?'}</button><button class="linkbtn" data-a="gymSkip">Skip it</button></div>
   </div>`;
 }
 
@@ -2861,7 +2976,7 @@ function render() {
   $('#modeLabel').textContent = { normal: 'Normal', travel: 'Away', sick: 'Ill', break: 'Diet break', extra: 'Extra' }[m];
   const wk = Math.floor(diffDays(TODAY(), S.core.settings.start) / 7) + 1;
   $('#sub').textContent = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }) + (wk > 0 ? ' · week ' + wk : '');
-  const views = { today: viewToday, train: viewTrain, food: viewFood, me: viewMe, checkin: viewCheckin, report: viewReport, review: viewReview };
+  const views = { gym: viewGym, today: viewToday, train: viewTrain, food: viewFood, me: viewMe, checkin: viewCheckin, report: viewReport, review: viewReview };
   const v = $('#view');
   v.className = 'tab-' + UI.tab;
   v.innerHTML = (views[UI.tab] || viewToday)();
@@ -2882,7 +2997,7 @@ function ensureTodayMode() {
 const num = id => { const v = parseFloat(String(($('#' + id) || {}).value || '').replace(',', '.')); return isFinite(v) ? v : null; };
 const val = id => (($('#' + id) || {}).value || '').trim();
 const todayDay = () => { const d = getDay(TODAY(), true); d.mode = d.mode || S.core.mode.type; return d; };
-const go = tab => { UI.tab = tab; try { localStorage.setItem('gymbro-tab', tab); } catch (e) {} render(); window.scrollTo(0, 0); };
+const go = tab => { UI.tab = tab; if (tab !== 'gym') gymLock(false); try { localStorage.setItem('gymbro-tab', tab); } catch (e) {} render(); window.scrollTo(0, 0); };
 function keepDraft() { document.querySelectorAll('[data-ex]').forEach(el => { const dr = UI.draft[el.dataset.ex] = UI.draft[el.dataset.ex] || {}; dr.w = num(el.id); }); }
 
 /* ---------- actions ---------- */
@@ -2908,6 +3023,49 @@ const A = {
   },
   mode() { UI.sheet = 'mode'; render(); },
   closeSheet() { UI.sheet = null; render(); },
+  // gym mode
+  gymStart(el) {
+    const sess = el.dataset.v || UI.sess; if (!SESS[sess]) return;
+    gymLoad();
+    if (!UI.gym || UI.gym.sess !== sess) { UI.gym = { sess, i: -1, set: 1, restEnd: 0, short: false }; UI.draft = {}; }
+    gymSave(); go('gym');
+  },
+  gymResume() { go('gym'); },
+  gymExit() { gymSave(); gymBeepStop(); gymLock(false); UI.sess = UI.gym.sess; go('train'); toast('Paused. Tap "Back to gym mode" to carry on.'); },
+  gymShort() { UI.gym.short = !UI.gym.short; gymSave(); render(); },
+  gymGo() { UI.gym.i = 0; UI.gym.set = 1; gymSave(); render(); window.scrollTo(0, 0); },
+  gymWarm() { const id = gymQueue(UI.gym)[UI.gym.i].id; (UI.draft[id] = UI.draft[id] || {}).warm = 1; gymSave(); render(); },
+  gymW(el) { const G = UI.gym, id = gymQueue(G)[G.i].id, dr = UI.draft[id] = UI.draft[id] || {}; dr.w = Math.max(0, Math.round((gymW(id) + +el.dataset.v) * 100) / 100); gymSave(); render(); },
+  gymSet() {
+    const G = UI.gym, id = gymQueue(G)[G.i].id, dr = UI.draft[id] = UI.draft[id] || {};
+    const wv = num('gym-w'); if (wv !== null) dr.w = wv; else if (dr.w === undefined) dr.w = gymW(id);
+    if (G.set >= gymSets(G, id)) { G.ask = true; G.restEnd = 0; }
+    else { G.set++; const sec = gymRestSec(id); G.restEnd = Date.now() + sec * 1000; gymBeep(sec); }
+    G.swap = false; gymSave(); render();
+  },
+  gymSkipRest() { UI.gym.restEnd = 0; gymBeepStop(); gymSave(); render(); },
+  gymRes(el) {
+    const G = UI.gym, id = gymQueue(G)[G.i].id, dr = UI.draft[id] = UI.draft[id] || {};
+    dr.st = el.dataset.v; if (dr.w === undefined) dr.w = gymW(id);
+    G.ask = false; G.i++; G.set = 1; G.swap = false;
+    // rest before the next exercise too
+    if (G.i < gymQueue(G).length) { const sec = gymRestSec(id); G.restEnd = Date.now() + sec * 1000; gymBeep(sec); }
+    gymSave(); render(); window.scrollTo(0, 0);
+  },
+  gymPrev() { const G = UI.gym; G.i = Math.max(0, Math.min(G.i, gymQueue(G).length) - 1); G.set = 1; G.ask = false; G.restEnd = 0; G.swap = false; gymBeepStop(); gymSave(); render(); },
+  gymSkip() { const G = UI.gym; G.i++; G.set = 1; G.ask = false; G.restEnd = 0; G.swap = false; gymBeepStop(); gymSave(); render(); window.scrollTo(0, 0); },
+  gymSwapOpen() { UI.gym.swap = !UI.gym.swap; render(); },
+  gymSwap(el) {
+    const G = UI.gym, x = gymQueue(G)[G.i], d = getDay(TODAY(), true); d.exSwap = d.exSwap || {};
+    if (el.dataset.v === x.orig) delete d.exSwap[x.orig]; else d.exSwap[x.orig] = el.dataset.v;
+    delete UI.draft[x.id]; G.set = 1; G.swap = false; G.restEnd = 0; touch(); gymSave(); render();
+    toast('Swapped, just for today.');
+  },
+  gymFinish() {
+    const G = UI.gym;
+    if (!gymQueue(G).some(x => (UI.draft[x.id] || {}).st)) { toast('Nothing logged yet. Do at least one exercise.'); return; }
+    UI.sess = G.sess; gymClear(); A.saveSession();
+  },
   setMode(el) {
     const v = el.dataset.v, m = S.core.mode, prev = m.type; if (v === prev) return;
     if (v === 'normal' && (prev === 'sick' || diffDays(TODAY(), m.since) >= 7)) { m.rampStart = TODAY(); toast('Welcome back. 60% weights this week, 80% next.', 3500); }
@@ -2964,7 +3122,9 @@ const A = {
     sessionExercises(UI.sess, k).filter(x => x.id).map(x => x.id).forEach(id => {
       const saved = d.lifts && d.lifts[id], dr = UI.draft[id] || {};
       const st = dr.st !== undefined ? dr.st : saved ? (liftOk(saved, EX[id]) ? 'ok' : 'miss') : '';
-      if (st) lifts[id] = { w: num('w-' + id) || 0, ok: st === 'ok' };
+      // the weight box on the Train tab, or the weight you used in gym mode
+      const wv = num('w-' + id);
+      if (st) lifts[id] = { w: (wv !== null ? wv : dr.w !== undefined && dr.w !== null ? dr.w : saved ? saved.w : 0) || 0, ok: st === 'ok' };
     });
     if (!Object.keys(lifts).length) { toast('Tap the button on at least one exercise first.'); return; }
     d.lifts = Object.assign(d.lifts || {}, lifts); d.session = UI.sess;
@@ -3378,6 +3538,7 @@ document.addEventListener('input', e => {
   if (el.id === 'ac-min' && UI.sheet && UI.sheet.act) { const v = num('ac-min'); if (v > 0) { UI.sheet.act.min = v; const b = $('#ac-burn'); if (b) b.innerHTML = burnTxt(UI.sheet.act); } return; }
   if (!el.dataset.ex) return;
   const dr = UI.draft[el.dataset.ex] = UI.draft[el.dataset.ex] || {}; dr.w = num(el.id);
+  if (UI.tab === 'gym' && UI.gym) gymSave();
 });
 
 document.addEventListener('keydown', e => {
@@ -3388,6 +3549,7 @@ document.addEventListener('keydown', e => {
 if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 (async () => {
   await loadStore();
+  gymLoad();
   try { const c = localStorage.getItem('gymbro-prices'); if (c) S.prices = JSON.parse(c); } catch (e) {}
   ensureTodayMode();
   render();
@@ -3397,6 +3559,7 @@ if ('serviceWorker' in navigator) window.addEventListener('load', () => navigato
   fetchHealth();
   fetchGcal();
   let lastDay = TODAY();
+  setInterval(gymTick, 1000);
   setInterval(() => { if (TODAY() !== lastDay) { lastDay = TODAY(); ensureTodayMode(); } if (UI.tab === 'today' && !UI.sheet) render(); }, 5 * 60000);
   setInterval(() => { if (UI.tab === 'today' && !UI.sheet && UI.say && UI.say.until < Date.now()) { UI.say = null; render(); } }, 3000);
 })();

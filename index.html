@@ -182,6 +182,7 @@ th{font-size:13px;color:var(--muted);border-top:0}
 .aisle{font-size:14px;font-weight:800;color:var(--green);margin-top:8px}
 .pchips{display:flex;flex-wrap:wrap;gap:8px}
 .pchip{border:2px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 13px;font-weight:700;font-size:15px}
+.pchip:disabled{opacity:.4}
 .painscale{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
 .painscale .seg{padding:10px 0;text-align:center}
 .painscale .seg.on{background:var(--red);border-color:var(--red);color:#fff}
@@ -402,6 +403,9 @@ const ALTS = {
   dip: ['cgbench', 'push', 'ohext'], fly: ['pecdeck', 'machpress', 'floorpress'], face: ['reardelt', 'csrow'],
   dl: ['tbdl', 'hipthrust', 'pullthrough', 'rdl', 'glutebridge'], lpress: ['hacksq', 'gobletsq', 'hipthrust', 'glutebridge'], lunge: ['revlunge', 'stepup', 'hipthrust', 'glutebridge', 'pullthrough', 'seatcurl'],
   lext: ['gobletsq', 'stepup', 'hipthrust', 'glutebridge', 'seatcurl', 'pullthrough'], scalf: ['calf', 'lpcalf'], crunch: ['deadbug', 'plank', 'hlr'],
+  // for the exercises special requests add
+  pecdeck: ['fly', 'machpress'], inclinemach: ['idb', 'machpress'], cablelat: ['lat'], reardelt: ['face'], hammer: ['curl'], ohext: ['push', 'dip'],
+  hacksq: ['lpress', 'gobletsq'], seatcurl: ['lcurl'], latpd: ['assistpull', 'pull'], dbrow: ['csrow', 'crow'], hipthrust: ['glutebridge'], pullthrough: ['glutebridge', 'rdl'],
 };
 const AREAS = { knee: 'knee', back: 'lower back', shoulder: 'shoulder' };
 const SESS = {
@@ -1023,7 +1027,7 @@ const DEFAULT_CORE = () => ({
   v: 5,
   profile: { age: 30, height: 180, weight: 80, goalWeight: 76, deadline: '', sex: '', exp: 'mid' },
   settings: { start: TODAY(), wake: '07:30', gym: '18:30', sleep: '23:30', ride: '10:00' },
-  goal: { type: 'recomp', days: 4, adj: 0 },
+  goal: { type: 'recomp', days: 4, adj: 0, req: [] },
   // a plan has a start and an end; at the end Gym Bro reviews it and sets up the next one
   plan: { start: TODAY(), end: addDays(TODAY(), 84), n: 1, w0: 0, waist0: 0, type: 'recomp' },
   plans: [],
@@ -1151,7 +1155,7 @@ async function loadPrices() {
   try { const r = await fetch('prices.json?t=' + Date.now(), { cache: 'no-store' }); if (r.ok) { const p = await r.json(); if (p && p.items) { S.prices = p; try { localStorage.setItem('gymbro-prices', JSON.stringify(p)); } catch (e) {} } } } catch (e) {}
 }
 // the app updates itself: when a newer version is online, reload into it (your data stays on the phone)
-const APP_VERSION = '19';
+const APP_VERSION = '20';
 async function checkUpdate() {
   try {
     const v = (await (await fetch('version.txt?t=' + Date.now(), { cache: 'no-store' })).text()).trim();
@@ -1226,7 +1230,7 @@ function targets(mode, k) {
   const kcal = round(base + bonus, 50);
   // g/kg from the goal (1.6–2.2, research range), on your weight but capped at a BMI-25 weight so heavier people aren't told to eat 250 g
   const refW = proteinWeight(w), protein = round(refW * Math.min(2.4, g.prot + (focus === 'protein' ? 0.2 : 0)), 5), fat = round(w * 0.9, 5);
-  return { kcal, protein, fat, carbs: Math.max(100, round((kcal - protein * 4 - fat * 9) / 4, 5)), sugar: round(kcal * (focus === 'lowsugar' ? 0.022 : 0.035), 5), steps: g.steps, tdee: round(tdee, 50), bonus };
+  return { kcal, protein, fat, carbs: Math.max(100, round((kcal - protein * 4 - fat * 9) / 4, 5)), sugar: round(kcal * (focus === 'lowsugar' ? 0.022 : 0.035), 5), steps: g.steps + reqSteps(), tdee: round(tdee, 50), bonus };
 }
 function goalInfo() {
   const p = S.core.profile, g = GOALS[S.core.goal.type], cw = currentWeight(), diff = p.goalWeight - cw;
@@ -1889,6 +1893,8 @@ const SOURCES = [
   ['Calories burned: 2024 Compendium of Physical Activities', 'https://pacompendium.com/'],
   ['Afterburn after lifting: Schuenke et al. 2002', 'https://pubmed.ncbi.nlm.nih.gov/11882927/'],
   ['Body fat from tape measures: US Navy method, Hodgdon & Beckett 1984', 'https://apps.dtic.mil/sti/pdfs/ADA143890.pdf'],
+  ['No spot fat loss from ab exercises: Vispute et al. 2011', 'https://pubmed.ncbi.nlm.nih.gov/21804427/'],
+  ['No spot fat loss from training one leg: Ramírez-Campillo et al. 2013', 'https://pubmed.ncbi.nlm.nih.gov/23222084/'],
 ];
 function whyCard() {
   const G = GOALS[S.core.goal.type], four = S.core.goal.days === 4;
@@ -1910,6 +1916,35 @@ function whyCard() {
     <ul class="src">${SOURCES.map(([n, u]) => `<li><a href="${u}" target="_blank" rel="noopener">${esc(n)}</a></li>`).join('')}</ul></details>`;
 }
 function safeFor(id, avoid) { return !(EX[id].stress || []).some(t => avoid.includes(t)); }
+/* ---------- special requests on top of your goal ---------- */
+// A muscle request adds two exercises, one in each of two sessions: about 6 hard sets a week more for that muscle.
+// The research range is 10–20 sets a week; more than ~6 extra on top of the program you can't recover from, so that's the fastest.
+// Fat can't be lost from one spot (Vispute 2011, Ramírez-Campillo 2013): fat requests speed up overall fat loss safely instead.
+const REQS = {
+  chest: { n: 'Bigger chest', ex: ['pecdeck', 'idb'], half: 'up', note: 'Extra chest sets, upper chest included: it fills out the top of the chest that shows in a T-shirt.' },
+  shoulders: { n: 'Wider shoulders', ex: ['cablelat', 'reardelt'], half: 'up', note: 'Side and rear delts make your shoulders look wider. Light weights, strict and slow, lots of reps.' },
+  back: { n: 'Wider back', ex: ['latpd', 'dbrow'], half: 'up', note: 'Pulldowns for width, rows for thickness. Pull with your elbows, not your hands.' },
+  arms: { n: 'Bigger arms', ex: ['hammer', 'ohext'], half: 'up', note: 'Triceps are two thirds of your upper arm, and the overhead extension trains the biggest part of them.' },
+  legs: { n: 'Bigger legs', ex: ['hacksq', 'seatcurl'], half: 'low', note: 'Quads and hamstrings on machines, so it stays safe at the end of a session when you\'re tired.' },
+  glutes: { n: 'Glutes', ex: ['hipthrust', 'pullthrough'], half: 'low', note: 'Hip thrusts are the best glute builder. Squeeze for a second at the top of every rep.' },
+  abs: { n: 'Visible abs', ex: ['crunch', 'hlr'], half: 'low', note: 'Weighted crunches build the abs; losing fat shows them. They appear around 12–15% body fat for men and 18–22% for women.' },
+  posture: { n: 'Better posture', ex: ['face', 'reardelt'], half: 'up', note: 'A stronger upper back pulls your shoulders back. At a desk, stand up and move every 30–45 minutes.' },
+  cycling: { n: 'Stronger on the bike', ex: ['bss', 'scalf'], half: 'low', note: 'Single-leg strength and calves for more power on the pedals. Once a week on the long ride: 6 × 2 min hard, 2 min easy.' },
+  chestfat: { n: 'Less chest fat', ex: ['pecdeck', 'idb'], half: 'up', fat: true, note: 'No exercise burns fat from one spot: studies keep finding the same. Chest fat goes with your overall fat loss, so Gym Bro keeps you at the fastest safe pace and builds the chest muscle underneath, which makes it look flatter and firmer. Firm, rubbery tissue right behind the nipple that stays when you\'re lean can be gynecomastia. That\'s for a doctor, not the gym.' },
+  bellyfat: { n: 'Less belly fat', ex: [], fat: true, steps: 2000, note: 'Crunches don\'t burn belly fat. It goes with overall fat loss, and for men often last. Gym Bro adds 2,000 steps a day, keeps protein high and your deficit at the fastest safe pace. Sleep 7–9 hours: short sleep makes it harder.' },
+};
+const REQ_MAX = 2; // requests that add exercises
+const reqs = () => (S.core.goal.req || []).filter(r => REQS[r]);
+const reqSteps = () => reqs().reduce((n, r) => n + (REQS[r].steps || 0), 0);
+// which sessions a request's two exercises go to: two that already train that half of the body
+function reqSlots(key) {
+  const four = S.core.goal.days === 4, out = [];
+  reqs().forEach(r => {
+    const Q = REQS[r], sess = four ? (Q.half === 'up' ? ['UA', 'UB'] : ['LA', 'LB']) : ['FA', 'FC'];
+    Q.ex.forEach((e, i) => { const o = Q.ex[1 - i]; if (sess[i] === key) out.push({ r, cands: [e, o].concat(ALTS[e] || [], ALTS[o] || []).filter(Boolean) }); });
+  });
+  return out;
+}
 // the exercises you actually do today: your swaps first, then injury-friendly replacements, no duplicates
 function sessionExercises(key, k) {
   const d = getDay(k) || {}, dayS = d.exSwap || {}, av = S.core.gym.avoid, used = new Set(), out = [];
@@ -1923,6 +1958,13 @@ function sessionExercises(key, k) {
       if (alt) { id = alt; why = 'injury'; } else if (!safeFor(id, av)) { out.push({ id: null, orig }); continue; }
     }
     used.add(id); out.push({ id, orig, why });
+  }
+  for (const { r, cands } of reqSlots(key)) {
+    const c = cands.find(e => EX[e] && !used.has(e) && !SESS[key].ex.includes(e) && safeFor(e, av)); if (!c) continue;
+    if (skips[c]) { out.push({ id: null, orig: c, skip: skips[c] }); continue; }
+    let id = dayS[c] || S.core.gym.swap[c] || c;
+    if (!EX[id] || used.has(id) || !safeFor(id, av)) id = c;
+    used.add(id); out.push({ id, orig: c, why: 'req', req: r });
   }
   for (const id of (d.addEx || [])) if (EX[id] && !used.has(id)) { used.add(id); out.push({ id, orig: id, why: 'added' }); }
   return out;
@@ -1956,7 +1998,7 @@ function exCard(id, d, x = {}) {
   const goal = E.inc ? (sg.up ? 'up from ' + sg.last.w : sg.last ? 'same as last time' : 'starting guess') : 'add a rep each time';
   return `<div class="ex ${E.main ? 'main' : ''}">
     <div class="ex-top"><button class="exname" data-a="how" data-v="${id}"><b>${esc(E.n)}</b><span>${E.sets} sets × ${repsOf(E).join('–')} reps${E.note ? ' · ' + esc(E.note) : ''}</span></button>${E.main ? '<span class="tag">Main</span>' : ''}</div>
-    ${x.why === 'added' ? `<p class="small" style="font-weight:700;color:var(--blue)">Extra, added by you · <button class="linkbtn" data-a="addExDel" data-v="${id}">Remove</button></p>` : x.why ? `<p class="small" style="font-weight:700;color:var(--blue)">Instead of ${esc(EX[x.orig].n)} (${x.why === 'today' ? 'just today' : x.why === 'always' ? 'always' : (AREAS[S.core.gym.avoid.find(a => (EX[x.orig].stress || []).includes(a))] || 'injury') + '-friendly'})${x.why !== 'injury' ? ` · <button class="linkbtn" data-a="exUndo" data-v="${x.orig}">Undo</button>` : ''}</p>` : ''}
+    ${x.why === 'req' ? `<p class="small" style="font-weight:700;color:var(--violet)">Extra for your request: ${esc(REQS[x.req].n)}${x.id !== x.orig ? ' (instead of ' + esc(EX[x.orig].n) + ')' : ''}</p>` : x.why === 'added' ? `<p class="small" style="font-weight:700;color:var(--blue)">Extra, added by you · <button class="linkbtn" data-a="addExDel" data-v="${id}">Remove</button></p>` : x.why ? `<p class="small" style="font-weight:700;color:var(--blue)">Instead of ${esc(EX[x.orig].n)} (${x.why === 'today' ? 'just today' : x.why === 'always' ? 'always' : (AREAS[S.core.gym.avoid.find(a => (EX[x.orig].stress || []).includes(a))] || 'injury') + '-friendly'})${x.why !== 'injury' ? ` · <button class="linkbtn" data-a="exUndo" data-v="${x.orig}">Undo</button>` : ''}</p>` : ''}
     <div class="meal-act" style="margin-top:0"><button class="linkbtn" data-a="how" data-v="${id}">${open ? 'Hide how-to' : 'How to do it'}</button>${x.why === 'added' ? '' : `<button class="linkbtn" data-a="exSwap" data-v="${x.orig || id}">Swap</button>`}</div>
     ${open ? `<div class="how">${exHowHTML(id)}</div>` : ''}
     <div class="ex-log">
@@ -2068,7 +2110,7 @@ function viewGym() {
   return `<div class="card">${top}
     <p class="small muted">Exercise ${G.i + 1} of ${n}${E.main ? ' · Main lift' : ''}</p>
     <h2>${esc(E.n)}</h2>
-    ${x.why ? `<p class="small" style="font-weight:700;color:var(--blue)">Instead of ${esc(EX[x.orig].n)}</p>` : ''}
+    ${x.why === 'req' ? `<p class="small" style="font-weight:700;color:var(--violet)">Extra for your request: ${esc(REQS[x.req].n)}</p>` : x.why && x.why !== 'added' ? `<p class="small" style="font-weight:700;color:var(--blue)">Instead of ${esc(EX[x.orig].n)}</p>` : ''}
     ${main}
     <details ${G.how || !lastLog(id, TODAY()) ? 'open' : ''}><summary>How to do it</summary><div class="how">${exHowHTML(id)}</div></details>
     ${G.swap ? `<div class="field"><span>Machine taken? Do one of these instead:</span><div class="pchips">${alts.map(a => `<button class="pchip" data-a="gymSwap" data-v="${a}">${esc(EX[a].n)}</button>`).join('') || '<span class="small muted">No swap left. Ask "how many sets left?", or skip it.</span>'}</div></div>` : ''}
@@ -2256,6 +2298,7 @@ function viewMe() {
     </div>
     ${chart(series, p.goalWeight)}
   </div>
+  ${reqCard()}
   ${photoCard()}
   ${skipLogCard()}
   ${bodyCard()}
@@ -2418,6 +2461,18 @@ function skipLogCard() {
     <div>${log.slice(0, 15).map(x => `<div style="border-top:1px solid var(--line);padding:8px 0"><div class="spread small"><b>${esc(x.ex)}</b><span class="muted">${shortDate(x.d)}</span></div><p class="small">${esc(SKIP_REASONS[x.reason] || x.reason)}${x.reason === 'pain' ? ` · ${esc(AREAS[x.area] || 'other')} · pain ${x.pain}/10` : ''}</p><p class="small muted">"${esc(x.note)}"</p></div>`).join('')}</div>
     <button class="btn ghost small" data-a="copySkipLog">Copy report for a physio</button>
   </details>`;
+}
+function reqCard() {
+  const on = reqs(), G = S.core.goal, nEx = on.filter(r => REQS[r].ex.length).length;
+  const where = r => programSessions().flatMap(k => sessionExercises(k, TODAY()).filter(x => x.req === r && x.id).map(x => EX[x.id].n + ' on ' + SESS[k].n));
+  return `<div class="card"><h2>Special requests</h2>
+    <p class="small muted">Something extra on top of your goal. Gym Bro adds what the research says works, as fast as your body can recover from it: up to ${REQ_MAX} that add exercises.</p>
+    <div class="pchips">${Object.entries(REQS).map(([k, r]) => `<button class="pchip ${on.includes(k) ? 'on' : ''}" data-a="reqToggle" data-v="${k}" ${!on.includes(k) && r.ex.length && nEx >= REQ_MAX ? 'disabled' : ''}>${esc(r.n)}</button>`).join('')}</div>
+    ${on.map(r => { const Q = REQS[r], w = where(r); return `<div class="banner ${Q.fat ? 'warn' : 'good'}"><h3>${esc(Q.n)}</h3><p class="small">${esc(Q.note)}</p>
+      ${w.length ? `<p class="small"><b>Added:</b> ${w.map(esc).join(', ')} (about ${w.length * 3} more sets a week).</p>` : ''}
+      ${Q.steps ? `<p class="small"><b>Steps:</b> ${fmt(targets('normal').steps)} a day now.</p>` : ''}
+      ${Q.fat && !['lose', 'recomp'].includes(G.type) ? `<p class="small">Your goal is "${esc(GOALS[G.type].n)}", which doesn't lose fat. <button class="linkbtn" data-a="goalOpen">Change goal</button></p>` : ''}</div>`; }).join('')}
+  </div>`;
 }
 function photoCard() {
   const ph = (S.core.photos || []).filter(x => x.pose === UI.pose).sort((a, b) => a.d < b.d ? -1 : a.d > b.d ? 1 : 0);
@@ -3098,6 +3153,14 @@ const A = {
   },
   mode() { UI.sheet = 'mode'; render(); },
   closeSheet() { UI.sheet = null; render(); },
+  reqToggle(el) {
+    const G = S.core.goal, k = el.dataset.v, on = reqs();
+    if (on.includes(k)) G.req = on.filter(x => x !== k);
+    else if (REQS[k].ex.length && on.filter(r => REQS[r].ex.length).length >= REQ_MAX) { toast('Two at a time, so you can recover. Turn one off first.'); return; }
+    else G.req = on.concat(k);
+    saveCore(); syncPlan(); render();
+    if (G.req.includes(k)) toast(REQS[k].ex.length ? 'Added to your sessions.' : 'Done. Your steps went up.');
+  },
   // weather
   wxIndoor(el) { const d = todayDay(); if (el.dataset.v) d.indoor = el.dataset.v; else { delete d.indoor; d.wxOk = 1; } touch(); render(); if (el.dataset.v) toast('Indoors today. Same effort.'); },
   wxOk() { todayDay().wxOk = 1; touch(); render(); },

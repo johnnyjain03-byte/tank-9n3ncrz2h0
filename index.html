@@ -1138,7 +1138,7 @@ async function loadPrices() {
   try { const r = await fetch('prices.json?t=' + Date.now(), { cache: 'no-store' }); if (r.ok) { const p = await r.json(); if (p && p.items) { S.prices = p; try { localStorage.setItem('gymbro-prices', JSON.stringify(p)); } catch (e) {} } } } catch (e) {}
 }
 // the app updates itself: when a newer version is online, reload into it (your data stays on the phone)
-const APP_VERSION = '15';
+const APP_VERSION = '16';
 async function checkUpdate() {
   try {
     const v = (await (await fetch('version.txt?t=' + Date.now(), { cache: 'no-store' })).text()).trim();
@@ -1436,12 +1436,14 @@ function planStats(P = S.core.plan) {
     (d.extra || []).forEach(x => { st.extraN++; st.extraKcal += actKcal(x.a, x.min, x.i); });
     st.skips += Object.keys(d.exSkip || {}).length;
   }
-  const clean = weightSeries().filter(x => !x.ex), ms = S.core.measurements.slice().sort((a, b) => a.d < b.d ? -1 : 1);
+  const clean = weightSeries().filter(x => !x.ex), ms = S.core.measurements.filter(m => m.waist > 0).sort((a, b) => a.d < b.d ? -1 : 1);
   st.w0 = P.w0 || (clean.find(x => x.k >= P.start) || {}).w || S.core.profile.weight;
   st.wNow = currentWeight();
   const m0 = ms.find(m => m.d >= P.start), m1 = ms.filter(m => m.d <= last).pop();
   st.waist0 = P.waist0 || (m0 && m0.waist) || 0;
   st.waistNow = m1 && (P.waist0 || (m0 && m1.d > m0.d)) ? m1.waist : 0;
+  const bc = bfChange(bfSeries(P.start, last));
+  st.bf0 = bc.b0 ? bc.b0.v : 0; st.bfNow = bc.b1 ? bc.b1.v : 0;
   st.lifts = Object.keys(EX).filter(id => EX[id].main).map(id => {
     let a = 0, b = 0;
     for (let k = P.start; k <= last; k = addDays(k, 1)) { const d = getDay(k); if (d && d.lifts && d.lifts[id] && d.lifts[id].w > 0) { a = a || d.lifts[id].w; b = d.lifts[id].w; } }
@@ -1451,25 +1453,53 @@ function planStats(P = S.core.plan) {
   st.avgScore = st.ci ? Math.round(st.score / st.ci) : 0;
   return st;
 }
-// what to do next, from what actually happened: pace, waist-to-height ratio, how long you've dieted
+/* ---------- body fat: US Navy tape formula (Hodgdon & Beckett 1984), about ±3–4% ---------- */
+// waist at the belly button, neck just below the Adam's apple, hips (women) at the widest point; all cm
+function navyBF(sex, h, waist, neck, hips) {
+  let v = null;
+  if (!h || !waist || !neck) return null;
+  if (sex === 'male' && waist - neck > 0) v = 495 / (1.0324 - 0.19077 * Math.log10(waist - neck) + 0.15456 * Math.log10(h)) - 450;
+  if (sex === 'female' && hips && waist + hips - neck > 0) v = 495 / (1.29579 - 0.35004 * Math.log10(waist + hips - neck) + 0.22100 * Math.log10(h)) - 450;
+  return v !== null && v >= 3 && v <= 60 ? Math.round(v * 10) / 10 : null;
+}
+// neck and hips barely change: a weekly waist uses the last neck and hips you measured
+function lastMeas(field, d) { const m = S.core.measurements.filter(x => x[field] > 0 && x.d <= d).sort((a, b) => a.d < b.d ? -1 : 1).pop(); return m ? m[field] : 0; }
+// a value you typed in (DEXA, BodPod) wins over the tape estimate
+function bodyFatOf(m) {
+  if (m.bf > 0) return { v: m.bf, src: 'typed' };
+  const p = S.core.profile, v = navyBF(p.sex, p.height, m.waist, m.neck || lastMeas('neck', m.d), m.hips || lastMeas('hips', m.d));
+  return v === null ? null : { v, src: 'tape' };
+}
+function weightOn(d) { const s = weightSeries().filter(x => !x.ex && x.k <= d); return s.length ? trendAt(s[s.length - 1].k, s) : currentWeight(); }
+// ACE ranges
+const BF_BANDS = { male: [[6, 'Very lean'], [14, 'Athletic'], [18, 'Fit'], [25, 'Average'], [99, 'High']], female: [[14, 'Very lean'], [21, 'Athletic'], [25, 'Fit'], [32, 'Average'], [99, 'High']] };
+const bfBand = v => (BF_BANDS[S.core.profile.sex] || BF_BANDS.male).find(([max]) => v < max)[1];
+// your measurements with body fat, oldest first; changes only compare like with like (tape with tape)
+function bfSeries(from = '', to = '9999') {
+  return S.core.measurements.filter(m => m.d >= from && m.d <= to).sort((a, b) => a.d < b.d ? -1 : 1).map(m => ({ d: m.d, ...bodyFatOf(m) })).filter(x => x.v);
+}
+function bfChange(list) { const b1 = list[list.length - 1], b0 = b1 && list.find(x => x.src === b1.src); return { b0: b0 && b0.d < b1.d ? b0 : null, b1 }; }
+// what to do next, from what actually happened: pace, body fat or waist-to-height ratio, how long you've dieted
 function nextPlanAdvice(st) {
   const P = S.core.plan, type0 = P.type || S.core.goal.type, G = GOALS[type0], p = S.core.profile;
   const weeks = Math.max(1, st.days / 7), pct = (st.wNow - st.w0) / st.w0 * 100 / weeks;
-  const whtr = st.waistNow ? st.waistNow / p.height : null;
+  const whtr = st.waistNow ? st.waistNow / p.height : null, bf = st.bfNow ? Math.round(st.bfNow) : 0;
+  // still carrying fat: body fat over 20% (men) or 30% (women) if you've measured it, otherwise waist over half your height
+  const over = bf ? bf > (p.sex === 'female' ? 30 : 20) : whtr > 0.5;
   const reached = G.rate < 0 ? st.wNow <= p.goalWeight + 0.3 : G.rate > 0 ? st.wNow >= p.goalWeight - 0.3 : true;
   let type = type0, adj = 0, wks = 12, why;
   if (G.rate < 0) {
-    if (reached && !(whtr > 0.5)) { type = 'muscle'; why = 'Goal weight reached' + (whtr ? ' and your waist is under half your height' : '') + '. Time to build: a small surplus, same training.'; }
-    else if (reached) { wks = 8; why = 'Goal weight reached, but your waist is still over half your height. One more fat-loss block.'; }
+    if (reached && !over) { type = 'muscle'; why = 'Goal weight reached' + (bf ? ' at about ' + bf + '% body fat' : whtr ? ' and your waist is under half your height' : '') + '. Time to build: a small surplus, same training.'; }
+    else if (reached) { wks = 8; why = 'Goal weight reached, but ' + (bf ? 'body fat is still about ' + bf + '%' : 'your waist is still over half your height') + '. One more fat-loss block.'; }
     else if (pct > -0.25) { adj = -150; why = 'Your weight barely moved (' + pct.toFixed(2) + '% a week). Same plan, 150 kcal less a day.'; }
     else if (pct < -1.1) { adj = 150; why = 'You lost more than 1% of your weight a week. That costs muscle. Same plan, 150 kcal more a day.'; }
     else if (st.days >= 84) { type = 'maintain'; wks = 2; why = '12 weeks of dieting. Take 2 weeks at maintenance, then go again. Hunger down, sessions up.'; }
     else why = 'Good pace: ' + Math.abs(pct).toFixed(2) + '% of your weight a week. Keep going.';
   } else if (G.rate > 0) {
-    if (whtr > 0.5 || pct > 0.6) { type = 'recomp'; wks = 8; why = 'You gained fast' + (whtr > 0.5 ? ' and your waist grew' : '') + '. Lose fat, build muscle for a while.'; }
+    if (over || pct > 0.6) { type = 'recomp'; wks = 8; why = (pct > 0.6 ? 'You gained fast' : 'You gained some fat') + (over ? (bf ? ', body fat about ' + bf + '%' : ' and your waist grew') : '') + '. Lose fat, build muscle for a while.'; }
     else if (pct < 0.05) { adj = 150; why = 'Your weight didn\'t move. 150 kcal more a day.'; }
     else why = 'Lean, steady gain. Keep going.';
-  } else { type = whtr > 0.5 ? 'recomp' : 'muscle'; why = 'Break done. Back to: ' + GOALS[type].n.toLowerCase() + '.'; }
+  } else { type = over ? 'recomp' : 'muscle'; why = 'Break done. Back to: ' + GOALS[type].n.toLowerCase() + '.'; }
   return { type, adj, wks, why, gw: Math.round((st.wNow + GOALS[type].rate * wks) * 2) / 2, reached, pct };
 }
 
@@ -1776,6 +1806,7 @@ const SOURCES = [
   ['ISSN position stand: creatine', 'https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5469049/'],
   ['Calories burned: 2024 Compendium of Physical Activities', 'https://pacompendium.com/'],
   ['Afterburn after lifting: Schuenke et al. 2002', 'https://pubmed.ncbi.nlm.nih.gov/11882927/'],
+  ['Body fat from tape measures: US Navy method, Hodgdon & Beckett 1984', 'https://apps.dtic.mil/sti/pdfs/ADA143890.pdf'],
 ];
 function whyCard() {
   const G = GOALS[S.core.goal.type], four = S.core.goal.days === 4;
@@ -2035,16 +2066,46 @@ function viewMe() {
   </div>
   ${photoCard()}
   ${skipLogCard()}
-  <div class="card">
-    <h2>Waist</h2>
-    <div class="row" style="flex-wrap:nowrap">
-      <label class="field" style="flex:1"><span>At the belly button, cm</span><input id="m-waist" inputmode="decimal" placeholder="cm"></label>
-      <button class="btn ghost" data-a="saveMeas" style="align-self:flex-end">Save</button>
-    </div>
-    ${S.core.measurements.length ? `<p class="small">${S.core.measurements.slice(-6).map(m => shortDate(m.d) + ': <b>' + m.waist + ' cm</b>').join(' · ')}</p>` : '<p class="small muted">Once a week. Waist down while weight stays flat = fat going, muscle coming.</p>'}
-  </div>
-  ${S.core.plans.length ? `<details class="card"><summary>Past plans (${S.core.plans.length})</summary>${S.core.plans.slice().reverse().map(x => `<div style="border-top:1px solid var(--line);padding:8px 0"><div class="spread small"><b>Plan ${x.n}: ${esc((GOALS[x.type] || {}).n || '')}</b><span class="muted">${shortDate(x.start)}–${shortDate(x.end)}</span></div><p class="small muted">${x.stats ? `${x.stats.w0 ? (+x.stats.w0).toFixed(1) : '?'} → ${(+x.stats.w1).toFixed(1)} kg${x.stats.waist0 && x.stats.waist1 ? ' · waist ' + x.stats.waist0 + ' → ' + x.stats.waist1 + ' cm' : ''} · gym ${x.stats.gym}${x.stats.score ? ' · score ' + x.stats.score : ''}` : ''}</p></div>`).join('')}</details>` : ''}
+  ${bodyCard()}
+  ${S.core.plans.length ? `<details class="card"><summary>Past plans (${S.core.plans.length})</summary>${S.core.plans.slice().reverse().map(x => `<div style="border-top:1px solid var(--line);padding:8px 0"><div class="spread small"><b>Plan ${x.n}: ${esc((GOALS[x.type] || {}).n || '')}</b><span class="muted">${shortDate(x.start)}–${shortDate(x.end)}</span></div><p class="small muted">${x.stats ? `${x.stats.w0 ? (+x.stats.w0).toFixed(1) : '?'} → ${(+x.stats.w1).toFixed(1)} kg${x.stats.waist0 && x.stats.waist1 ? ' · waist ' + x.stats.waist0 + ' → ' + x.stats.waist1 + ' cm' : ''}${x.stats.bf0 && x.stats.bf1 ? ' · body fat ' + Math.round(x.stats.bf0) + ' → ' + Math.round(x.stats.bf1) + '%' : ''} · gym ${x.stats.gym}${x.stats.score ? ' · score ' + x.stats.score : ''}` : ''}</p></div>`).join('')}</details>` : ''}
   ${settingsCard()}`;
+}
+function bodyCard() {
+  const p = S.core.profile, fem = p.sex === 'female', ms = S.core.measurements.slice().sort((a, b) => a.d < b.d ? -1 : 1);
+  const { b0, b1 } = bfChange(bfSeries());
+  let res = '';
+  if (b1) {
+    const w = weightOn(b1.d), fat = w * b1.v / 100, dv = b0 ? b1.v - b0.v : null;
+    const lean0 = b0 ? weightOn(b0.d) * (1 - b0.v / 100) : 0, dl = b0 ? (w - fat) - lean0 : null;
+    res = `<div class="stats" style="margin-top:4px">
+      ${stat('Body fat', '≈ ' + Math.round(b1.v) + '%', bfBand(b1.v) + ' · ' + (dv !== null ? (dv > 0 ? '+' : '') + dv.toFixed(1) + '% since ' + shortDate(b0.d) : b1.src === 'tape' ? 'tape, ±3–4%' : 'your value'))}
+      ${stat('Fat / lean', Math.round(fat) + ' / ' + Math.round(w - fat) + ' kg', dl !== null ? 'lean ' + (dl > 0 ? '+' : '') + dl.toFixed(1) + ' kg since ' + shortDate(b0.d) : 'at ' + w.toFixed(1) + ' kg')}
+    </div>`;
+  }
+  const hist = ms.slice(-6).map(m => { const r = bodyFatOf(m); return shortDate(m.d) + ': <b>' + [m.waist ? m.waist + ' cm' : '', r ? Math.round(r.v) + '%' : ''].filter(Boolean).join(' · ') + '</b>'; });
+  return `<div class="card">
+    <h2>Waist & body fat</h2>
+    <div class="row">
+      <label class="field" style="flex:1 1 100px"><span>Waist, belly button</span><input id="m-waist" inputmode="decimal" placeholder="cm"></label>
+      <label class="field" style="flex:1 1 100px"><span>Neck</span><input id="m-neck" inputmode="decimal" placeholder="cm" value="${lastMeas('neck', TODAY()) || ''}"></label>
+      ${fem ? `<label class="field" style="flex:1 1 100px"><span>Hips, widest</span><input id="m-hips" inputmode="decimal" placeholder="cm" value="${lastMeas('hips', TODAY()) || ''}"></label>` : ''}
+    </div>
+    <details style="margin-top:8px"><summary class="small">Know your body fat %? (DEXA or BodPod scan)</summary>
+      <label class="field" style="margin-top:6px"><span>Body fat %</span><input id="m-bf" inputmode="decimal" placeholder="e.g. 18"></label>
+      <p class="small muted">A scan beats the tape. Bathroom scales and handheld gadgets guess from water and can be 5–8% off, so the tape is better than those.</p>
+    </details>
+    <button class="btn ghost" data-a="saveMeas" style="margin-top:10px">Save</button>
+    ${!p.sex ? '<p class="small muted">Add your sex in Settings and Gym Bro works out your body fat from the tape.</p>' : ''}
+    ${res}
+    ${hist.length ? `<p class="small">${hist.join(' · ')}</p>` : '<p class="small muted">Once a week, Sunday morning. Waist down while weight stays flat = fat going, muscle coming.</p>'}
+    <details><summary class="small">How to measure</summary><ul class="small" style="padding-left:18px;margin:6px 0 0">
+      <li>Morning, before eating. Breathe out normally, don't suck in.</li>
+      <li>Waist: tape level, across the belly button.</li>
+      <li>Neck: just below the Adam's apple, tape sloping slightly down to the front.</li>
+      ${fem ? '<li>Hips: the widest part of your bum, feet together.</li>' : ''}
+      <li>Same time, same tape. The trend matters more than any one number.</li>
+    </ul></details>
+  </div>`;
 }
 // the honest test of a program is your own numbers: strength up, weight moving at the planned pace, waist down, sessions done
 function workingCheck() {
@@ -2059,7 +2120,7 @@ function workingCheck() {
   if (rate === null) rows.push({ ok: 'wait', t: 'Weight', d: 'Needs 2 weeks of morning weigh-ins.' });
   else if (!G.rate) rows.push({ ok: Math.abs(rate) < 0.25 ? 'good' : 'meh', t: 'Weight', d: `${rate >= 0 ? '+' : ''}${rate.toFixed(2)} kg a week. Goal: stay level.` });
   else { const r = rate / G.rate; rows.push({ ok: r >= 0.5 && r <= 1.6 ? 'good' : r > 0 ? 'meh' : 'bad', t: 'Weight', d: `${rate >= 0 ? '+' : ''}${rate.toFixed(2)} kg a week, plan ${G.rate > 0 ? '+' : ''}${G.rate}. ${r < 0 ? 'Wrong way.' : r < 0.5 ? 'Slower than planned.' : r > 1.6 ? 'Faster than planned.' : 'On pace.'}` }); }
-  const ms = S.core.measurements.filter(m => m.d >= since).sort((a, b) => a.d < b.d ? -1 : 1);
+  const ms = S.core.measurements.filter(m => m.d >= since && m.waist > 0).sort((a, b) => a.d < b.d ? -1 : 1);
   if (ms.length >= 2) { const dw = ms[ms.length - 1].waist - ms[0].waist; rows.push({ ok: G.rate > 0 ? (dw <= 1 ? 'good' : 'meh') : dw < -0.4 ? 'good' : dw <= 0.4 ? 'meh' : 'bad', t: 'Waist', d: `${dw >= 0 ? '+' : ''}${dw.toFixed(1)} cm in 4 weeks.` }); }
   else rows.push({ ok: 'wait', t: 'Waist', d: 'Measure on Sundays: 2 measurements needed.' });
   let plan = 0, done = 0;
@@ -2289,7 +2350,7 @@ function exHowHTML(id) {
 }
 const SKIP_REASONS = { pain: 'Pain or injury', equip: 'No equipment', time: 'No time', tired: 'Too tired', other: 'Other' };
 function swapSheet() {
-  const sw = UI.sheet.swap, orig = sw.orig, k = TODAY(), cur = (sessionExercises(UI.sess, k).find(x => x.orig === orig) || {}).id || orig;
+  const sw = UI.sheet.swap, orig = sw.orig, k = TODAY(), cur = ((SESS[UI.sess] ? sessionExercises(UI.sess, k) : []).find(x => x.orig === orig) || {}).id || orig;
   const close = `<div class="spread"><span class="lbl">Swap exercise</span><button class="btn small ghost" data-a="closeSheet">Close</button></div>`;
   const avoid = sw.area && sw.area !== 'other' ? [sw.area] : [];
   const opts = [orig].concat(ALTS[orig] || []).filter(a => EX[a] && a !== cur && safeFor(a, avoid));
@@ -2691,6 +2752,7 @@ function viewReview() {
     <div class="stats">
       ${stat('Weight', st.wNow.toFixed(1) + ' kg', (dw >= 0 ? '+' : '') + dw.toFixed(1) + ' kg since the start')}
       ${stat('Waist', st.waistNow ? st.waistNow + ' cm' : '–', st.waist0 && st.waistNow ? ((st.waistNow - st.waist0) >= 0 ? '+' : '') + (st.waistNow - st.waist0).toFixed(1) + ' cm' : 'Measure on Sundays')}
+      ${stat('Body fat', st.bfNow ? '≈ ' + Math.round(st.bfNow) + '%' : '–', st.bf0 ? ((st.bfNow - st.bf0) > 0 ? '+' : '') + (st.bfNow - st.bf0).toFixed(1) + '% since the start' : 'Waist and neck on Sundays')}
       ${stat('Gym sessions', st.gymDone + ' / ' + st.gymPlan, gymPct + '% done')}
       ${stat('Rides', st.ridesDone + ' / ' + st.rides, '')}
       ${stat('Calories a day', st.avgKcal ? fmt(st.avgKcal) : '–', st.kcalDays + ' days logged')}
@@ -2865,7 +2927,7 @@ const A = {
     if (!r.reason) { toast('Pick a reason first.'); return; }
     if (r.reason === 'pain' && (!r.area || !r.pain)) { toast('Say where it hurts and how bad.'); return; }
     if (r.note.length < 3) { toast('Write a few words about what happened.'); return; }
-    const cur = (sessionExercises(UI.sess, k).find(x => x.orig === orig) || {}).id || orig;
+    const cur = ((SESS[UI.sess] ? sessionExercises(UI.sess, k) : []).find(x => x.orig === orig) || {}).id || orig;
     const d = getDay(k, true); d.exSkip = d.exSkip || {}; d.exSwap = d.exSwap || {};
     delete d.exSwap[orig];
     d.exSkip[orig] = { ex: cur, reason: r.reason, area: r.area || '', pain: r.pain || 0, note: r.note };
@@ -2931,10 +2993,17 @@ const A = {
     toast(good ? 'Gym Bro: "Moving the right way. Keep going."' : Math.abs(w - before) > 0.5 ? 'Gym Bro: "One day means nothing. Watch the line."' : 'Saved.', 3200); render();
   },
   saveMeas() {
-    const waist = num('m-waist'); if (!waist) { toast('Enter your waist in cm.'); return; }
-    const ms = S.core.measurements, ex = ms.find(m => m.d === TODAY());
-    if (ex) ex.waist = waist; else ms.push({ d: TODAY(), waist });
-    saveCore(); toast('Saved.'); render();
+    const waist = num('m-waist'), neck = num('m-neck'), hips = num('m-hips'), bf = num('m-bf');
+    if (!waist && !bf) { toast('Enter your waist in cm.'); return; }
+    if ((waist && (waist < 40 || waist > 200)) || (neck && (neck < 20 || neck > 70)) || (hips && (hips < 50 || hips > 200))) { toast('Check the numbers: all in cm.'); return; }
+    if (bf && (bf < 3 || bf > 60)) { toast('Body fat should be between 3 and 60%.'); return; }
+    const ms = S.core.measurements; let m = ms.find(x => x.d === TODAY());
+    if (!m) { m = { d: TODAY() }; ms.push(m); }
+    if (waist) m.waist = waist;
+    if (neck) m.neck = neck;
+    if (hips) m.hips = hips;
+    if (bf) m.bf = bf;
+    saveCore(); const r = bodyFatOf(m); toast(r ? 'Saved. Body fat about ' + Math.round(r.v) + '%.' : 'Saved.'); render();
   },
   pose(el) { UI.pose = el.dataset.v; UI.confirm = null; render(); },
   askDel(el) { UI.confirm = el.dataset.v; render(); },
@@ -3015,7 +3084,7 @@ const A = {
   npWeeks(el) { const n = UI.next; n.wks = +el.dataset.v; n.gw = Math.round((currentWeight() + GOALS[n.type].rate * n.wks) * 2) / 2; render(); },
   npStart() {
     const P = S.core.plan, st = planStats(), n = UI.next, gw = num('np-gw') || n.gw;
-    S.core.plans.push({ ...P, end: P.end < TODAY() ? P.end : TODAY(), stats: { w0: st.w0, w1: Math.round(st.wNow * 10) / 10, waist0: st.waist0, waist1: st.waistNow, gym: st.gymDone + '/' + st.gymPlan, kcal: st.avgKcal, score: st.avgScore } });
+    S.core.plans.push({ ...P, end: P.end < TODAY() ? P.end : TODAY(), stats: { w0: st.w0, w1: Math.round(st.wNow * 10) / 10, waist0: st.waist0, waist1: st.waistNow, bf0: st.bf0, bf1: st.bfNow, gym: st.gymDone + '/' + st.gymPlan, kcal: st.avgKcal, score: st.avgScore } });
     S.core.goal.adj = (n.type === P.type ? S.core.goal.adj || 0 : 0) + n.adj; S.core.goal.type = n.type;
     S.core.profile.goalWeight = gw; S.core.profile.weight = Math.round(st.wNow * 10) / 10;
     S.core.plan = { start: TODAY(), end: addDays(TODAY(), n.wks * 7), n: P.n + 1, w0: S.core.profile.weight, waist0: st.waistNow || 0, type: n.type };

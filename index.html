@@ -1120,13 +1120,13 @@ function pushCard(compact) {
   return `<div class="card" ${compact ? 'style="background:var(--orange-soft)"' : ''}><h2>Notifications</h2>${body}</div>`;
 }
 function markDirty() { clearTimeout(S.timer); S.timer = setTimeout(flush, 250); }
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush(); else { checkUpdate(); fetchHealth(); if (UI.tab === 'today' && !UI.sheet) render(); } });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush(); else { checkUpdate(); fetchHealth(); fetchGcal(); if (UI.tab === 'today' && !UI.sheet) render(); } });
 // prices come from prices.json; the last copy is kept so the budget works offline
 async function loadPrices() {
   try { const r = await fetch('prices.json?t=' + Date.now(), { cache: 'no-store' }); if (r.ok) { const p = await r.json(); if (p && p.items) { S.prices = p; try { localStorage.setItem('gymbro-prices', JSON.stringify(p)); } catch (e) {} } } } catch (e) {}
 }
 // the app updates itself: when a newer version is online, reload into it (your data stays on the phone)
-const APP_VERSION = '13';
+const APP_VERSION = '14';
 async function checkUpdate() {
   try {
     const v = (await (await fetch('version.txt?t=' + Date.now(), { cache: 'no-store' })).text()).trim();
@@ -1516,7 +1516,7 @@ function clashes(days = 7) {
 }
 // what goes into your Gym Bro calendar for the next 2 weeks
 function planItems() {
-  const out = [], item = (k, t, dur, title, desc) => { const s = atMin(k, toMin(t)); return { id: k + '-' + title.replace(/[^a-z0-9]+/gi, '').toLowerCase().slice(0, 24), s: new Date(s).toISOString(), e: new Date(s + dur * 6e4).toISOString(), t: 'Gym Bro · ' + title, x: desc }; };
+  const out = [], item = (k, t, dur, title, desc) => { const s = atMin(k, toMin(t)); return { id: k + '-' + title.replace(/[^a-z0-9]+/gi, '').toLowerCase().slice(0, 24), s: new Date(s).toISOString(), e: new Date(s + dur * 6e4).toISOString(), t: 'Gym Bro · ' + title, x: desc, m: (S.core.movedAt || {})[k] || 0 }; };
   for (let i = 0; i < 14; i++) {
     const k = addDays(TODAY(), i), p = planFor(k), m = dayMode(k);
     if (m === 'sick') continue;
@@ -2079,6 +2079,33 @@ function healthCard() {
       <button class="btn violet block" data-a="help" data-v="shortcut">Connect Apple Health & Calendar</button>`}
   </div>`;
 }
+/* Google Calendar, both ways: the server writes your sessions into a "Gym Bro" calendar in your Google account
+   and reads back what you move there. Moves you make in Google show up here; deleted sessions are put back. */
+const markMoved = k => { S.core.movedAt = S.core.movedAt || {}; S.core.movedAt[k] = Date.now(); for (const x in S.core.movedAt) if (x < addDays(TODAY(), -14)) delete S.core.movedAt[x]; };
+async function fetchGcal() {
+  if (!PUSH_URL || !(S.core.gcal || S.core.gcalPending) || S.core.needsSetup) return;
+  try {
+    const o = await (await fetch(PUSH_URL + '/g/state/' + S.core.sid, { cache: 'no-store' })).json();
+    if (!o.on) { if (S.core.gcal) { S.core.gcal = false; saveCore(); } return; }
+    const first = !S.core.gcal; S.core.gcal = true; S.core.gcalPending = false;
+    const done = S.core.gApplied = S.core.gApplied || {}, said = [];
+    for (const [id, mv] of Object.entries(o.moves || {})) {
+      const key = id + '@' + mv.at; if (done[key]) continue;
+      const k = id.slice(0, 10), st = new Date(mv.s), nk = keyOf(st), t = pad(st.getHours()) + ':' + pad(st.getMinutes()), p = planFor(k);
+      if (getDay(k) && getDay(k).xplan) { const b = getDay(k).xplan.find(b => id.endsWith(actOf(b.a).n.replace(/[^a-z0-9]+/gi, '').toLowerCase().slice(0, 24))); if (b && nk === k) b.t = t; }
+      else if (nk === k) S.core.timeOv[k] = t;
+      else { const px = planFor(nk); S.core.overrides[k] = px; S.core.overrides[nk] = p; S.core.timeOv[nk] = t; delete S.core.timeOv[k]; }
+      S.core.movedAt = S.core.movedAt || {}; S.core.movedAt[k] = S.core.movedAt[nk] = mv.at;
+      done[key] = 1; said.push((SESS[p] ? SESS[p].n : CARDIO[p] ? CARDIO[p].n : 'Session') + ' → ' + dayName(nk).toLowerCase() + ' ' + t);
+    }
+    for (const x in done) if (x.slice(0, 10) < addDays(TODAY(), -14)) delete done[x];
+    saveCore(); syncPlan(true);
+    if (first) tankSay('happy', 'Google Calendar connected. Move sessions there or here, I keep both in sync.', 12000);
+    if (said.length) tankSay('neutral', 'Moved in Google Calendar: ' + said.join(', ') + '. Updated here too.', 12000);
+    (o.notes || []).filter(n => n.kind === 'restored').forEach(n => tankSay('angry', 'You deleted ' + n.t.replace(/^Gym: /, '') + ' in Google Calendar. I put it back. Can\'t train? Skip it here, with a reason.', 15000));
+    if (!UI.sheet) render();
+  } catch (e) {}
+}
 // Apple Calendar subscribes with webcal://; Google Calendar adds the same feed "From URL" (it refreshes it less often)
 const calHttps = () => PUSH_URL + '/cal/' + S.core.sid + '.ics';
 const googleCalURL = () => 'https://calendar.google.com/calendar/r?cid=' + encodeURIComponent(calURL());
@@ -2091,7 +2118,14 @@ function calendarCard() {
     ${app === 'apple' ? `<a class="btn violet block" href="${calURL()}" data-a="calOn">Add Gym Bro to Apple Calendar</a>
       <p class="small muted">Tap Subscribe when asked. Then iPhone Settings → Apps → Calendar → Calendar Accounts → Fetch New Data → every 15 minutes, so moves show up fast.</p>
       <p class="small">${clash}</p>`
-    : `<ol class="steps">
+    : S.core.gcal ? `<div class="banner good"><p class="small"><b>Connected ✓</b> A "Gym Bro" calendar is in your Google Calendar. Move a session there or here: both update within about 10 minutes. Delete one in Google and Gym Bro puts it back; to skip, use the app.</p></div>
+      <p class="small muted">Gym Bro can only see and change its own "Gym Bro" calendar, not your other calendars.</p>
+      <button class="btn ghost small" data-a="gOff">Disconnect Google Calendar</button>`
+    : `<a class="btn violet block" href="${PUSH_URL}/g/start?id=${S.core.sid}" target="_blank" rel="noopener" data-a="gConnect">Connect Google Calendar (both ways)</a>
+      <p class="small">Sign in with Google and allow Gym Bro to make its own calendar. If Google says "Google hasn't verified this app", tap <b>Advanced → Go to Gym Bro</b>: it's your own private app, not a public one. When it says "connected", come back here.</p>
+      ${S.core.gcalPending ? '<button class="btn ghost small" data-a="gCheck">I\'ve connected it, check</button>' : ''}
+      <details><summary class="small">Or just show sessions (one way, no account link)</summary>
+      <ol class="steps">
         <li><span><b>Copy your calendar link.</b></span></li>
         <li><span>On a computer (the Google Calendar iPhone app can't do this), open <b>calendar.google.com</b> → <b>Other calendars +</b> → <b>From URL</b> → paste → <b>Add calendar</b>. Or tap the button below.</span></li>
         <li><span>It shows up in the Google Calendar app on your phone within a few minutes, as "Gym Bro".</span></li>
@@ -2099,6 +2133,7 @@ function calendarCard() {
       <div class="code">${esc(calHttps())}</div>
       <div class="row"><button class="btn violet" data-a="calCopy">Copy link</button><a class="btn ghost" href="${googleCalURL()}" target="_blank" rel="noopener" data-a="calOn">Open Google Calendar</a></div>
       <p class="small muted">Google refreshes linked calendars every few hours, not instantly. A session you move today can take a while to move there. Gym Bro and its notifications are always up to date.</p>
+      </details>
       <p class="small"><b>Clashes with your Google events:</b> add your Google account to the iPhone once (Settings → Apps → Calendar → Calendar Accounts → Add Account → Google, Calendars on). You keep using the Google app; the Shortcut can then read your events. ${S.core.health.at ? '' : 'Set up the Shortcut in Apple Health & Watch above.'}</p>`}
   </div>`;
 }
@@ -2841,6 +2876,7 @@ const A = {
     if (v === 'UNDO') { if (o[tk] === orig) delete o[tk]; delete o[k]; }
     else if (v === 'MOVE') { o[k] = 'REST'; o[tk] = orig; }
     else o[k] = v;
+    markMoved(k); markMoved(tk);
     const d = getDay(k); if (d && d.mode === undefined) d.mode = S.core.mode.type;
     UI.sheet = null; UI.sess = null; saveCore();
     tankSay(v === 'REST' ? 'angry' : 'grumpy', { HOME: 'No gym? Home workout then. The floor is free.', Z2: 'Ride instead. Easy pace, full 45 minutes.', MOVE: 'Moved to tomorrow. Tomorrow you go. No excuses.', REST: 'Skipping. I\'ll remember this.', UNDO: 'Back to the plan. Good.' }[v]);
@@ -3001,14 +3037,14 @@ const A = {
   // moving sessions: a new time, or swap with another day; skipping needs a reason
   moveOpen(el) { keepDraft(); UI.sheet = { move: el.dataset.v }; render(); },
   moveTime(el) {
-    const [k, t] = el.dataset.v.split('|'); S.core.timeOv[k] = t;
+    const [k, t] = el.dataset.v.split('|'); S.core.timeOv[k] = t; markMoved(k);
     for (const x in S.core.timeOv) if (x < addDays(TODAY(), -14)) delete S.core.timeOv[x];
     UI.sheet = null; saveCore(); tankSay('neutral', 'Moved to ' + t + '. That\'s a promise now.'); render();
   },
   moveTimeSave(el) { const t = val('mv-time'); if (!/^\d\d:\d\d$/.test(t)) { toast('Pick a time.'); return; } A.moveTime({ dataset: { v: el.dataset.v + '|' + t } }); },
   moveDay(el) {
     const [k, x] = el.dataset.v.split('|'), o = S.core.overrides, pk = planFor(k), px = planFor(x);
-    o[k] = px; o[x] = pk;
+    o[k] = px; o[x] = pk; markMoved(k); markMoved(x);
     if (S.core.timeOv[k]) { S.core.timeOv[x] = S.core.timeOv[k]; delete S.core.timeOv[k]; }
     UI.sheet = null; UI.sess = null; saveCore(); tankSay('neutral', (SESS[pk] ? SESS[pk].n : CARDIO[pk] ? CARDIO[pk].n : 'It') + ' moved to ' + dayName(x).toLowerCase() + '. No more moving.'); render();
   },
@@ -3089,6 +3125,12 @@ const A = {
   async healthRefresh() { toast('Checking…'); syncPlan(true); await fetchHealth(); render(); toast(S.core.health.at ? 'Last sync ' + ago(S.core.health.at) + '.' : 'Nothing yet. Run the Shortcut once, then try again.', 3500); },
   copyLink() { try { navigator.clipboard.writeText(shortcutURL()).then(() => toast('Link copied. Paste it into Get Contents of URL.'), () => toast('Could not copy. Press and hold the link to copy it.')); } catch (e) { toast('Could not copy. Press and hold the link to copy it.'); } },
   calOn() { S.core.calOn = true; saveCore(); syncPlan(true); },
+  gConnect() { S.core.gcalPending = true; saveCore(); syncPlan(true); setTimeout(render, 300); },
+  async gCheck() { toast('Checking…'); await fetchGcal(); render(); toast(S.core.gcal ? 'Google Calendar connected.' : 'Not connected yet. Finish signing in with Google, then try again.', 3500); },
+  async gOff() {
+    try { await fetch(PUSH_URL + '/g/off', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: S.core.sid }) }); } catch (e) {}
+    S.core.gcal = false; S.core.gcalPending = false; saveCore(); toast('Google Calendar disconnected. The Gym Bro calendar was removed.'); render();
+  },
   calApp(el) { S.core.calApp = el.dataset.v; saveCore(); render(); },
   calCopy() { A.calOn(); try { navigator.clipboard.writeText(calHttps()).then(() => toast('Link copied. Paste it in Google Calendar → From URL.', 3500), () => toast('Press and hold the link to copy it.')); } catch (e) { toast('Press and hold the link to copy it.'); } },
 };
@@ -3152,6 +3194,7 @@ if ('serviceWorker' in navigator) window.addEventListener('load', () => navigato
   checkUpdate();
   loadPrices().then(() => { BP = null; priceCheck(); if (!UI.sheet && (UI.tab === 'food' || UI.tab === 'today')) render(); });
   fetchHealth();
+  fetchGcal();
   let lastDay = TODAY();
   setInterval(() => { if (TODAY() !== lastDay) { lastDay = TODAY(); ensureTodayMode(); } if (UI.tab === 'today' && !UI.sheet) render(); }, 5 * 60000);
   setInterval(() => { if (UI.tab === 'today' && !UI.sheet && UI.say && UI.say.until < Date.now()) { UI.say = null; render(); } }, 3000);

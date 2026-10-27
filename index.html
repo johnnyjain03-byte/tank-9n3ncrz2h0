@@ -1377,7 +1377,7 @@ async function loadPrices() {
   try { const r = await fetch('prices.json?t=' + Date.now(), { cache: 'no-store' }); if (r.ok) { const p = await r.json(); if (p && p.items) { S.prices = p; try { localStorage.setItem('gymbro-prices', JSON.stringify(p)); } catch (e) {} } } } catch (e) {}
 }
 // the app updates itself: when a newer version is online, reload into it (your data stays on the phone)
-const APP_VERSION = '41';
+const APP_VERSION = '42';
 async function checkUpdate() {
   try {
     const v = (await (await fetch('version.txt?t=' + Date.now(), { cache: 'no-store' })).text()).trim();
@@ -2742,7 +2742,7 @@ function viewFood() {
     <h2>Today's meals</h2>
     <p class="muted small">Tick a meal when you've eaten it.</p>
     <div class="tasks">${mealOrder(meals).map(m => mealCard(m, ate.includes(m.key), true)).join('')}</div>
-    ${Object.entries(d.slotOv || {}).map(([i, o]) => `<p class="small" style="border-top:1px solid var(--line);padding-top:8px"><b>${esc(SLOTS[i])}:</b> ${o.t === 'skip' ? 'skipped, spread over your other meals' : 'eaten out: ' + esc(o.n) + ', ~' + fmt(o.k) + ' kcal'} · <button class="linkbtn" data-a="slotUndo" data-v="${i}">Undo</button></p>`).join('')}
+    ${Object.entries(d.slotOv || {}).map(([i, o]) => `<p class="small" style="border-top:1px solid var(--line);padding-top:8px"><b>${esc(SLOTS[i])}:</b> ${o.t === 'skip' ? 'skipped, spread over your other meals' : (o.t === 'own' ? 'your own: ' : 'eaten out: ') + esc(o.n) + ', ~' + fmt(o.k) + ' kcal · P ' + (o.p || 0)} · <button class="linkbtn" data-a="slotUndo" data-v="${i}">Undo</button></p>`).join('')}
     ${(d.food || []).length ? `<div><div class="aisle">Also today</div>${d.food.map((f, i) => `<div class="spread small" style="border-top:1px solid var(--line);padding-top:8px"><span style="flex:1;min-width:0"><b>${esc(f.n)}</b> <span class="muted">${f.k} kcal · P ${f.p} · sugar ${f.s || 0} g</span></span><button class="linkbtn" data-a="rmFood" data-v="${i}">Remove</button></div>`).join('')}</div>` : ''}
     <div class="row" style="flex-wrap:nowrap"><button class="btn green" style="flex:1" data-a="foodOpen">+ Add food or drink</button><button class="btn ghost" style="flex:1" data-a="outOpen">Eating out</button></div>
     <p class="small muted">Coffee, a croissant, a beer: type it like you'd say it and Gym Bro counts it.</p>
@@ -2764,7 +2764,7 @@ function mealCard(m, done, canEat) {
     <div class="mact">
       <button class="pill ${open ? 'on' : ''}" data-a="openRecipe" data-v="${m.key + (canEat ? '' : '-all')}">${open ? 'Hide recipe' : 'Recipe · ' + (r.min ? r.min + ' min' : 'no cooking')}</button>
       ${canEat ? `<button class="pill ${UI.edit === m.key ? 'on' : ''}" data-a="meOpen" data-v="${m.key}">${UI.edit === m.key ? 'Close edit' : 'Edit'}</button><button class="pill" data-a="swap" data-v="${m.i}">Swap</button>` : ''}
-      ${canEat && m.i < 3 && !done ? `<button class="pill" data-a="busyOpen" data-v="${m.i}">No time?</button><button class="pill" data-a="outOpen" data-v="${m.i}">Eating out?</button>` : ''}
+      ${canEat && m.i < 3 && !done ? `<button class="pill" data-a="replOpen" data-v="${m.i}">Replace</button><button class="pill" data-a="busyOpen" data-v="${m.i}">No time?</button><button class="pill" data-a="outOpen" data-v="${m.i}">Eating out?</button>` : ''}
     </div>
     ${canEat && r.quick ? `<p class="mnote">Quick option today · <button class="linkbtn" data-a="busyUndo" data-v="${m.i}">Back to the plan</button></p>` : ''}
     ${canEat && m.edited && UI.edit !== m.key ? `<p class="mnote">${esc(editNote(m))} · <button class="linkbtn" data-a="meReset" data-v="${m.key}">Undo</button></p>` : ''}
@@ -3583,6 +3583,20 @@ const OUT = {
 const OUT_TIPS = ['Protein first: chicken, fish, eggs, steak, prawns, tofu.', 'One carb, not three: rice or bread or potatoes.', 'Sauces and dressings on the side. Use half.', 'Drinks count: water, black coffee or diet.', 'Huge portion? Stop at three quarters.'];
 // the main meal still to come: the one Eating out replaces by default
 function nextMain(k) { const d = getDay(k) || {}, ov = d.slotOv || {}, ate = d.ate || [], ms = dayMeals(k).filter(m => m.i < 3 && !ate.includes(m.key)); const now = new Date(), t = now.getHours() * 60 + now.getMinutes(); return (ms.find(m => m.at + 60 >= t) || ms[ms.length - 1] || { i: [0, 1, 2].find(i => !ov[i]) ?? 1 }).i; }
+// Replace a planned meal with your own: what the plan had, so you know what to aim for, and Gym Bro's suggestions
+function replSheet(i) {
+  const k = TODAY(), m = dayMeals(k).find(x => x.i === i), close = `<div class="spread"><span class="lbl">Replace ${esc(SLOTS[i].toLowerCase())}</span><button class="btn small ghost" data-a="closeSheet">Close</button></div>`;
+  if (!m) return `<div class="in">${close}<p>Nothing planned there.</p></div>`;
+  const pool = budgetPools()[SLOT_POOL[i]].filter(id => id !== m.id && okRecipe(id) && !R[id].quick);
+  const sugg = pool.map(id => ({ id, d: Math.abs(R[id].k * m.f - m.k) + Math.abs(R[id].p * m.f - m.p) * 4 })).sort((a, b) => a.d - b.d).slice(0, 3).map(x => x.id);
+  return `<div class="in" role="dialog" aria-label="Replace ${esc(SLOTS[i].toLowerCase())}">${close}
+    <h2>Replace ${esc(R[m.id].n)}?</h2>
+    <div class="banner travel"><p class="small">The plan's ${esc(SLOTS[i].toLowerCase())} gives you about <b>${fmt(m.k)} kcal</b> and <b>${m.p} g protein</b>. Make yours about the same, especially the protein, and the rest of today still adds up. If it comes out bigger or smaller, Gym Bro resizes your other meals.</p></div>
+    <button class="btn blue block" data-a="replOwn" data-v="${i}">Log my own meal</button>
+    <p class="small muted">Type it, take a photo or scan the barcode. It replaces the planned meal.</p>
+    ${sugg.length ? `<div class="aisle">Or one of Gym Bro's that fits</div><div class="sug-list">${sugg.map(id => `<button data-a="replPick" data-v="${id}"><b>${esc(R[id].n)}</b><span>${fmt(R[id].k * m.f)} kcal · P ${Math.round(R[id].p * m.f)} · ${R[id].min ? R[id].min + ' min' : 'no cooking'}</span></button>`).join('')}</div>` : ''}
+  </div>`;
+}
 function busySheet(i) {
   const k = TODAY(), m = dayMeals(k).find(x => x.i === i), close = `<div class="spread"><span class="lbl">No time?</span><button class="btn small ghost" data-a="closeSheet">Close</button></div>`;
   if (!m) return `<div class="in">${close}<p>Nothing planned there.</p></div>`;
@@ -3689,15 +3703,17 @@ function foodSheet() {
     <button class="btn ghost block" data-a="faView" data-v="main">Back</button></div>`;
   const tot = F.items.reduce((a, it) => { const f = itemFood(it); if (f) { a.k += f.k * it.q; a.p += f.p * it.q; a.s += (f.s || 0) * it.q; } return a; }, { k: 0, p: 0, s: 0 });
   const recent = S.core.recentFoods.map(foodById).filter(Boolean).slice(0, 8);
+  const own = F.own !== undefined ? dayMeals(TODAY()).find(x => x.i === F.own) : null;
   return `<div class="in" role="dialog" aria-label="Add food">${close}
-    <h2>What did you have?</h2>
+    <h2>${F.own !== undefined ? 'What are you having for ' + esc(SLOTS[F.own].toLowerCase()) + '?' : 'What did you have?'}</h2>
+    ${own ? `<p class="small muted">Instead of ${esc(R[own.id].n)}: aim for about ${fmt(own.k)} kcal and ${own.p} g protein.</p>` : ''}
     <label class="field"><span>Type it like you'd say it</span><input id="fa-q" type="text" value="${esc(F.q)}" placeholder="e.g. 2 coffees with milk and a croissant" autocomplete="off"></label>
     <button class="btn green block" data-a="faParse">Count it</button>
     <div id="fa-sug" class="sug-list">${sugHTML(F.q)}</div>
     ${F.miss && F.miss.length ? `<div class="banner warn"><p class="small">Gym Bro doesn't know: <b>${F.miss.map(esc).join(', ')}</b></p><div class="row"><button class="btn small ghost" data-a="faView" data-v="custom">Enter it myself</button><button class="btn small ghost" data-a="faView" data-v="online">Search packaged food</button></div></div>` : ''}
     ${F.items.length ? `<div>${F.items.map(foodItemRow).join('')}</div>
       <div class="spread"><b>Total</b><span class="num"><b>${fmt(tot.k)}</b> kcal · P ${Math.round(tot.p)} · sugar ${Math.round(tot.s)} g</span></div>
-      <button class="btn green block" data-a="faSave">Add to today</button>` : ''}
+      <button class="btn green block" data-a="faSave">${F.own !== undefined ? 'Use this as my ' + esc(SLOTS[F.own].toLowerCase()) : 'Add to today'}</button>` : ''}
     ${recent.length && !F.items.length ? `<div class="field"><span>Recent</span><div class="pchips">${recent.map(f => `<button class="pchip" data-a="faPick" data-v="${esc(f.id)}">${esc(f.n)}</button>`).join('')}</div></div>` : ''}
     <div class="row" style="flex-wrap:nowrap"><label class="btn ghost filebtn" style="flex:1">Photo of my meal<input id="meal-in" type="file" accept="image/*" capture="environment"></label><button class="btn ghost" style="flex:1" data-a="faView" data-v="scan">Scan a barcode</button></div>
     <div class="meal-act"><button class="linkbtn" data-a="faView" data-v="custom">Enter it myself</button><button class="linkbtn" data-a="faView" data-v="online">Search packaged food</button></div>
@@ -4031,7 +4047,7 @@ function render() {
   const sh = $('#sheet');
   if (UI.sheet) {
     const x = UI.sheet;
-    sh.innerHTML = x.med ? medSheet() : x === 'mode' ? modeSheet() : x === 'goal' ? goalSheet() : x === 'day' ? daySheet() : x === 'addEx' ? addExSheet() : x.fin ? finSheet() : x.swap ? swapSheet() : x.food ? foodSheet() : x.busy !== undefined ? busySheet(x.busy) : x.out ? outSheet() : x.act ? actSheet() : x.move ? moveSheet(x.move) : x.skipday ? skipDaySheet() : helpSheet(x.help);
+    sh.innerHTML = x.med ? medSheet() : x === 'mode' ? modeSheet() : x === 'goal' ? goalSheet() : x === 'day' ? daySheet() : x === 'addEx' ? addExSheet() : x.fin ? finSheet() : x.swap ? swapSheet() : x.food ? foodSheet() : x.busy !== undefined ? busySheet(x.busy) : x.repl !== undefined ? replSheet(x.repl) : x.out ? outSheet() : x.act ? actSheet() : x.move ? moveSheet(x.move) : x.skipday ? skipDaySheet() : helpSheet(x.help);
     sh.hidden = false;
   } else { sh.hidden = true; sh.innerHTML = ''; }
   bcAttach();
@@ -4439,6 +4455,14 @@ const A = {
   // a meal you already ticked keeps its new numbers
   meRefresh(d, key) { if ((d.ate || []).includes(key)) { const m = dayMeals(TODAY()).find(x => x.key === key); if (m) setAte(d, m, true); } },
   // no time for a meal: a grab-and-go option, skip it, or eat out
+  replOpen(el) { UI.sheet = { repl: +el.dataset.v }; render(); },
+  replOwn(el) { UI.sheet = { food: { q: '', items: [], view: 'main', own: +el.dataset.v } }; render(); setTimeout(() => { const t = $('#fa-q'); if (t) t.focus(); }, 60); },
+  replPick(el) {
+    const k = TODAY(), i = UI.sheet.repl, m = dayMeals(k).find(x => x.i === i), wk = weekStart(k), wd = (parseKey(k).getDay() + 6) % 7;
+    const sw = S.core.food.swaps[wk] = S.core.food.swaps[wk] || {}; sw[wd + '-' + i] = el.dataset.v;
+    const d = getDay(k); if (d && m && d.ate && d.ate.includes(m.key)) setAte(d, m, false);
+    UI.sheet = null; saveCore(); syncPush(); render(); toast(R[el.dataset.v].n + ' it is. Same numbers, different plate.', 3000);
+  },
   busyOpen(el) { UI.sheet = { busy: +el.dataset.v }; render(); },
   busyPick(el) {
     const k = TODAY(), i = UI.sheet.busy, m = dayMeals(k).find(x => x.i === i), wk = weekStart(k), wd = (parseKey(k).getDay() + 6) % 7;
@@ -4746,9 +4770,16 @@ const A = {
     F.items.push({ id: f.id, q: 1, alts: [f.id] }); F.view = 'main'; F.miss = []; saveCore(); render();
   },
   faSave() {
-    const F = UI.sheet.food, d = todayDay(); d.food = d.food || [];
-    let tot = 0;
-    F.items.forEach(it => { const f = itemFood(it); if (!f) return; const rec = foodRec(f, it.q, { fid: it.id, exact: 1 }); tot += rec.k; d.food.push(rec); if (it.id) S.core.recentFoods = [it.id].concat(S.core.recentFoods.filter(x => x !== it.id)).slice(0, 12); });
+    const F = UI.sheet.food, d = todayDay(), oid = F.own !== undefined ? 'own' + Date.now().toString(36) : ''; d.food = d.food || [];
+    let tot = 0, totP = 0; const names = [];
+    F.items.forEach(it => { const f = itemFood(it); if (!f) return; const rec = foodRec(f, it.q, { fid: it.id, exact: 1 }); if (oid) rec.oid = oid; tot += rec.k; totP += rec.p || 0; names.push(rec.n); d.food.push(rec); if (it.id) S.core.recentFoods = [it.id].concat(S.core.recentFoods.filter(x => x !== it.id)).slice(0, 12); });
+    // your own meal takes the planned one's place: the rest of the day is portioned around it
+    if (oid && names.length) {
+      const m = dayMeals(TODAY()).find(x => x.i === F.own); if (m && d.ate && d.ate.includes(m.key)) setAte(d, m, false);
+      d.slotOv = d.slotOv || {}; d.slotOv[F.own] = { t: 'own', n: names.join(', ').slice(0, 80), k: Math.round(tot), p: Math.round(totP), oid };
+      UI.sheet = null; touch(); saveCore(); syncPush(); render();
+      toast('Logged as your ' + SLOTS[F.own].toLowerCase() + '. The rest of today is resized around it.', 3500); return;
+    }
     UI.sheet = null; touch(); saveCore(); render();
     toast(tot > 600 ? 'Gym Bro: "' + fmt(tot) + ' kcal? I saw that."' : '+' + fmt(tot) + ' kcal added', 3000);
   },

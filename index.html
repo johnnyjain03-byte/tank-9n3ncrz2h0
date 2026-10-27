@@ -139,6 +139,8 @@ input::placeholder{color:#7A8499}
 .tag{font-size:12px;font-weight:800;background:var(--blue);color:#fff;padding:3px 8px;border-radius:6px;white-space:nowrap}
 .ex-log{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:end}
 .ex-log input{text-align:center;font-weight:800}
+.ex-reps{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px} .ex-reps span{flex-basis:100%} .ex-reps input{width:60px;text-align:center;font-weight:800}
+.gym-rep{display:grid;grid-template-columns:56px 52px 1fr 52px;gap:8px;align-items:center;margin:8px 0} .gym-rep b{font-size:15px} .gym-rep input{text-align:center;font-weight:800;font-size:22px}
 .hit{height:50px;border-radius:12px;border:2px solid var(--line);background:var(--surface);font-weight:800;font-size:15px}
 .hit.ok{background:var(--green);border-color:var(--green);color:#fff}
 .hit.miss{background:var(--orange);border-color:var(--orange);color:#fff}
@@ -1365,7 +1367,7 @@ async function loadPrices() {
   try { const r = await fetch('prices.json?t=' + Date.now(), { cache: 'no-store' }); if (r.ok) { const p = await r.json(); if (p && p.items) { S.prices = p; try { localStorage.setItem('gymbro-prices', JSON.stringify(p)); } catch (e) {} } } } catch (e) {}
 }
 // the app updates itself: when a newer version is online, reload into it (your data stays on the phone)
-const APP_VERSION = '36';
+const APP_VERSION = '37';
 async function checkUpdate() {
   try {
     const v = (await (await fetch('version.txt?t=' + Date.now(), { cache: 'no-store' })).text()).trim();
@@ -2148,8 +2150,19 @@ function lastLogs(ex, n, beforeKey = TODAY()) {
   for (const k of allDayKeys().filter(x => x < beforeKey).reverse()) { const d = getDay(k); if (d.lifts && d.lifts[ex]) { out.push({ k, ...d.lifts[ex] }); if (out.length >= n) break; } }
   return out;
 }
-// stuck: the same weight missed 3 sessions in a row (the classic StrongLifts / Starting Strength rule)
-const stalled = ex => { const L = lastLogs(ex, 3); return L.length === 3 && EX[ex].inc > 0 && L.every(l => !liftOk(l, EX[ex]) && l.w > 0 && l.w === L[0].w); };
+// stuck: the same weight missed 3 sessions in a row (the classic StrongLifts / Starting Strength rule),
+// unless the reps you logged went up over those 3 sessions: then it's still moving
+const repSum = l => l.r.reduce((a, n) => a + (+n || 0), 0);
+const stalled = ex => { const L = lastLogs(ex, 3); return L.length === 3 && EX[ex].inc > 0 && L.every(l => !liftOk(l, EX[ex]) && l.w > 0 && l.w === L[0].w) && !(Array.isArray(L[0].r) && Array.isArray(L[2].r) && repSum(L[0]) > repSum(L[2])); };
+// Missed reps: only the first set decides (Rippedbody's double progression). Inside the rep range: same weight, beat the reps.
+// Below it: too heavy, about 4% lighter per rep short (at least one step, at most 20%). Later sets dropping is normal fatigue.
+const repUnit = E => /second/.test(E.note || '') ? 's' : 'reps';
+function missDown(l, E, id) {
+  if (!l || liftOk(l, E) || !Array.isArray(l.r) || !l.r.length || !E.inc || !(l.w > 0)) return null;
+  const short = repsOf(E)[0] - (+l.r[0] || 0); if (short <= 0) return null;
+  const step = E.inc >= 2.5 ? 2.5 : E.inc;
+  return Math.max(BARBELL.includes(id) ? 20 : 0, Math.min(l.w - step, round(l.w * (1 - Math.min(0.2, 0.04 * short)), step)));
+}
 // a lighter week: same weights, half the sets
 const lightOn = (k = TODAY()) => { const L = S.core.light; return !!(L && k >= L.start && k <= L.end); };
 const setsOf = E => lightOn() ? Math.max(1, Math.ceil(E.sets / 2)) : E.sets;
@@ -2166,12 +2179,14 @@ function suggestion(ex) {
   const E = EX[ex], last = lastLog(ex, TODAY());
   let w = startW(ex);
   if (last) w = liftOk(last, E) && E.inc ? last.w + E.inc : last.w;
+  const down = missDown(last, E, ex);
+  if (down !== null) w = down;
   // stuck 3 times: 10% lighter, then build back up
-  const reset = !!(last && stalled(ex));
+  const reset = down === null && !!(last && stalled(ex));
   if (reset) w = Math.max(0, round(last.w * 0.9, E.inc >= 2.5 ? 2.5 : 1));
   const f = rampFactor();
   if (f < 1 && w > 0) w = round(w * f, E.inc >= 2.5 ? 2.5 : 1);
-  return { w, last, reset, up: !!(last && liftOk(last, E) && E.inc) };
+  return { w, last, reset, down: down !== null, up: !!(last && liftOk(last, E) && E.inc) };
 }
 function tankTip(area) {
   const list = TIPS[area], i = (UI.tip[area] || 0) % list.length;
@@ -2311,14 +2326,14 @@ function sessionExercises(key, k) {
 function sessionResult(k) {
   const d = getDay(k) || {}, ids = Object.keys(d.lifts || {}), added = new Set(d.addEx || []), w = currentWeight();
   const sets = ids.reduce((a, id) => a + (EX[id] ? setsOf(EX[id]) : 0), 0), min = 10 + ids.length * 9, net = Math.round(4 * w * min / 60);
-  return { n: ids.length, extra: ids.filter(id => added.has(id)).length, sets, min, kcal: Math.round(5 * w * min / 60), epoc: Math.max(30, Math.min(110, Math.round(net * 0.12))), up: ids.filter(id => EX[id] && d.lifts[id].ok && EX[id].inc).map(id => EX[id].n), miss: ids.filter(id => EX[id] && !d.lifts[id].ok).map(id => EX[id].n) };
+  return { n: ids.length, extra: ids.filter(id => added.has(id)).length, sets, min, kcal: Math.round(5 * w * min / 60), epoc: Math.max(30, Math.min(110, Math.round(net * 0.12))), up: ids.filter(id => EX[id] && d.lifts[id].ok && EX[id].inc).map(id => EX[id].n), miss: ids.filter(id => EX[id] && !d.lifts[id].ok && missDown(d.lifts[id], EX[id], id) === null).map(id => EX[id].n), down: ids.filter(id => EX[id] && missDown(d.lifts[id], EX[id], id) !== null).map(id => EX[id].n) };
 }
 function resultCard(k) {
   const d = getDay(k) || {}; if (!d.result) return '';
   const r = d.result;
   return `<div class="banner good"><h3>Session done</h3>
     <p class="small"><b>${r.n} exercises</b>${r.extra ? ` (${r.extra} extra)` : ''} · <b>${r.sets} sets</b> · about <b>${fmt(r.kcal)} kcal</b> + ${r.epoc} afterburn · ${r.min} min</p>
-    ${r.up.length ? `<p class="small">Heavier next time: ${esc(r.up.join(', '))}.</p>` : ''}${r.miss.length ? `<p class="small muted">Same weight next time: ${esc(r.miss.join(', '))}.</p>` : ''}</div>`;
+    ${r.up.length ? `<p class="small">Heavier next time: ${esc(r.up.join(', '))}.</p>` : ''}${r.miss.length ? `<p class="small muted">Same weight next time, beat your reps: ${esc(r.miss.join(', '))}.</p>` : ''}${(r.down || []).length ? `<p class="small muted">A bit lighter next time, the first set was below the range: ${esc(r.down.join(', '))}.</p>` : ''}</div>`;
 }
 function skippedCard(x) {
   const r = x.skip;
@@ -2333,7 +2348,9 @@ function exCard(id, d, x = {}) {
   const w = dr.w !== undefined && dr.w !== null ? dr.w : saved ? saved.w : sg.w;
   const st = dr.st !== undefined ? dr.st : saved ? (liftOk(saved, E) ? 'ok' : 'miss') : '';
   const open = UI.how === id;
-  const goal = E.inc ? (sg.reset ? 'stuck 3 times: 10% lighter, build back up' : sg.up ? 'up from ' + sg.last.w : sg.last ? 'same as last time' : 'starting guess') : 'add a rep each time';
+  const lastR = sg.last && Array.isArray(sg.last.r) ? sg.last.r.join(', ') : '';
+  const goal = E.inc ? (sg.reset ? 'stuck 3 times: 10% lighter, build back up' : sg.down ? 'too heavy last time, down from ' + sg.last.w : sg.up ? 'up from ' + sg.last.w : lastR ? 'last time ' + lastR + ': beat it' : sg.last ? 'same as last time' : 'starting guess') : lastR ? 'last time ' + lastR + ': add a rep' : 'add a rep each time';
+  const reps = dr.r || (saved && saved.r) || [];
   return `<div class="ex ${E.main ? 'main' : ''}">
     <div class="ex-top"><button class="exname" data-a="how" data-v="${id}"><b>${esc(E.n)}</b><span>${setsOf(E)} sets × ${repsOf(E).join('–')} reps${E.note ? ' · ' + esc(E.note) : ''}</span></button>${E.main ? '<span class="tag">Main</span>' : ''}</div>
     ${x.why === 'fin' ? `<p class="small" style="font-weight:700;color:var(--orange)">Finisher: last set to failure · <button class="linkbtn" data-a="addExDel" data-v="${id}">Remove</button></p>` : x.why === 'req' ? `<p class="small" style="font-weight:700;color:var(--violet)">Extra for your request: ${esc(REQS[x.req].n)}${x.id !== x.orig ? ' (instead of ' + esc(EX[x.orig].n) + ')' : ''}</p>` : x.why === 'added' ? `<p class="small" style="font-weight:700;color:var(--blue)">Extra, added by you · <button class="linkbtn" data-a="addExDel" data-v="${id}">Remove</button></p>` : x.why ? `<p class="small" style="font-weight:700;color:var(--blue)">Instead of ${esc(EX[x.orig].n)} (${x.why === 'today' ? 'just today' : x.why === 'always' ? 'always' : (AREAS[S.core.gym.avoid.find(a => (EX[x.orig].stress || []).includes(a))] || 'injury') + '-friendly'})${x.why !== 'injury' ? ` · <button class="linkbtn" data-a="exUndo" data-v="${x.orig}">Undo</button>` : ''}</p>` : ''}
@@ -2343,6 +2360,7 @@ function exCard(id, d, x = {}) {
       <label class="field"><span>kg (${esc(goal)})</span><input id="w-${id}" data-ex="${id}" inputmode="decimal" value="${w}"></label>
       <button class="hit ${st}" data-a="hit" data-v="${id}">${st === 'ok' ? '✓ All reps' : st === 'miss' ? '✗ Missed some' : 'Tap when done'}</button>
     </div>
+    <div class="ex-reps" ${st === 'miss' ? '' : 'hidden'}><span class="small">${repUnit(E) === 's' ? 'Seconds' : 'Reps'} on each set:</span>${Array.from({ length: setsOf(E) }, (_, i) => `<input id="r-${id}-${i}" data-rep="${id}|${i}" inputmode="numeric" placeholder="${repsOf(E)[1]}" value="${reps[i] !== undefined && reps[i] !== null ? reps[i] : ''}" aria-label="Set ${i + 1}">`).join('')}</div>
   </div>`;
 }
 
@@ -2385,6 +2403,7 @@ function gymBeepStop(keepPush) { GYMX.beep.forEach(o => { try { o.stop(); } catc
 // A web app can't show a live countdown on the lock screen (that's an App Store app's Live Activity), and the beep stops
 // when the phone locks. So with notifications on, the server buzzes you 10 seconds before the rest ends; a new rest replaces it.
 const REST_WARN = 10;
+const gymRepsRead = () => { const G = UI.gym; if (G && G.reps) G.reps = G.reps.map((n, i) => { const v = num('gr-' + i); return v === null ? n : v; }); };
 function gymNextTxt() {
   const G = UI.gym, x = gymQueue(G)[G.i]; if (!x || !EX[x.id]) return 'Next set. Get ready.';
   const id = x.id, E = EX[id], w = gymW(id), bw = !E.inc && !w;
@@ -2437,7 +2456,7 @@ function viewGym() {
     </div>`;
   }
   if (G.i >= n) {
-    const rows = q.map(x => { const dr = UI.draft[x.id] || {}; return `<tr><td>${esc(EX[x.id].n)}</td><td class="num">${dr.st ? gymW(x.id) + ' kg ' + (dr.st === 'ok' ? '✓' : '✗') : '<span class="muted">skipped</span>'}</td></tr>`; }).join('');
+    const rows = q.map(x => { const dr = UI.draft[x.id] || {}; return `<tr><td>${esc(EX[x.id].n)}</td><td class="num">${dr.st ? gymW(x.id) + ' kg ' + (dr.st === 'ok' ? '✓' : '✗' + (dr.r ? ' ' + dr.r.join(', ') : '')) : '<span class="muted">skipped</span>'}</td></tr>`; }).join('');
     return `<div class="hero happy"><span class="face">${tankSVG('happy')}</span><div class="say"><b>Gym Bro</b><p>Done. That's how it's done. Save it and go eat your protein.</p></div></div>
     <div class="card">${top}<h2>Session done</h2><table>${rows}</table>
       ${finisherBlock(G.sess) ? '' : '<button class="btn ghost block" data-a="finOpen" data-v="' + G.sess + '" style="border:2px dashed var(--orange);color:var(--orange)">Not done yet? Add a 15-minute finisher</button>'}
@@ -2448,10 +2467,17 @@ function viewGym() {
   const resting = G.restEnd > Date.now(), warm = G.set === 1 && !dr.warm && !resting ? warmups(id, w) : [];
   const alts = G.swap ? [x.orig].concat(ALTS[x.orig] || []).filter(a => EX[a] && a !== id && safeFor(a, S.core.gym.avoid) && !q.some(y => y.id === a)) : [];
   const step = Math.min(E.inc || 2.5, 2.5), bw = !E.inc && !w;
+  const unit = repUnit(E) === 's' ? 'seconds' : 'reps', prev = lastLog(id, TODAY()), sg = suggestion(id);
+  const hint = sg.down && w === sg.w ? `Last time your first set was ${prev.r[0]}, below ${repsOf(E)[0]}, so ${+(prev.w - sg.w).toFixed(2)} kg lighter today.` : prev && Array.isArray(prev.r) && prev.w === w ? `Last time${bw ? '' : ' at ' + w + ' kg'}: ${prev.r.join(', ')}. Beat it.` : '';
   let main;
-  if (G.ask) main = `<p class="gym-big">All ${repsOf(E)[1]} reps on every set?</p>
-      <div class="row" style="flex-wrap:nowrap"><button class="btn green" style="flex:1" data-a="gymRes" data-v="ok">✓ Yes, all</button><button class="btn ghost" style="flex:1" data-a="gymRes" data-v="miss">✗ Missed some</button></div>
-      <p class="small muted">All of them: Gym Bro adds weight next time. Missed some: same weight, beat it next time.</p>`;
+  if (G.reps) main = `<p class="gym-big">How many ${unit} on each set?</p>
+      ${G.reps.map((r, i) => `<div class="gym-rep"><b>Set ${i + 1}</b><button class="btn ghost" data-a="gymRep" data-v="${i}|-1" aria-label="One less">−</button><input id="gr-${i}" inputmode="numeric" value="${r}" aria-label="Set ${i + 1}"><button class="btn ghost" data-a="gymRep" data-v="${i}|1" aria-label="One more">+</button></div>`).join('')}
+      <button class="btn blue block" data-a="gymRepsSave">Save</button>
+      <button class="btn ghost block" data-a="gymRepsBack">Back</button>
+      <p class="small muted">Only the first set decides your next weight. Under ${repsOf(E)[0]} on it: a bit lighter next time. Otherwise same weight, and you beat these numbers.</p>`;
+  else if (G.ask) main = `<p class="gym-big">All ${repsOf(E)[1]} ${unit} on every set?</p>
+      <div class="row" style="flex-wrap:nowrap"><button class="btn green" style="flex:1" data-a="gymRes" data-v="ok">✓ Yes, all</button><button class="btn ghost" style="flex:1" data-a="gymMiss">✗ Not all</button></div>
+      <p class="small muted">All of them: ${E.inc ? 'Gym Bro adds weight next time' : 'next time, add a rep'}. Not all: tell him how many, and he picks your next ${E.inc ? 'weight' : 'target'} from that.</p>`;
   else if (resting) main = `<p class="small" style="text-align:center;font-weight:800">Rest. Next: set ${G.set} of ${sets}</p><div class="gym-rest" id="gym-rest">${mmss(Math.ceil((G.restEnd - Date.now()) / 1000))}</div>
       <button class="btn ghost block" data-a="gymSkipRest">Ready, skip the rest</button>
       <p class="small muted" style="text-align:center">${G.alarm ? `Lock your phone if you like: Gym Bro buzzes you ${REST_WARN} seconds before the end.` : pushState() === 'off' ? `Want a buzz ${REST_WARN} seconds before the end, even with your phone locked? <button class="linkbtn" data-a="pushOn">Turn on notifications</button>` : ''}</p>`;
@@ -2459,7 +2485,8 @@ function viewGym() {
       <ol class="steps">${warm.map(([kg, r]) => `<li><span><b>${kg} kg × ${r}</b>${kg === 20 && BARBELL.includes(id) ? ' (empty bar)' : ''}</span></li>`).join('')}</ol>
       <p class="small muted">Easy and quick, about a minute's rest between them. They don't count as sets.</p>
       <button class="btn blue block" data-a="gymWarm">Warm-ups done</button>`;
-  else main = `<p class="gym-big">Set ${G.set} of ${sets}: ${reps} reps${bw ? '' : ` at <span id="gym-wt">${w}</span> kg`}</p>
+  else main = `<p class="gym-big">Set ${G.set} of ${sets}: ${reps} ${unit}${bw ? '' : ` at <span id="gym-wt">${w}</span> kg`}</p>
+      ${hint ? `<p class="small" style="font-weight:700;color:var(--blue)">${esc(hint)}</p>` : ''}
       ${bw ? '' : `<div class="gym-w"><button class="btn ghost" data-a="gymW" data-v="-${step}">−</button><input id="gym-w" data-ex="${id}" inputmode="decimal" value="${w}"><button class="btn ghost" data-a="gymW" data-v="${step}">+</button></div>`}
       <p class="small muted">${ISO.has(id) && G.set === sets ? 'Last set: keep going until you can\'t do another clean rep.' : 'Stop with 1–2 reps left in the tank.'} Rest ${restTxt(id)} after.</p>
       <button class="btn blue block" data-a="gymSet">Set done</button>`;
@@ -3795,7 +3822,10 @@ const num = id => { const v = parseFloat(String(($('#' + id) || {}).value || '')
 const val = id => (($('#' + id) || {}).value || '').trim();
 const todayDay = () => { const d = getDay(TODAY(), true); d.mode = d.mode || S.core.mode.type; return d; };
 const go = tab => { UI.tab = tab; if (tab !== 'gym') gymLock(false); try { localStorage.setItem('gymbro-tab', tab); } catch (e) {} render(); window.scrollTo(0, 0); };
-function keepDraft() { document.querySelectorAll('[data-ex]').forEach(el => { const dr = UI.draft[el.dataset.ex] = UI.draft[el.dataset.ex] || {}; dr.w = num(el.id); }); }
+function keepDraft() {
+  document.querySelectorAll('[data-ex]').forEach(el => { const dr = UI.draft[el.dataset.ex] = UI.draft[el.dataset.ex] || {}; dr.w = num(el.id); });
+  document.querySelectorAll('[data-rep]').forEach(el => { const [id, i] = el.dataset.rep.split('|'), dr = UI.draft[id] = UI.draft[id] || {}; (dr.r = dr.r || [])[+i] = num(el.id); });
+}
 
 /* ---------- actions ---------- */
 const A = {
@@ -3908,21 +3938,31 @@ const A = {
     G.swap = false; gymSave(); render();
   },
   gymSkipRest() { UI.gym.restEnd = 0; gymBeepStop(); gymSave(); render(); },
+  gymMiss() { const G = UI.gym, id = gymQueue(G)[G.i].id, dr = UI.draft[id] || {}; G.reps = (dr.r && dr.r.length ? dr.r : Array(gymSets(G, id)).fill(repsOf(EX[id])[1])).slice(); gymSave(); render(); },
+  gymRep(el) { const G = UI.gym, [i, d] = el.dataset.v.split('|').map(Number); gymRepsRead(); G.reps[i] = Math.max(0, (+G.reps[i] || 0) + d); gymSave(); render(); },
+  gymRepsBack() { UI.gym.reps = null; gymSave(); render(); },
+  gymRepsSave() {
+    const G = UI.gym, id = gymQueue(G)[G.i].id, dr = UI.draft[id] = UI.draft[id] || {}; gymRepsRead();
+    const r = G.reps.map(n => Math.max(0, Math.round(+n || 0))), all = r.every(n => n >= repsOf(EX[id])[1]);
+    G.reps = null; if (!all) dr.r = r;
+    A.gymRes({ dataset: { v: all ? 'ok' : 'miss' } });
+    if (all) toast('That\'s all of them: counted as all reps.');
+  },
   gymRes(el) {
     const G = UI.gym, id = gymQueue(G)[G.i].id, dr = UI.draft[id] = UI.draft[id] || {};
-    dr.st = el.dataset.v; if (dr.w === undefined) dr.w = gymW(id);
-    G.ask = false; G.i++; G.set = 1; G.swap = false;
+    dr.st = el.dataset.v; if (dr.w === undefined) dr.w = gymW(id); if (dr.st === 'ok') delete dr.r;
+    G.ask = false; G.reps = null; G.i++; G.set = 1; G.swap = false;
     // rest before the next exercise too
     if (G.i < gymQueue(G).length) { const sec = gymRestSec(id); G.restEnd = Date.now() + sec * 1000; gymBeep(sec); }
     gymSave(); render(); window.scrollTo(0, 0);
   },
-  gymPrev() { const G = UI.gym; G.i = Math.max(0, Math.min(G.i, gymQueue(G).length) - 1); G.set = 1; G.ask = false; G.restEnd = 0; G.swap = false; gymBeepStop(); gymSave(); render(); },
-  gymSkip() { const G = UI.gym; G.i++; G.set = 1; G.ask = false; G.restEnd = 0; G.swap = false; gymBeepStop(); gymSave(); render(); window.scrollTo(0, 0); },
+  gymPrev() { const G = UI.gym; G.i = Math.max(0, Math.min(G.i, gymQueue(G).length) - 1); G.set = 1; G.ask = false; G.reps = null; G.restEnd = 0; G.swap = false; gymBeepStop(); gymSave(); render(); },
+  gymSkip() { const G = UI.gym; G.i++; G.set = 1; G.ask = false; G.reps = null; G.restEnd = 0; G.swap = false; gymBeepStop(); gymSave(); render(); window.scrollTo(0, 0); },
   gymSwapOpen() { UI.gym.swap = !UI.gym.swap; render(); },
   gymSwap(el) {
     const G = UI.gym, x = gymQueue(G)[G.i], d = getDay(TODAY(), true); d.exSwap = d.exSwap || {};
     if (el.dataset.v === x.orig) delete d.exSwap[x.orig]; else d.exSwap[x.orig] = el.dataset.v;
-    delete UI.draft[x.id]; G.set = 1; G.swap = false; G.restEnd = 0; gymBeepStop(); touch(); gymSave(); render();
+    delete UI.draft[x.id]; G.set = 1; G.ask = false; G.reps = null; G.swap = false; G.restEnd = 0; gymBeepStop(); touch(); gymSave(); render();
     toast('Swapped, just for today.');
   },
   gymFinish() {
@@ -3979,6 +4019,7 @@ const A = {
     dr.st = cur === '' ? 'ok' : cur === 'ok' ? 'miss' : '';
     dr.w = num('w-' + id);
     el.className = 'hit ' + dr.st; el.textContent = dr.st === 'ok' ? '✓ All reps' : dr.st === 'miss' ? '✗ Missed some' : 'Tap when done';
+    const box = el.closest('.ex').querySelector('.ex-reps'); if (box) { box.hidden = dr.st !== 'miss'; if (dr.st === 'miss') { const f = box.querySelector('input'); if (f) f.focus(); } }
   },
   saveSession() {
     const k = TODAY(), d = todayDay(), lifts = {};
@@ -3987,7 +4028,8 @@ const A = {
       const st = dr.st !== undefined ? dr.st : saved ? (liftOk(saved, EX[id]) ? 'ok' : 'miss') : '';
       // the weight box on the Train tab, or the weight you used in gym mode
       const wv = num('w-' + id);
-      if (st) lifts[id] = { w: (wv !== null ? wv : dr.w !== undefined && dr.w !== null ? dr.w : saved ? saved.w : 0) || 0, ok: st === 'ok' };
+      const boxes = document.querySelectorAll(`[data-rep^="${id}|"]`), r = (boxes.length ? [...boxes].map(b => num(b.id)) : dr.r || (saved && saved.r) || []).map(n => n === null || n === undefined ? null : Math.max(0, Math.round(n)));
+      if (st) lifts[id] = { w: (wv !== null ? wv : dr.w !== undefined && dr.w !== null ? dr.w : saved ? saved.w : 0) || 0, ok: st === 'ok', ...(st === 'miss' && r.some(n => n !== null) ? { r } : {}) };
     });
     if (!Object.keys(lifts).length) { toast('Tap the button on at least one exercise first.'); return; }
     d.lifts = Object.assign(d.lifts || {}, lifts); d.session = UI.sess;

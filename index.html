@@ -1354,7 +1354,7 @@ async function loadPrices() {
   try { const r = await fetch('prices.json?t=' + Date.now(), { cache: 'no-store' }); if (r.ok) { const p = await r.json(); if (p && p.items) { S.prices = p; try { localStorage.setItem('gymbro-prices', JSON.stringify(p)); } catch (e) {} } } } catch (e) {}
 }
 // the app updates itself: when a newer version is online, reload into it (your data stays on the phone)
-const APP_VERSION = '30';
+const APP_VERSION = '31';
 async function checkUpdate() {
   try {
     const v = (await (await fetch('version.txt?t=' + Date.now(), { cache: 'no-store' })).text()).trim();
@@ -2409,7 +2409,7 @@ function viewGym() {
   const x = q[G.i], id = x.id, E = EX[id], dr = UI.draft[id] || {}, sets = gymSets(G, id), w = gymW(id), reps = repsOf(E).join('–');
   const resting = G.restEnd > Date.now(), warm = G.set === 1 && !dr.warm && !resting ? warmups(id, w) : [];
   const alts = G.swap ? [x.orig].concat(ALTS[x.orig] || []).filter(a => EX[a] && a !== id && safeFor(a, S.core.gym.avoid) && !q.some(y => y.id === a)) : [];
-  const step = E.inc || 2.5, bw = !E.inc && !w;
+  const step = Math.min(E.inc || 2.5, 2.5), bw = !E.inc && !w;
   let main;
   if (G.ask) main = `<p class="gym-big">All ${repsOf(E)[1]} reps on every set?</p>
       <div class="row" style="flex-wrap:nowrap"><button class="btn green" style="flex:1" data-a="gymRes" data-v="ok">✓ Yes, all</button><button class="btn ghost" style="flex:1" data-a="gymRes" data-v="miss">✗ Missed some</button></div>
@@ -2420,7 +2420,7 @@ function viewGym() {
       <ol class="steps">${warm.map(([kg, r]) => `<li><span><b>${kg} kg × ${r}</b>${kg === 20 && BARBELL.includes(id) ? ' (empty bar)' : ''}</span></li>`).join('')}</ol>
       <p class="small muted">Easy and quick, about a minute's rest between them. They don't count as sets.</p>
       <button class="btn blue block" data-a="gymWarm">Warm-ups done</button>`;
-  else main = `<p class="gym-big">Set ${G.set} of ${sets}: ${reps} reps${bw ? '' : ` at ${w} kg`}</p>
+  else main = `<p class="gym-big">Set ${G.set} of ${sets}: ${reps} reps${bw ? '' : ` at <span id="gym-wt">${w}</span> kg`}</p>
       ${bw ? '' : `<div class="gym-w"><button class="btn ghost" data-a="gymW" data-v="-${step}">−</button><input id="gym-w" data-ex="${id}" inputmode="decimal" value="${w}"><button class="btn ghost" data-a="gymW" data-v="${step}">+</button></div>`}
       <p class="small muted">${ISO.has(id) && G.set === sets ? 'Last set: keep going until you can\'t do another clean rep.' : 'Stop with 1–2 reps left in the tank.'} Rest ${restTxt(id)} after.</p>
       <button class="btn blue block" data-a="gymSet">Set done</button>`;
@@ -4451,6 +4451,7 @@ document.addEventListener('input', e => {
   if (el.id === 'ac-min' && UI.sheet && UI.sheet.act) { const v = num('ac-min'); if (v > 0) { UI.sheet.act.min = v; const b = $('#ac-burn'); if (b) b.innerHTML = burnTxt(UI.sheet.act); } return; }
   if (!el.dataset.ex) return;
   const dr = UI.draft[el.dataset.ex] = UI.draft[el.dataset.ex] || {}; dr.w = num(el.id);
+  const wt = el.id === 'gym-w' && $('#gym-wt'); if (wt) wt.textContent = gymW(el.dataset.ex);
   if (UI.tab === 'gym' && UI.gym) gymSave();
 });
 

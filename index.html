@@ -1107,7 +1107,7 @@ const TALK = {
 };
 const POKES = ['What?', 'Stop poking me.', 'I\'m a capybara, not a button.', 'Poke me again and I eat your protein bars.', 'Fine. 10 push-ups. Right now. Then you can poke me.', 'That\'s {n} pokes. More reps than your last set.'];
 const REACT = {
-  creatine: 'Creatine in. Your muscles say thanks.', forearm: 'Forearms done. Handshakes will never be the same.', steps: 'Steps done. Your legs exist again.', sleep: 'Slept well? Good. Gains happen in bed. The sleeping kind.',
+  creatine: 'Creatine in. Your muscles say thanks.', forearm: 'Forearms done. Handshakes will never be the same.', sugar: 'Checked. That\'s how you train safely.', steps: 'Steps done. Your legs exist again.', sleep: 'Slept well? Good. Gains happen in bed. The sleeping kind.',
   water: 'Hydrated. Not a raisin any more.', recover: 'Walk done. Recovery counts.', cardio: 'Ride done. Heart and lungs: upgraded.',
   travelTrain: 'Hotel workout done. Respect.', rest: 'Good. Resting is the job today.', fluids: 'Fluids in. Keep sipping.', protein: 'Protein in every meal. That\'s the way.',
   train: 'Session done. Was that so hard? Don\'t answer.',
@@ -1367,7 +1367,7 @@ async function loadPrices() {
   try { const r = await fetch('prices.json?t=' + Date.now(), { cache: 'no-store' }); if (r.ok) { const p = await r.json(); if (p && p.items) { S.prices = p; try { localStorage.setItem('gymbro-prices', JSON.stringify(p)); } catch (e) {} } } } catch (e) {}
 }
 // the app updates itself: when a newer version is online, reload into it (your data stays on the phone)
-const APP_VERSION = '38';
+const APP_VERSION = '39';
 async function checkUpdate() {
   try {
     const v = (await (await fetch('version.txt?t=' + Date.now(), { cache: 'no-store' })).text()).trim();
@@ -1433,12 +1433,15 @@ const AGE_RULES = {
 };
 const ageBand = (a = ageNow()) => a < 18 ? 'teen' : a < 40 ? 'adult' : a < 50 ? 'forties' : a < 65 ? 'fifties' : 'senior';
 const ageRule = () => AGE_RULES[ageBand()];
-const repsOf = E => { const m = ageRule().minReps; return m && E.lo < m && E.inc ? [m, Math.max(E.hi, m + 4)] : [E.lo, E.hi]; };
+const repsOf = E => { const m = Math.max(ageRule().minReps, typeof medMinReps === 'function' && S.core ? medMinReps() : 0); return m && E.lo < m && E.inc ? [m, Math.max(E.hi, m + 4)] : [E.lo, E.hi]; };
 const bmrOf = (w = currentWeight()) => { const p = S.core.profile; return 10 * w + 6.25 * p.height - 5 * ageNow() + (p.sex === 'female' ? -161 : 5); };
 function targets(mode, k) {
   const p = S.core.profile, w = currentWeight(), g = GOALS[S.core.goal.type], focus = S.core.food.focus;
   const bmr = bmrOf(w), tdee = bmr * 1.55, bonus = k ? activityBonus(k, mode) : 0;
-  const base = ['sick', 'travel', 'break'].includes(mode) ? tdee : Math.max(tdee + Math.max(ageRule().maxCut, g.kcal + (S.core.goal.adj || 0)), bmr, p.sex === 'female' ? 1200 : 1500);
+  // pregnant: no deficit (NHS: no extra calories needed before the last 3 months either); after the birth: a small one at most
+  const P = (S.core.med && S.core.med.c || {}).preg;
+  let delta = Math.max(ageRule().maxCut, g.kcal + (S.core.goal.adj || 0)); if (P) delta = P.when === 'after' ? Math.max(-300, delta) : 0;
+  const base = ['sick', 'travel', 'break'].includes(mode) ? tdee : Math.max(tdee + delta, bmr, p.sex === 'female' ? 1200 : 1500);
   const kcal = round(base + bonus, 50);
   // g/kg from the goal (1.6–2.2, research range), on your weight but capped at a BMI-25 weight so heavier people aren't told to eat 250 g
   const refW = proteinWeight(w), protein = round(refW * Math.min(2.4, g.prot + (focus === 'protein' ? 0.2 : 0)), 5), fat = round(w * 0.9, 5);
@@ -1601,10 +1604,12 @@ function tasksFor(k) {
   const mode = dayMode(k), T = targets(mode, k), plan = planFor(k), L = [], h = healthDay(k);
   const stepsSub = h && h.steps ? fmt(h.steps) + ' so far (Apple Health)' : '';
   if (mode === 'normal') {
-    if (plan === 'HOME') L.push({ id: 'travelTrain', label: 'Home workout, 25 min', sub: 'Instead of the gym today', go: 'train' });
+    if (medWait() && (SESS[plan] || CARDIO[plan] || plan === 'HOME')) L.push({ id: 'recover', label: '20–30 min walk', sub: 'Instead of training, until your doctor says OK' });
+    else if (plan === 'HOME') L.push({ id: 'travelTrain', label: 'Home workout, 25 min', sub: 'Instead of the gym today', go: 'train' });
     else if (SESS[plan]) L.push({ id: 'train', label: 'Gym: ' + SESS[plan].n, sub: SESS[plan].sub, go: 'train' });
     else if (CARDIO[plan]) { const ind = (getDay(k) || {}).indoor; L.push(ind && INDOOR[ind] ? { id: 'cardio', label: 'Indoors: ' + indoorTxt(ind, plan), sub: 'Instead of the ride, because of the weather' } : { id: 'cardio', label: CARDIO[plan].n, sub: CARDIO[plan].sub }); }
     else L.push({ id: 'recover', label: '20-min walk', sub: 'Rest day' });
+    if (medHypo() && (SESS[plan] || CARDIO[plan] || plan === 'HOME')) L.push({ id: 'sugar', label: 'Blood sugar: before training and at bedtime', sub: 'Lows can come hours after exercise', help: 'sugar' });
     if (forearmHome(k)) L.push({ id: 'forearm', label: 'Forearms at home, ' + (forearmNew(k) ? '4' : '8') + ' min', sub: forearmNew(k) ? 'First 2 weeks: 1 set of each, easy' : 'Twist, lift, grip: 2 sets of each', help: 'forearm' });
     L.push({ id: 'creatine', label: 'Creatine 5 g' });
     L.push({ id: 'protein', label: 'Protein ' + T.protein + ' g', sub: 'Ticks itself when you tick meals', auto: 'protein' });
@@ -1691,7 +1696,7 @@ function wxVerdict(H, date, startMin, durMin, ride) {
     if (wc >= 95) why = 'Thunderstorm';
     else if ((wc >= 71 && wc <= 77) || wc === 85 || wc === 86) why = 'Snow';
     else if (pr >= 0.5 && pp >= 50) why = pr >= 4 ? 'Heavy rain' : 'Rain';
-    else if (t <= (ride ? 3 : -2)) why = t <= 0 ? 'Freezing' : 'Cold';
+    else if (t <= (ride ? (medHas('asthma') ? 5 : 3) : -2)) why = t <= 0 ? 'Freezing' : 'Cold';
     else if (ws >= (ride ? 35 : 55)) why = 'Strong wind';
     else if (ride && t >= 30) why = 'Heat';
     if (why) return { why, at: key.slice(11), t: Math.round(t), txt: why + ' at ' + key.slice(11) + ', ' + Math.round(t) + ' °C' };
@@ -2016,7 +2021,8 @@ function medStops(c = medC()) {
   const out = Object.keys(c).filter(k => MED[k] && MED[k].stop).map(k => MED[k].n.toLowerCase().replace('a doctor said: supervised exercise only', 'supervised-only exercise'));
   if (c.hbp && c.hbp.ctl !== 'yes') out.push('blood pressure that may not be under control');
   if (c.preg) out.push(c.preg.when === 'after' ? 'a recent birth' : 'pregnancy');
-  Object.entries((c.injury || {}).areas || {}).forEach(([a, x]) => { if (x.when !== 'old') out.push('a recent ' + MED_AREAS[a].toLowerCase() + ' injury or operation'); });
+  if (c.other && (c.other.ai || {}).doctor) out.push((c.other.ai.name || c.other.txt).toLowerCase());
+  Object.entries((c.injury || {}).areas || {}).forEach(([a, x]) => { if (injRecent(x)) out.push('a recent ' + MED_AREAS[a].toLowerCase() + ' injury or operation'); });
   return out;
 }
 function medForm(D, sheet) {
@@ -2062,7 +2068,71 @@ function medCard() {
   return `<div class="card"><div class="spread"><h2>Health & injuries</h2><button class="btn small violet" data-a="medOpen">Change</button></div>
     <p class="small">${!M ? 'Not answered yet.' : keys.length ? esc(list.join(' · ')) : 'Nothing to note.'}</p>
     ${M && M.ok && medStops().length ? `<p class="small muted">Your doctor's OK: ${esc(shortDate(M.ok))}.</p>` : ''}
-    <p class="small muted">Stays on your phone, never sent anywhere. Not medical advice: check with your GP or specialist before you start.</p></div>`;
+    ${M && keys.length ? `<h3>What Gym Bro does for you</h3><ul class="small" style="padding-left:20px;margin:0">${medNotes().map(n => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}
+    ${c.other ? `${c.other.ai && c.other.ai.note ? `<p class="small">${esc(c.other.ai.note)}</p>` : ''}${c.other.ai ? `<p class="small muted">Tips by AI (Claude) from the words you typed, ${esc(shortDate(c.other.ai.at))}. They can only make Gym Bro more careful, never less.</p>` : ''}
+      <button class="btn ghost small" data-a="medAi" ${UI.medAiBusy ? 'disabled' : ''}>${UI.medAiBusy ? 'Asking…' : c.other.ai ? 'Ask the AI again' : 'Get AI tips for "' + esc(c.other.txt) + '"'}</button>
+      <p class="small muted">Sends only the words you typed to Claude (Anthropic) for this one answer. Nothing else about you, and nothing is kept.</p>` : ''}
+    <p class="small muted">Stays on your phone. Not medical advice: check with your GP or specialist before you start.</p></div>`;
+}
+/* ---------- what each condition changes: only ever more careful ---------- */
+// Sources: NHS pages on exercise in pregnancy and low blood pressure; NHS diabetes services (Cambridge, UCLH, Wirral) for
+// blood sugar around exercise; ACSM-aligned guidance for high blood pressure (moderate weights, 10–15 reps, never hold
+// your breath); asthma advice via the Met Office. Your own doctor's or diabetes team's numbers come first.
+const LYING = new Set(['bench', 'incb', 'idb', 'dbbench', 'floorpress', 'lcurl', 'hipthrust', 'glutebridge', 'deadbug', 'plank']);
+// pregnancy: nothing lying flat on the back or front, no hard ab work; after the birth: gentle core first
+const PREG_SWAP = { bench: 'machpress', dbbench: 'machpress', floorpress: 'machpress', lcurl: 'seatcurl', hipthrust: 'pullthrough', glutebridge: 'pullthrough', crunch: '', hlr: '', deadbug: '', plank: '' };
+const POSTNATAL_SWAP = { crunch: 'deadbug', hlr: 'deadbug' };
+const medHas = k => !!medC()[k];
+// waiting for a doctor's OK: walks instead of the gym and rides
+const medWait = () => !!S.core.med && !S.core.med.ok && medStops().length > 0;
+const medHypo = () => { const d = medC().diabetes; return !!d && (d.t === '1' || d.hypo !== 'no'); };
+const injRecent = x => x.when !== 'old' && !(x.at && diffDays(TODAY(), x.at) >= 183);
+// heavy, breath-holding and to-failure work is out for these
+const medCareful = () => ['hbp', 'heart', 'dizzy', 'superv', 'preg'].some(medHas) || !!(medC().other && (medC().other.ai || {}).doctor);
+const medMinReps = () => medCareful() ? 10 : 0;
+// the swap a condition makes: an exercise id, '' to leave it out, undefined for no change
+function medSwap(orig) {
+  const p = medC().preg; if (!p) return undefined;
+  const m = p.when === 'after' ? POSTNATAL_SWAP : PREG_SWAP; return orig in m ? m[orig] : undefined;
+}
+// joints to protect: injuries that are recent or still hurt, plus what the AI flagged for "Something else"
+function medAvoid() {
+  const c = medC(), out = new Set();
+  Object.entries((c.injury || {}).areas || {}).forEach(([a, x]) => { if (AREAS[a] && (injRecent(x) || x.hurt === 'yes' || x.hurt === 'some')) out.add(a); });
+  (((c.other || {}).ai || {}).avoid || []).forEach(a => { if (AREAS[a]) out.add(a); });
+  return [...out];
+}
+const avoidList = () => [...new Set(S.core.gym.avoid.concat(medAvoid()))];
+// one or two lines on the set screen
+function medTips(id) {
+  const c = medC(), out = [];
+  if (medCareful()) out.push('Breathe out as you push. Never hold your breath.');
+  if (c.lbp && LYING.has(id)) out.push('Sit up slowly and wait a few seconds before you stand.');
+  if (c.preg && c.preg.when !== 'after') out.push('You should still be able to talk, but not sing.');
+  Object.entries((c.injury || {}).areas || {}).forEach(([a, x]) => { if (!injRecent(x) && x.hurt === 'no' && (EX[id].stress || []).includes(a)) out.push('Old ' + MED_AREAS[a].toLowerCase() + ' injury: one extra light warm-up set first.'); });
+  return out.slice(0, 2);
+}
+// before the session
+function medWarm() {
+  const c = medC(), out = [];
+  if (c.diabetes) out.push(medHypo() ? 'Blood sugar checked? Under 4: treat the hypo, no training. Under 5: 15–30 g of fast sugar first. Glucose tablets in your bag. Your diabetes team\'s numbers come first.' : 'Water in your bag. Weights and rides both help your blood sugar.');
+  if (c.diabetes && c.diabetes.t === '1') out.push('Over 14 mmol/L: check ketones. Above 0.6: no training today.');
+  if (c.asthma) out.push('Reliever inhaler in your bag. Do the full warm-up, 10–15 minutes.');
+  if (c.lbp) out.push('Drink a glass of water now. Get up slowly between exercises.');
+  if (c.preg) out.push('Not on an empty stomach. Drink water, stay cool, stop if you feel unwell.');
+  return out;
+}
+// what Gym Bro does for you, on the Health card
+function medNotes() {
+  const c = medC(), out = [], av = medAvoid();
+  if (c.diabetes) out.push(medHypo() ? 'Diabetes: a blood sugar task on training days, before and at bedtime, because lows can come hours later. Losing weight on insulin or hypo tablets? Ask your diabetes team first: your doses may need to change.' : 'Diabetes: reminders before training. Weights and rides both help your blood sugar.');
+  if (medCareful()) out.push('Steadier lifting: at least 10 reps a set, 2–3 left in the tank, no finishers, breathe out as you push. Weights start lighter and build up over 2 weeks.');
+  if (c.lbp) out.push('Low blood pressure: water and "get up slowly" reminders after lying-down exercises.');
+  if (c.asthma) out.push('Asthma: inhaler and warm-up reminders, and rides move indoors below 5 °C.');
+  if (c.preg) out.push(c.preg.when === 'after' ? 'After the birth: gentle core work first, only a small calorie deficit.' : 'Pregnancy: nothing lying flat on your back or front, no hard ab work, calories at maintenance.');
+  if (av.length) out.push('Protecting your ' + andList(av.map(a => AREAS[a])) + ': exercises that load it are swapped.');
+  if (c.other) out.push(c.other.ai ? (c.other.ai.name || c.other.txt) + ': ' + (c.other.ai.tips || []).join(' ') : 'Something else: ask your GP what to avoid with it.');
+  return out;
 }
 function viewToday() {
   if (S.core.needsSetup) return `<div class="hero neutral"><span class="face">${tankSVG('neutral')}</span><div class="say"><b>Gym Bro</b><p>New recruit. Fill this in. I'll know if you lie.</p></div></div>` + setupCard();
@@ -2079,8 +2149,8 @@ function viewToday() {
   ${wxCard()}
   ${wakeCard()}
   ${late ? ciCard() : ''}
-  ${SESS[planFor(k)] && S.core.mode.type === 'normal' && !(getDay(k) || {}).session ? gymButton(planFor(k)) : ''}
-  ${CARDIO[planFor(k)] && S.core.mode.type === 'normal' && !isDone(k, { id: 'cardio' }) ? '<button class="btn ghost block" data-a="dayOpen">Gym instead of the ride?</button>' : ''}
+  ${SESS[planFor(k)] && S.core.mode.type === 'normal' && !medWait() && !(getDay(k) || {}).session ? gymButton(planFor(k)) : ''}
+  ${CARDIO[planFor(k)] && S.core.mode.type === 'normal' && !medWait() && !isDone(k, { id: 'cardio' }) ? '<button class="btn ghost block" data-a="dayOpen">Gym instead of the ride?</button>' : ''}
   <div class="card">
     <div class="spread"><h2>Today</h2>${st ? `<span class="streak">${st}-day streak</span>` : ''}</div>
     <div class="tasks">${tasks.map(t => taskRow(k, t)).join('')}</div>
@@ -2186,7 +2256,7 @@ const FINISH = {
   lower: [['lpcalf', 'Calves: small and quick to recover'], ['lext', 'Quads, safe to take to failure'], ['lcurl', 'Hamstrings from another angle'], ['glutebridge', 'Glutes'], ['crunch', 'Abs']],
 };
 function finisherFor(sess) {
-  const have = new Set(sessionExercises(sess, TODAY()).flatMap(x => [x.id, x.orig])), av = S.core.gym.avoid;
+  const have = new Set(sessionExercises(sess, TODAY()).flatMap(x => [x.id, x.orig])), av = avoidList();
   const up = FINISH.upper, lo = FINISH.lower, list = sess[0] === 'U' ? up : sess[0] === 'L' ? lo : up.flatMap((x, i) => lo[i] ? [x, lo[i]] : [x]);
   return list.filter(([id]) => EX[id] && !have.has(id) && safeFor(id, av)).slice(0, 3);
 }
@@ -2285,17 +2355,17 @@ function viewTrain() {
   const ss = SESS[UI.sess];
   const moved = S.core.overrides[k];
   const todayNote = !SESS[plan] && mode === 'normal' ? `<div class="banner travel"><p class="small"><b>No gym today.</b> ${plan === 'REST' ? 'Rest day: walk 20 min.' : CARDIO[plan] ? esc(CARDIO[plan].n) + ', easy pace. <button class="linkbtn" data-a="dayOpen">Gym instead?</button>' : ''}${moved ? ' You changed today\'s plan. <button class="linkbtn" data-a="dayUndo">Undo</button>' : ''}</p></div>` : '';
-  const av = S.core.gym.avoid;
+  const av = avoidList();
   const injury = av.length ? `<div class="banner warn"><h3>${av.map(a => AREAS[a][0].toUpperCase() + AREAS[a].slice(1)).join(' + ')}-friendly mode</h3><p class="small">Exercises that load your ${av.map(a => AREAS[a]).join(' or ')} are swapped automatically. Pain for more than a week, or sharp pain? See a physio.</p><button class="btn ghost small" data-a="avoidOff">My ${av.map(a => AREAS[a]).join(' and ')} feel${av.length > 1 ? '' : 's'} fine again</button></div>` : '';
   const exs = sessionExercises(UI.sess, k), b = sessBurn(UI.sess);
   return `
-  ${modeBanner()}${tankTip('gym')}${segs}${todayNote}${injury}${lightCard()}${UI.sess === plan ? resultCard(k) : ''}${d.session === UI.sess ? '' : gymButton(UI.sess)}
+  ${modeBanner()}${tankTip('gym')}${segs}${todayNote}${injury}${medWait() ? medTodayCard() : ''}${medWarm().length && mode === 'normal' ? `<div class="banner travel"><h3>Before you start</h3>${medWarm().map(t => `<p class="small">${esc(t)}</p>`).join('')}</div>` : ''}${lightCard()}${UI.sess === plan ? resultCard(k) : ''}${d.session === UI.sess ? '' : gymButton(UI.sess)}
   <div class="card">
     <div><h2>${ss.n}: ${esc(ss.sub)}</h2><p class="muted">About ${b.min} min${UI.sess === plan ? ' at <button class="linkbtn" data-a="moveOpen" data-v="' + k + '">' + planTime(k) + '</button>' : ''} · <button class="linkbtn" data-a="help" data-v="sess:${UI.sess}">What to do at the gym</button>${UI.sess === plan ? ' · <button class="linkbtn" data-a="dayOpen">Can\'t train today?</button>' : ''}</p></div>
     <div class="burn">You burn about <b>${fmt(b.kcal)} kcal</b> in this session, plus about <b>${b.epoc} kcal</b> of afterburn over the next day. It's already in your calories.</div>
-    ${exs.map(x => x.id ? exCard(x.id, d, x) : x.skip ? skippedCard(x) : `<div class="ex"><b>${esc(EX[x.orig].n)}</b><p class="small muted">Skip it today: no ${av.map(a => AREAS[a]).join('/')}-friendly swap.</p></div>`).join('')}
+    ${exs.map(x => x.id ? exCard(x.id, d, x) : x.skip ? skippedCard(x) : x.med !== undefined ? `<div class="ex"><b>${esc(EX[x.orig].n)}</b><p class="small muted">${esc(x.med)}</p></div>` : `<div class="ex"><b>${esc(EX[x.orig].n)}</b><p class="small muted">Skip it today: no ${av.map(a => AREAS[a]).join('/')}-friendly swap.</p></div>`).join('')}
     <button class="btn ghost block" data-a="addExOpen" style="border:2px dashed var(--blue);color:var(--blue)">+ Add more exercises</button>
-    <button class="btn ghost block" data-a="finOpen" data-v="${UI.sess}" style="border:2px dashed var(--orange);color:var(--orange)">Finisher: push it harder, safely</button>
+    ${medCareful() ? '' : `<button class="btn ghost block" data-a="finOpen" data-v="${UI.sess}" style="border:2px dashed var(--orange);color:var(--orange)">Finisher: push it harder, safely</button>`}
     <button class="btn block blue" data-a="saveSession">${d.session === UI.sess ? 'Update session' : 'Finish session'}</button>
   </div>
   ${sched}${whyCard()}`;
@@ -2375,11 +2445,13 @@ function reqSlots(key) {
 }
 // the exercises you actually do today: your swaps first, then injury-friendly replacements, no duplicates
 function sessionExercises(key, k) {
-  const d = getDay(k) || {}, dayS = d.exSwap || {}, av = S.core.gym.avoid, used = new Set(), out = [];
+  const d = getDay(k) || {}, dayS = d.exSwap || {}, av = avoidList(), used = new Set(), out = [];
   const skips = d.exSkip || {};
   for (const orig of SESS[key].ex) {
     if (skips[orig]) { out.push({ id: null, orig, skip: skips[orig] }); continue; }
-    let id = dayS[orig] || S.core.gym.swap[orig] || orig, why = dayS[orig] ? 'today' : S.core.gym.swap[orig] ? 'always' : '';
+    const ms = medSwap(orig);
+    if (ms === '' && !dayS[orig]) { out.push({ id: null, orig, med: medC().preg.when === 'after' ? '' : 'Left out in pregnancy. Do pelvic floor exercises instead: squeeze and lift 10 times, 3 times a day.' }); continue; }
+    let id = dayS[orig] || S.core.gym.swap[orig] || ms || orig, why = dayS[orig] ? 'today' : S.core.gym.swap[orig] ? 'always' : ms ? 'med' : '';
     if (!EX[id]) { id = orig; why = ''; }
     if (!safeFor(id, av) || used.has(id)) {
       const alt = (ALTS[orig] || []).find(a => EX[a] && safeFor(a, av) && !used.has(a));
@@ -2428,7 +2500,7 @@ function exCard(id, d, x = {}) {
   const reps = dr.r || (saved && saved.r) || [];
   return `<div class="ex ${E.main ? 'main' : ''}">
     <div class="ex-top"><button class="exname" data-a="how" data-v="${id}"><b>${esc(E.n)}</b><span>${setsOf(E)} sets × ${repsOf(E).join('–')} reps${E.note ? ' · ' + esc(E.note) : ''}</span></button>${E.main ? '<span class="tag">Main</span>' : ''}</div>
-    ${x.why === 'fin' ? `<p class="small" style="font-weight:700;color:var(--orange)">Finisher: last set to failure · <button class="linkbtn" data-a="addExDel" data-v="${id}">Remove</button></p>` : x.why === 'req' ? `<p class="small" style="font-weight:700;color:var(--violet)">Extra for your request: ${esc(REQS[x.req].n)}${x.id !== x.orig ? ' (instead of ' + esc(EX[x.orig].n) + ')' : ''}</p>` : x.why === 'added' ? `<p class="small" style="font-weight:700;color:var(--blue)">Extra, added by you · <button class="linkbtn" data-a="addExDel" data-v="${id}">Remove</button></p>` : x.why ? `<p class="small" style="font-weight:700;color:var(--blue)">Instead of ${esc(EX[x.orig].n)} (${x.why === 'today' ? 'just today' : x.why === 'always' ? 'always' : (AREAS[S.core.gym.avoid.find(a => (EX[x.orig].stress || []).includes(a))] || 'injury') + '-friendly'})${x.why !== 'injury' ? ` · <button class="linkbtn" data-a="exUndo" data-v="${x.orig}">Undo</button>` : ''}</p>` : ''}
+    ${x.why === 'fin' ? `<p class="small" style="font-weight:700;color:var(--orange)">Finisher: last set to failure · <button class="linkbtn" data-a="addExDel" data-v="${id}">Remove</button></p>` : x.why === 'req' ? `<p class="small" style="font-weight:700;color:var(--violet)">Extra for your request: ${esc(REQS[x.req].n)}${x.id !== x.orig ? ' (instead of ' + esc(EX[x.orig].n) + ')' : ''}</p>` : x.why === 'added' ? `<p class="small" style="font-weight:700;color:var(--blue)">Extra, added by you · <button class="linkbtn" data-a="addExDel" data-v="${id}">Remove</button></p>` : x.why ? `<p class="small" style="font-weight:700;color:var(--blue)">Instead of ${esc(EX[x.orig].n)} (${x.why === 'today' ? 'just today' : x.why === 'always' ? 'always' : x.why === 'med' ? 'safer for you now' : (AREAS[avoidList().find(a => (EX[x.orig].stress || []).includes(a))] || 'injury') + '-friendly'})${!['injury', 'med'].includes(x.why) ? ` · <button class="linkbtn" data-a="exUndo" data-v="${x.orig}">Undo</button>` : ''}</p>` : ''}
     <div class="meal-act" style="margin-top:0"><button class="linkbtn" data-a="how" data-v="${id}">${open ? 'Hide how-to' : 'How to do it'}</button>${x.why === 'added' ? '' : `<button class="linkbtn" data-a="exSwap" data-v="${x.orig || id}">Swap</button>`}</div>
     ${open ? `<div class="how">${exHowHTML(id)}</div>` : ''}
     <div class="ex-log">
@@ -2525,6 +2597,7 @@ function viewGym() {
         <li><span><b>10 arm circles</b> each way, <b>10 bodyweight squats</b>, <b>10 hip swings</b> each leg.</span></li>
         <li><span>Warm-up sets for the heavy lifts come later, Gym Bro tells you when.</span></li>
       </ol>
+      ${medWarm().map(t => `<p class="small" style="font-weight:700;color:var(--violet)">${esc(t)}</p>`).join('')}
       <p class="small muted">Today: ${n} exercises, about ${mins} min.</p>
       <button class="btn ghost block" data-a="gymShort">${G.short ? 'Full session after all' : 'Short on time? Main lifts + 2 more, one set less'}</button>
       <button class="btn blue block" data-a="gymGo">Warm-up done, start</button>
@@ -2534,13 +2607,13 @@ function viewGym() {
     const rows = q.map(x => { const dr = UI.draft[x.id] || {}; return `<tr><td>${esc(EX[x.id].n)}</td><td class="num">${dr.st ? gymW(x.id) + ' kg ' + (dr.st === 'ok' ? '✓' : '✗' + (dr.r ? ' ' + dr.r.join(', ') : '')) : '<span class="muted">skipped</span>'}</td></tr>`; }).join('');
     return `<div class="hero happy"><span class="face">${tankSVG('happy')}</span><div class="say"><b>Gym Bro</b><p>Done. That's how it's done. Save it and go eat your protein.</p></div></div>
     <div class="card">${top}<h2>Session done</h2><table>${rows}</table>
-      ${finisherBlock(G.sess) ? '' : '<button class="btn ghost block" data-a="finOpen" data-v="' + G.sess + '" style="border:2px dashed var(--orange);color:var(--orange)">Not done yet? Add a 15-minute finisher</button>'}
+      ${finisherBlock(G.sess) || medCareful() ? '' : '<button class="btn ghost block" data-a="finOpen" data-v="' + G.sess + '" style="border:2px dashed var(--orange);color:var(--orange)">Not done yet? Add a 15-minute finisher</button>'}
       <button class="btn green block" data-a="gymFinish">Save session</button>
       <button class="btn ghost block" data-a="gymPrev">Back to the last exercise</button></div>`;
   }
   const x = q[G.i], id = x.id, E = EX[id], dr = UI.draft[id] || {}, sets = gymSets(G, id), w = gymW(id), reps = repsOf(E).join('–');
   const resting = G.restEnd > Date.now(), warm = G.set === 1 && !dr.warm && !resting ? warmups(id, w) : [];
-  const alts = G.swap ? [x.orig].concat(ALTS[x.orig] || []).filter(a => EX[a] && a !== id && safeFor(a, S.core.gym.avoid) && !q.some(y => y.id === a)) : [];
+  const alts = G.swap ? [x.orig].concat(ALTS[x.orig] || []).filter(a => EX[a] && a !== id && safeFor(a, avoidList()) && !q.some(y => y.id === a)) : [];
   const step = Math.min(E.inc || 2.5, 2.5), bw = !E.inc && !w;
   const unit = repUnit(E) === 's' ? 'seconds' : 'reps', prev = lastLog(id, TODAY()), sg = suggestion(id);
   const hint = sg.down && w === sg.w ? `Last time your first set was ${prev.r[0]}, below ${repsOf(E)[0]}, so ${+(prev.w - sg.w).toFixed(2)} kg lighter today.` : prev && Array.isArray(prev.r) && prev.w === w ? `Last time${bw ? '' : ' at ' + w + ' kg'}: ${prev.r.join(', ')}. Beat it.` : '';
@@ -2563,7 +2636,8 @@ function viewGym() {
   else main = `<p class="gym-big">Set ${G.set} of ${sets}: ${reps} ${unit}${bw ? '' : ` at <span id="gym-wt">${w}</span> kg`}</p>
       ${hint ? `<p class="small" style="font-weight:700;color:var(--blue)">${esc(hint)}</p>` : ''}
       ${bw ? '' : `<div class="gym-w"><button class="btn ghost" data-a="gymW" data-v="-${step}">−</button><input id="gym-w" data-ex="${id}" inputmode="decimal" value="${w}"><button class="btn ghost" data-a="gymW" data-v="${step}">+</button></div>`}
-      <p class="small muted">${ISO.has(id) && G.set === sets ? 'Last set: keep going until you can\'t do another clean rep.' : 'Stop with 1–2 reps left in the tank.'} Rest ${restTxt(id)} after.</p>
+      ${medTips(id).map(t => `<p class="small" style="font-weight:700;color:var(--violet)">${esc(t)}</p>`).join('')}
+      <p class="small muted">${medCareful() ? 'Stop with 2–3 reps left in the tank.' : ISO.has(id) && G.set === sets ? 'Last set: keep going until you can\'t do another clean rep.' : 'Stop with 1–2 reps left in the tank.'} Rest ${restTxt(id)} after.</p>
       <button class="btn blue block" data-a="gymSet">Set done</button>`;
   return `<div class="card">${top}
     <p class="small muted">Exercise ${G.i + 1} of ${n}${E.main ? ' · Main lift' : ''}</p>
@@ -3240,6 +3314,12 @@ const HELP = {
   fluids: { t: 'Fluids when you\'re ill', s: ['3 L a day: water, tea with honey, broth or soup.', 'Small sips often if your stomach is bad.'] },
   rest: { t: 'How to rest properly', s: ['No gym. No hard rides.', 'Symptoms only above the neck? A 20–30 min walk is fine.', 'Sleep as much as you can. Keep eating protein.', 'Switch the mode back to Normal when you feel better.'] },
   recover: { t: 'Rest day', s: ['Go for an easy 20-minute walk outside.', 'Optional: 10 minutes of stretching.', 'Still eat your meals and take creatine. Muscle grows on rest days.'] },
+  sugar: { t: 'Blood sugar and training', s: [
+    'Before: under 4 mmol/L is a hypo: treat it and don\'t train. Under 5: have 15–30 g of fast sugar (glucose tablets, juice) first.',
+    'Type 1 and over 14 mmol/L: check ketones. Above 0.6: no training today.',
+    'Carry glucose tablets in your gym bag and on rides.',
+    'Lows can come hours later, even overnight: check before bed on training days.',
+    'Your diabetes team\'s numbers come first if they gave you different ones.'] },
   forearm: { t: 'Forearms at home, 8 min', s: [
     'Twist: hold a hammer or a dumbbell handle with weight on one end, forearm on your thigh. Turn your palm down slowly, then up and over. 2 × 12–15 each arm.',
     'Lift: forearm on your thigh, palm down, a light dumbbell or a full 1.5 L bottle. Lift the back of your hand, pause, lower slowly. 2 × 15–20 each arm.',
@@ -3261,7 +3341,7 @@ const videoLink = name => 'https://www.youtube.com/results?search_query=' + enco
 function exHowHTML(id) {
   const E = EX[id];
   return `<ol>${E.how.map(s => `<li>${esc(s)}</li>`).join('')}</ol>
-    <p class="muted">${setsOf(E)} sets of ${repsOf(E).join('–')} reps. Rest ${restTxt(id)} between sets.${ISO.has(id) ? ' Last set: keep going until you can\'t do another clean rep.' : ' Stop with 1–2 reps left in the tank.'}</p>
+    <p class="muted">${setsOf(E)} sets of ${repsOf(E).join('–')} reps. Rest ${restTxt(id)} between sets.${medCareful() ? ' Stop with 2–3 reps left in the tank, and breathe out as you push.' : ISO.has(id) ? ' Last set: keep going until you can\'t do another clean rep.' : ' Stop with 1–2 reps left in the tank.'}</p>
     <a class="vid" href="${videoLink(E.n)}" target="_blank" rel="noopener">▶ Watch a video</a>`;
 }
 const SKIP_REASONS = { pain: 'Pain or injury', equip: 'No equipment', time: 'No time', tired: 'Too tired', other: 'Other' };
@@ -3304,7 +3384,7 @@ function swapSheet() {
     <h2>Do this instead</h2>
     ${list}
     ${sw.pick ? `<div class="grid2"><button class="btn blue" data-a="swApply" data-v="today">Just today</button><button class="btn ghost" data-a="swApply" data-v="always">From now on</button></div>` : ''}
-    ${sw.area && sw.area !== 'other' && !S.core.gym.avoid.includes(sw.area) ? `<button class="btn ghost block" data-a="avoidOn" data-v="${sw.area}">Make every session ${AREAS[sw.area]}-friendly</button>` : ''}
+    ${sw.area && sw.area !== 'other' && !avoidList().includes(sw.area) ? `<button class="btn ghost block" data-a="avoidOn" data-v="${sw.area}">Make every session ${AREAS[sw.area]}-friendly</button>` : ''}
     ${opts.length ? '<button class="btn ghost block" data-a="swSkip1" style="margin-top:6px">None of these work, skip it</button>' : ''}
   </div>`;
 }
@@ -3930,21 +4010,34 @@ const A = {
   medTog(el) { medKeep(); const c = UI.med.c, k = el.dataset.v; if (c[k]) delete c[k]; else c[k] = k === 'injury' ? { areas: {} } : {}; render(); },
   medSet(el) { medKeep(); const [k, f, v] = el.dataset.v.split('|'); UI.med.c[k][f] = v; render(); },
   medArea(el) { medKeep(); const ar = UI.med.c.injury.areas, a = el.dataset.v; if (ar[a]) delete ar[a]; else ar[a] = {}; render(); },
-  medInj(el) { medKeep(); const [a, f, v] = el.dataset.v.split('|'); UI.med.c.injury.areas[a][f] = v; render(); },
+  medInj(el) { medKeep(); const [a, f, v] = el.dataset.v.split('|'), x = UI.med.c.injury.areas[a]; x[f] = v; if (f === 'when') { if (v === 'recent') x.at = x.at || TODAY(); else delete x.at; } render(); },
   medNone() { UI.med = { c: {} }; A.medSave(); },
   medSave() {
     medKeep(); const c = UI.med.c, prev = S.core.med;
     if (c.injury && !Object.keys(c.injury.areas).length) { toast('Pick where the injury is, or untick it.'); return; }
     if (c.injury && Object.values(c.injury.areas).some(x => !x.when)) { toast('Say when each injury was.'); return; }
     if (c.other && !(c.other.txt || '').trim()) { toast('Write what it is, or untick "Something else".'); return; }
-    const st = medStops(c), keepOk = !!(prev && prev.ok && st.every(x => medStops(prev.c).includes(x)));
+    if (c.other && prev && prev.c.other && prev.c.other.txt !== c.other.txt) delete c.other.ai;
+    const st = medStops(c), keepOk = !!(prev && prev.ok && st.every(x => medStops(prev.c).includes(x))), wasCareful = !!prev && medCareful();
     S.core.med = { at: TODAY(), acc: TODAY(), c: JSON.parse(JSON.stringify(c)), ...(keepOk ? { ok: prev.ok } : {}) };
+    if (medCareful() && !wasCareful) S.core.mode.rampStart = TODAY();
     UI.med = null; UI.sheet = null; saveCore();
     tankSay(st.length && !keepOk ? 'soft' : 'happy', st.length && !keepOk ? 'Thanks for telling me. Doctor first, then we train. Safely.' : Object.keys(c).length ? 'Got it. I\'ll keep it in mind.' : 'Nothing to note. Good. Now let\'s work.', 10000);
     render();
   },
   medOpen() { UI.med = medDraft(); UI.sheet = { med: 1 }; render(); },
-  medOk() { S.core.med.ok = TODAY(); saveCore(); tankSay('happy', 'Doctor said yes. Good. We start easy and build up.', 10000); render(); },
+  async medAi() {
+    const o = medC().other; if (!o || !o.txt || UI.medAiBusy) return;
+    UI.medAiBusy = true; render();
+    const r = await aiAsk('med', [], { txt: o.txt }), before = medStops(), wasCareful = medCareful();
+    UI.medAiBusy = false;
+    if (r.error) { toast(r.error === 'not_set_up' ? 'AI tips aren\'t switched on yet.' : AI_ERR[r.error] || 'Couldn\'t get tips right now. Try again later.', 3500); render(); return; }
+    o.ai = { name: String(r.name || '').slice(0, 60), doctor: !!r.doctor, avoid: (r.avoid || []).filter(a => AREAS[a]), tips: (r.tips || []).slice(0, 3).map(t => String(t).slice(0, 320)), note: String(r.note || '').slice(0, 400), at: TODAY() };
+    if (medStops().some(x => !before.includes(x))) delete S.core.med.ok;
+    if (medCareful() && !wasCareful) S.core.mode.rampStart = TODAY();
+    saveCore(); render(); toast('Tips added to your Health card.');
+  },
+  medOk() { S.core.med.ok = TODAY(); S.core.mode.rampStart = TODAY(); saveCore(); tankSay('happy', 'Doctor said yes. Good. We start easy and build up.', 10000); render(); },
   medSame() { S.core.med.at = TODAY(); saveCore(); toast('Thanks. I\'ll ask again in 3 months.'); render(); },
   async bfAi(el, file) {
     UI.bfai = { loading: true }; render();
@@ -4185,7 +4278,7 @@ const A = {
   },
   exUndo(el) { const d = getDay(TODAY()), o = el.dataset.v; if (d && d.exSkip && d.exSkip[o]) { delete d.exSkip[o]; S.core.skipLog = (S.core.skipLog || []).filter(x => !(x.d === TODAY() && x.orig === o)); } if (d && d.exSwap) delete d.exSwap[el.dataset.v]; delete S.core.gym.swap[el.dataset.v]; saveCore(); render(); },
   avoidOn(el) { if (!S.core.gym.avoid.includes(el.dataset.v)) S.core.gym.avoid.push(el.dataset.v); UI.sheet = null; saveCore(); tankSay('soft', 'Every session is ' + AREAS[el.dataset.v] + '-friendly now. Heal up. Then we go again.'); render(); },
-  avoidOff() { S.core.gym.avoid = []; saveCore(); tankSay('happy', 'Back to full program. Easy at first, OK?'); render(); },
+  avoidOff() { S.core.gym.avoid = []; Object.values((medC().injury || {}).areas || {}).forEach(x => { if (x.hurt !== 'no') x.hurt = 'no'; }); saveCore(); tankSay('happy', 'Back to full program. Easy at first, OK?'); render(); },
   dayOpen() { UI.sheet = 'day'; render(); },
   dayApply(el) {
     const v = el.dataset.v, k = TODAY(), tk = addDays(k, 1), o = S.core.overrides, orig = weekPlan()[parseKey(k).getDay()];

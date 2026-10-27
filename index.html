@@ -1365,7 +1365,7 @@ async function loadPrices() {
   try { const r = await fetch('prices.json?t=' + Date.now(), { cache: 'no-store' }); if (r.ok) { const p = await r.json(); if (p && p.items) { S.prices = p; try { localStorage.setItem('gymbro-prices', JSON.stringify(p)); } catch (e) {} } } } catch (e) {}
 }
 // the app updates itself: when a newer version is online, reload into it (your data stays on the phone)
-const APP_VERSION = '35';
+const APP_VERSION = '36';
 async function checkUpdate() {
   try {
     const v = (await (await fetch('version.txt?t=' + Date.now(), { cache: 'no-store' })).text()).trim();
@@ -3067,6 +3067,7 @@ function settingsCard() {
     <p class="small muted">Your logs live on this phone only. Save a backup now and then (photos not included).</p>
     <div class="row"><button class="btn ghost small" data-a="exportBackup">Save backup file</button>
       <label class="btn ghost small filebtn">Restore backup<input id="import-in" type="file" accept="application/json,.json"></label></div>
+    <p class="small muted">Gym Bro version ${APP_VERSION} · <a href="privacy.html">Privacy</a></p>
     </div></details>`;
 }
 function chart(series, goal) {

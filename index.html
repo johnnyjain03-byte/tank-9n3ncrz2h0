@@ -1363,7 +1363,7 @@ async function loadPrices() {
   try { const r = await fetch('prices.json?t=' + Date.now(), { cache: 'no-store' }); if (r.ok) { const p = await r.json(); if (p && p.items) { S.prices = p; try { localStorage.setItem('gymbro-prices', JSON.stringify(p)); } catch (e) {} } } } catch (e) {}
 }
 // the app updates itself: when a newer version is online, reload into it (your data stays on the phone)
-const APP_VERSION = '32';
+const APP_VERSION = '33';
 async function checkUpdate() {
   try {
     const v = (await (await fetch('version.txt?t=' + Date.now(), { cache: 'no-store' })).text()).trim();
@@ -2351,7 +2351,7 @@ function gymSave() { try { localStorage.setItem(GYM_KEY, JSON.stringify({ d: TOD
 function gymLoad() {
   try { const o = JSON.parse(localStorage.getItem(GYM_KEY) || 'null'); if (o && o.d === TODAY() && o.g && SESS[o.g.sess]) { UI.gym = o.g; UI.draft = Object.assign(o.draft || {}, UI.draft); } } catch (e) {}
 }
-function gymClear() { UI.gym = null; try { localStorage.removeItem(GYM_KEY); } catch (e) {} gymBeepStop(); gymLock(false); }
+function gymClear() { gymBeepStop(); UI.gym = null; try { localStorage.removeItem(GYM_KEY); } catch (e) {} gymLock(false); }
 // short on time: every Main lift and the next two exercises, one set less each
 function gymQueue(G) {
   const all = sessionExercises(G.sess, TODAY()).filter(x => x.id);
@@ -2371,14 +2371,30 @@ function warmups(id, w) {
 const mmss = sec => Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
 // a beep when the rest is over (scheduled on the tap, so the phone allows the sound)
 function gymBeep(sec) {
-  gymBeepStop();
+  GYMX.beep.forEach(o => { try { o.stop(); } catch (e) {} }); GYMX.beep = [];
+  restAlarm(Date.now() + sec * 1000);
   try {
     const C = window.AudioContext || window.webkitAudioContext; if (!C) return;
     const ctx = GYMX.ctx = GYMX.ctx || new C(); ctx.resume();
     [0, 0.35].forEach(dt => { const o = ctx.createOscillator(), g = ctx.createGain(); o.frequency.value = 880; g.gain.value = 0.25; o.connect(g); g.connect(ctx.destination); o.start(ctx.currentTime + sec + dt); o.stop(ctx.currentTime + sec + dt + 0.2); GYMX.beep.push(o); });
   } catch (e) {}
 }
-function gymBeepStop() { GYMX.beep.forEach(o => { try { o.stop(); } catch (e) {} }); GYMX.beep = []; }
+function gymBeepStop(keepPush) { GYMX.beep.forEach(o => { try { o.stop(); } catch (e) {} }); GYMX.beep = []; if (!keepPush && UI.gym && UI.gym.alarm) restAlarm(0); }
+// A web app can't show a live countdown on the lock screen (that's an App Store app's Live Activity), and the beep stops
+// when the phone locks. So with notifications on, the server buzzes you 10 seconds before the rest ends; a new rest replaces it.
+const REST_WARN = 10;
+function gymNextTxt() {
+  const G = UI.gym, x = gymQueue(G)[G.i]; if (!x || !EX[x.id]) return 'Next set. Get ready.';
+  const id = x.id, E = EX[id], w = gymW(id), bw = !E.inc && !w;
+  return `${E.n}, set ${G.set} of ${gymSets(G, id)}: ${repsOf(E).join('–')} reps${bw ? '' : ' at ' + w + ' kg'}${G.set === 1 && warmups(id, w).length ? '. Warm-ups first.' : ''}`;
+}
+function restAlarm(end) {
+  const G = UI.gym; if (!G) return;
+  G.alarm = end && PUSH_URL && S.core.push.on ? end : 0;
+  if (!PUSH_URL || !S.core.push.on) return;
+  const at = end ? Math.max(Date.now() + 1000, end - REST_WARN * 1000) : 0;
+  try { fetch(PUSH_URL + '/rest', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: S.core.push.id, at, title: end ? REST_WARN + ' seconds left' : '', body: end ? gymNextTxt() : '' }), keepalive: true }).catch(() => {}); } catch (e) {}
+}
 // keep the screen on while you train
 async function gymLock(on) {
   try {
@@ -2435,7 +2451,8 @@ function viewGym() {
       <div class="row" style="flex-wrap:nowrap"><button class="btn green" style="flex:1" data-a="gymRes" data-v="ok">✓ Yes, all</button><button class="btn ghost" style="flex:1" data-a="gymRes" data-v="miss">✗ Missed some</button></div>
       <p class="small muted">All of them: Gym Bro adds weight next time. Missed some: same weight, beat it next time.</p>`;
   else if (resting) main = `<p class="small" style="text-align:center;font-weight:800">Rest. Next: set ${G.set} of ${sets}</p><div class="gym-rest" id="gym-rest">${mmss(Math.ceil((G.restEnd - Date.now()) / 1000))}</div>
-      <button class="btn ghost block" data-a="gymSkipRest">Ready, skip the rest</button>`;
+      <button class="btn ghost block" data-a="gymSkipRest">Ready, skip the rest</button>
+      <p class="small muted" style="text-align:center">${G.alarm ? `Lock your phone if you like: Gym Bro buzzes you ${REST_WARN} seconds before the end.` : pushState() === 'off' ? `Want a buzz ${REST_WARN} seconds before the end, even with your phone locked? <button class="linkbtn" data-a="pushOn">Turn on notifications</button>` : ''}</p>`;
   else if (warm.length) main = `<p class="gym-big">Warm-up sets first</p>
       <ol class="steps">${warm.map(([kg, r]) => `<li><span><b>${kg} kg × ${r}</b>${kg === 20 && BARBELL.includes(id) ? ' (empty bar)' : ''}</span></li>`).join('')}</ol>
       <p class="small muted">Easy and quick, about a minute's rest between them. They don't count as sets.</p>
@@ -3875,7 +3892,7 @@ const A = {
     gymSave(); go('gym');
   },
   gymResume() { go('gym'); },
-  gymExit() { gymSave(); gymBeepStop(); gymLock(false); UI.sess = UI.gym.sess; go('train'); toast('Paused. Tap "Back to gym mode" to carry on.'); },
+  gymExit() { gymSave(); gymBeepStop(true); gymLock(false); UI.sess = UI.gym.sess; go('train'); toast('Paused. Tap "Back to gym mode" to carry on.'); },
   gymShort() { UI.gym.short = !UI.gym.short; gymSave(); render(); },
   gymGo() { UI.gym.i = 0; UI.gym.set = 1; gymSave(); render(); window.scrollTo(0, 0); },
   gymWarm() { const id = gymQueue(UI.gym)[UI.gym.i].id; (UI.draft[id] = UI.draft[id] || {}).warm = 1; gymSave(); render(); },
@@ -3902,7 +3919,7 @@ const A = {
   gymSwap(el) {
     const G = UI.gym, x = gymQueue(G)[G.i], d = getDay(TODAY(), true); d.exSwap = d.exSwap || {};
     if (el.dataset.v === x.orig) delete d.exSwap[x.orig]; else d.exSwap[x.orig] = el.dataset.v;
-    delete UI.draft[x.id]; G.set = 1; G.swap = false; G.restEnd = 0; touch(); gymSave(); render();
+    delete UI.draft[x.id]; G.set = 1; G.swap = false; G.restEnd = 0; gymBeepStop(); touch(); gymSave(); render();
     toast('Swapped, just for today.');
   },
   gymFinish() {
@@ -4217,7 +4234,7 @@ const A = {
   },
   help(el) { if (UI.tab === 'train') keepDraft(); UI.sheet = { help: el.dataset.v }; render(); },
   openSess(el) { UI.sheet = null; UI.sess = el.dataset.v; UI.draft = {}; go('train'); },
-  pushOn() { enablePush(); },
+  async pushOn() { await enablePush(); if (UI.gym && UI.gym.restEnd > Date.now() + REST_WARN * 1000) { restAlarm(UI.gym.restEnd); gymSave(); render(); } },
   pushOff() { disablePush(); },
   async pushTest() {
     try { const r = await fetch(PUSH_URL + '/test', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: S.core.push.id }) }); toast(r.ok ? 'Sent. It should pop up in a few seconds.' : 'Test failed. Turn notifications off and on again.'); }

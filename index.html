@@ -1383,7 +1383,7 @@ async function loadPrices() {
   try { const r = await fetch('prices.json?t=' + Date.now(), { cache: 'no-store' }); if (r.ok) { const p = await r.json(); if (p && p.items) { S.prices = p; try { localStorage.setItem('gymbro-prices', JSON.stringify(p)); } catch (e) {} } } } catch (e) {}
 }
 // the app updates itself: when a newer version is online, reload into it (your data stays on the phone)
-const APP_VERSION = '44';
+const APP_VERSION = '45';
 async function checkUpdate() {
   try {
     const v = (await (await fetch('version.txt?t=' + Date.now(), { cache: 'no-store' })).text()).trim();
@@ -2024,6 +2024,10 @@ function parseFoodText(text) {
   });
 }
 const itemFood = it => it.custom || foodById(it.id);
+// a logged food back into an editable item: the food it came from and how much, or its own numbers
+const recItem = r => { const f = r.fid && foodById(r.fid); if (f) return { id: r.fid, q: r.q || Math.max(0.5, round(r.k / (f.k || 1), 0.5)), alts: [r.fid] }; if (r.cu) return { custom: r.cu, q: r.q || 1 }; return { custom: { n: r.n.replace(/ ×[\d¼½¾]+$/, '').replace(/ \(out\)$/, ''), por: '1 portion', k: r.k, p: r.p, fat: r.fat || 0, c: r.c || 0, s: r.s || 0 }, q: 1 }; };
+// add to the list, or put it in place of the item you're changing (same amount)
+function faPut(F, it) { if (F.swapI !== undefined && F.items[F.swapI]) { F.items[F.swapI] = { ...it, q: F.items[F.swapI].q }; F.swapI = undefined; } else F.items.push(it); }
 const foodRec = (f, q, extra = {}) => ({ n: f.n + (q !== 1 ? ' ×' + fracTxt(q) : ''), k: Math.round(f.k * q), p: Math.round(f.p * q), fat: Math.round((f.fat || 0) * q), c: Math.round((f.c || 0) * q), s: Math.round((f.s || 0) * q), ...extra });
 
 /* ---------- UI state ---------- */
@@ -2388,8 +2392,8 @@ function viewTrain() {
   const d = getDay(k) || {};
   const segs = `<div class="segs">${list.concat('TRAVEL').map(s => `<button class="seg ${UI.sess === s ? 'on' : ''}" data-a="sess" data-v="${s}">${s === 'TRAVEL' ? 'Travel' : SESS[s].n}${s === plan ? ' (today)' : ''}</button>`).join('')}</div>`;
   const sched = `<details class="card"><summary>Your next 7 days</summary><table>
-    ${[0, 1, 2, 3, 4, 5, 6].map(i => { const dk = addDays(k, i), p = planFor(dk); const name = SESS[p] ? 'Gym: ' + SESS[p].n : CARDIO[p] ? CARDIO[p].n : p === 'HOME' ? 'Home workout' : 'Rest + 20-min walk'; const hid = SESS[p] ? 'sess:' + p : CARDIO[p] ? 'ride:' + p : 'recover'; return `<tr${i === 0 ? ' style="font-weight:800"' : ''}><td>${DOW[parseKey(dk).getDay()]}</td><td><button class="sched" data-a="help" data-v="${hid}">${esc(name)}</button></td><td class="num">${planDur(p) ? `<button class="linkbtn" data-a="moveOpen" data-v="${dk}">${planTime(dk)}</button>` : ''}</td></tr>`; }).join('')}
-  </table><p class="small muted">${S.core.goal.days} gym days a week · goal: ${esc(GOALS[S.core.goal.type].n)}. Tap a time to move a session. <button class="linkbtn" data-a="goalOpen">Change program</button></p></details>`;
+    ${[0, 1, 2, 3, 4, 5, 6].map(i => { const dk = addDays(k, i), p = planFor(dk); const name = SESS[p] ? 'Gym: ' + SESS[p].n : CARDIO[p] ? CARDIO[p].n : p === 'HOME' ? 'Home workout' : 'Rest + 20-min walk'; const hid = SESS[p] ? 'sess:' + p : CARDIO[p] ? 'ride:' + p : 'recover'; return `<tr${i === 0 ? ' style="font-weight:800"' : ''}><td>${DOW[parseKey(dk).getDay()]}</td><td><button class="sched" data-a="planOpen" data-v="${dk}">${esc(name)}</button></td><td class="num">${planDur(p) ? `<button class="linkbtn" data-a="moveOpen" data-v="${dk}">${planTime(dk)}</button>` : ''}</td></tr>`; }).join('')}
+  </table><p class="small muted">${S.core.goal.days} gym days a week · goal: ${esc(GOALS[S.core.goal.type].n)}. Tap a day to swap or change it, or a time to move it. <button class="linkbtn" data-a="goalOpen">Change program</button></p></details>`;
   if (UI.sess === 'TRAVEL') {
     const did = d.t && d.t.travelTrain;
     return `${modeBanner()}${segs}<div class="card"><h2>${plan === 'HOME' ? 'Home workout' : 'Travel workout'}</h2><p class="muted">25 minutes. Do 2 exercises back to back, rest 60 s, repeat.</p>
@@ -2794,7 +2798,7 @@ function viewFood() {
     <p class="muted small">Tick a meal when you've eaten it.</p>
     <div class="tasks">${mealOrder(meals).map(m => mealCard(m, ate.includes(m.key), true)).join('')}</div>
     ${Object.entries(d.slotOv || {}).map(([i, o]) => `<p class="small" style="border-top:1px solid var(--line);padding-top:8px"><b>${esc(SLOTS[i])}:</b> ${o.t === 'skip' ? 'skipped, spread over your other meals' : (o.t === 'own' ? 'your own: ' : 'eaten out: ') + esc(o.n) + ', ~' + fmt(o.k) + ' kcal · P ' + (o.p || 0)} · <button class="linkbtn" data-a="slotUndo" data-v="${i}">Undo</button></p>`).join('')}
-    ${(d.food || []).length ? `<div><div class="aisle">Also today</div>${d.food.map((f, i) => `<div class="spread small" style="border-top:1px solid var(--line);padding-top:8px"><span style="flex:1;min-width:0"><b>${esc(f.n)}</b> <span class="muted">${f.k} kcal · P ${f.p} · sugar ${f.s || 0} g</span></span><button class="linkbtn" data-a="rmFood" data-v="${i}">Remove</button></div>`).join('')}</div>` : ''}
+    ${(d.food || []).length ? `<div><div class="aisle">Also today</div>${d.food.map((f, i) => `<div class="spread small" style="border-top:1px solid var(--line);padding-top:8px"><span style="flex:1;min-width:0"><b>${esc(f.n)}</b> <span class="muted">${f.k} kcal · P ${f.p} · sugar ${f.s || 0} g</span></span><button class="linkbtn" data-a="foodEdit" data-v="${i}">Edit</button>&nbsp;<button class="linkbtn" data-a="rmFood" data-v="${i}">Remove</button></div>`).join('')}</div>` : ''}
     <div class="row" style="flex-wrap:nowrap"><button class="btn green" style="flex:1" data-a="foodOpen">+ Add food or drink</button><button class="btn ghost" style="flex:1" data-a="outOpen">Eating out</button></div>
     <p class="small muted">Coffee, a croissant, a beer: type it like you'd say it and Gym Bro counts it.</p>
   </div>
@@ -3588,6 +3592,32 @@ function swapClash(k, x) {
   return '';
 }
 const onDay = x => x === addDays(TODAY(), 1) ? 'tomorrow' : dayName(x);
+// any day in the next week: swap it with another day, change just that day, or move the time
+const whenTxt = x => x === TODAY() ? 'today' : x === addDays(TODAY(), 1) ? 'tomorrow' : 'on ' + parseKey(x).toLocaleDateString('en-GB', { weekday: 'long' });
+const PLAN_NAME = p => SESS[p] ? 'Gym: ' + SESS[p].n : CARDIO[p] ? CARDIO[p].n : p === 'HOME' ? 'Home workout' : 'Rest + 20-min walk';
+function planSheet(k) {
+  const p = planFor(k), orig = weekPlan()[parseKey(k).getDay()], close = `<div class="spread"><span class="lbl">${esc(dayName(k))}</span><button class="btn small ghost" data-a="closeSheet">Close</button></div>`;
+  const days = [0, 1, 2, 3, 4, 5, 6].map(i => addDays(TODAY(), i)).filter(x => x !== k && planFor(x) !== p);
+  const done = k === TODAY() && ((getDay(k) || {}).session || ((getDay(k) || {}).t || {}).cardio);
+  const opt = (v, t, d) => `<button class="opt" data-a="planSet" data-v="${k}|${v}"><b>${t}</b><span>${d}</span></button>`;
+  // an extra gym day: a session that doesn't train the same muscles as the day before or after, if there is one
+  const ok = x => [addDays(k, -1), addDays(k, 1)].every(n => { const a = halfOf(planFor(n)), b = halfOf(x); return !a || (a !== b && a !== 'full' && b !== 'full'); });
+  const gymNext = programSessions().find(x => x !== p && ok(x)) || programSessions().find(x => x !== p) || 'UA';
+  return `<div class="in" role="dialog" aria-label="Change ${esc(dayName(k))}">${close}
+    <h2>${esc(PLAN_NAME(p))}${planDur(p) ? ' · ' + planTime(k) : ''}</h2>
+    ${done ? '<p class="small">Already done today. Nice.</p>' : `
+    <h3>Swap with another day</h3>
+    ${days.map(x => { const px = planFor(x), c = swapClash(k, x); return `<button class="opt" data-a="moveDay" data-v="${k}|${x}"><b>${esc(dayName(x))}: ${esc(PLAN_NAME(px))}</b><span>${esc(PLAN_NAME(px))} ${esc(whenTxt(k))}, ${esc(PLAN_NAME(p).toLowerCase())} ${esc(whenTxt(x))}.${c ? ` <b style="color:var(--orange)">${esc(c)}.</b>` : ''}</span></button>`; }).join('')}
+    <h3>Or change just this day</h3>
+    ${!SESS[p] ? opt(gymNext, 'Gym instead: ' + esc(SESS[gymNext].n), 'An extra gym session. Your other days stay as they are.' + (ok(gymNext) ? '' : ' Same muscles as the day before or after, so swapping days is better.')) : ''}
+    ${!CARDIO[p] ? opt('Z2', 'Easy ride instead', '45 minutes, easy pace.') : ''}
+    ${p !== 'HOME' ? opt('HOME', 'Home workout instead', '25 minutes, no equipment.') : ''}
+    ${p !== 'REST' ? opt('REST', 'Rest day instead', k === TODAY() ? 'You\'ll be asked why. Moving it is better.' : 'A 20-minute walk instead.') : ''}
+    ${planDur(p) ? `<button class="opt" data-a="moveOpen" data-v="${k}"><b>Change the time</b><span>Now ${planTime(k)}</span></button>` : ''}
+    ${S.core.overrides[k] ? opt('UNDO', 'Back to the original plan', esc(PLAN_NAME(orig)) + '.') : ''}`}
+    <button class="btn ghost block" data-a="help" data-v="${SESS[p] ? 'sess:' + p : CARDIO[p] ? 'ride:' + p : 'recover'}">How to do it</button>
+  </div>`;
+}
 function daySheet() {
   const k = TODAY(), tk = addDays(k, 1), plan = planFor(k), orig = weekPlan()[parseKey(k).getDay()], name = SESS[orig] ? SESS[orig].n : CARDIO[orig] ? CARDIO[orig].n : 'today\'s plan', ride = !!CARDIO[plan];
   const opt = (v, t, d) => `<button class="opt" data-a="dayApply" data-v="${v}"><b>${t}</b><span>${d}</span></button>`;
@@ -3828,7 +3858,8 @@ function foodSheet() {
   const recent = S.core.recentFoods.map(foodById).filter(Boolean).slice(0, 8);
   const own = F.own !== undefined ? dayMeals(TODAY()).find(x => x.i === F.own) : null;
   return `<div class="in" role="dialog" aria-label="Add food">${close}
-    <h2>${F.own !== undefined ? 'What are you having for ' + esc(SLOTS[F.own].toLowerCase()) + '?' : 'What did you have?'}</h2>
+    <h2>${F.edit ? 'Change what you had' : F.own !== undefined ? 'What are you having for ' + esc(SLOTS[F.own].toLowerCase()) + '?' : 'What did you have?'}</h2>
+    ${F.swapI !== undefined && F.items[F.swapI] ? `<div class="banner travel"><p class="small"><b>Changing ${esc((itemFood(F.items[F.swapI]) || {}).n || 'this')}.</b> Type, scan or photograph what it should be: it takes its place, same amount. <button class="linkbtn" data-a="faSwapI" data-v="${F.swapI}">Cancel</button></p></div>` : ''}
     ${own ? `<p class="small muted">Instead of ${esc(R[own.id].n)}: aim for about ${fmt(own.k)} kcal and ${own.p} g protein.</p>` : ''}
     <label class="field"><span>Type it like you'd say it</span><input id="fa-q" type="text" value="${esc(F.q)}" placeholder="e.g. 2 coffees with milk and a croissant" autocomplete="off"></label>
     <button class="btn green block" data-a="faParse">Count it</button>
@@ -3836,7 +3867,7 @@ function foodSheet() {
     ${F.miss && F.miss.length ? `<div class="banner warn"><p class="small">Gym Bro doesn't know: <b>${F.miss.map(esc).join(', ')}</b></p><div class="row"><button class="btn small ghost" data-a="faView" data-v="custom">Enter it myself</button><button class="btn small ghost" data-a="faView" data-v="online">Search packaged food</button></div></div>` : ''}
     ${F.items.length ? `<div>${F.items.map(foodItemRow).join('')}</div>
       <div class="spread"><b>Total</b><span class="num"><b>${fmt(tot.k)}</b> kcal · P ${Math.round(tot.p)} · sugar ${Math.round(tot.s)} g</span></div>
-      <button class="btn green block" data-a="faSave">${F.own !== undefined ? 'Use this as my ' + esc(SLOTS[F.own].toLowerCase()) : 'Add to today'}</button>` : ''}
+      <button class="btn green block" data-a="faSave">${F.edit ? 'Save changes' : F.own !== undefined ? 'Use this as my ' + esc(SLOTS[F.own].toLowerCase()) : 'Add to today'}</button>` : F.edit ? '<button class="btn ghost block" data-a="faSave">Remove it from today</button>' : ''}
     ${recent.length && !F.items.length ? `<div class="field"><span>Recent</span><div class="pchips">${recent.map(f => `<button class="pchip" data-a="faPick" data-v="${esc(f.id)}">${esc(f.n)}</button>`).join('')}</div></div>` : ''}
     <div class="row" style="flex-wrap:nowrap"><label class="btn ghost filebtn" style="flex:1">Photo of my meal<input id="meal-in" type="file" accept="image/*" capture="environment"></label><button class="btn ghost" style="flex:1" data-a="faView" data-v="scan">Scan a barcode</button></div>
     <div class="meal-act"><button class="linkbtn" data-a="faView" data-v="custom">Enter it myself</button><button class="linkbtn" data-a="faView" data-v="online">Search packaged food</button></div>
@@ -3845,7 +3876,8 @@ function foodSheet() {
 const sugHTML = q => q && q.trim().length >= 2 ? foodMatches(q.split(/,|\band\b|\bwith\b/i).pop(), 5).map(f => `<button data-a="faPick" data-v="${esc(f.id)}"><b>${esc(f.n)}</b><span>${esc(f.por)} · ${fmt(f.k)} kcal</span></button>`).join('') : '';
 function foodItemRow(it, i) {
   const f = itemFood(it); if (!f) return '';
-  return `<div class="frow"><span class="t"><b>${esc(f.n)}</b><span>${fracTxt(it.q)} × ${esc(f.por)} · ${fmt(f.k * it.q)} kcal · P ${Math.round(f.p * it.q)}</span>${(it.alts || []).length > 1 ? `<button class="linkbtn" data-a="faAlt" data-v="${i}">Not this? Next match</button>` : ''}</span>
+  const sw = UI.sheet && UI.sheet.food && UI.sheet.food.swapI === i;
+  return `<div class="frow" ${sw ? 'style="outline:2px solid var(--blue);border-radius:12px"' : ''}><span class="t"><b>${esc(f.n)}</b><span>${fracTxt(it.q)} × ${esc(f.por)} · ${fmt(f.k * it.q)} kcal · P ${Math.round(f.p * it.q)}</span><span>${(it.alts || []).length > 1 ? `<button class="linkbtn" data-a="faAlt" data-v="${i}">Next match</button> · ` : ''}<button class="linkbtn" data-a="faSwapI" data-v="${i}">${sw ? 'Keep it' : 'Change'}</button></span></span>
     <button class="qbtn" data-a="faQty" data-v="${i}|-1" aria-label="Less">−</button><span class="qn">${fracTxt(it.q)}</span><button class="qbtn" data-a="faQty" data-v="${i}|1" aria-label="More">+</button><button class="qbtn" data-a="faDel" data-v="${i}" aria-label="Remove">×</button></div>`;
 }
 const burnTxt = x => { const net = actNet(x.a, x.min, x.i); return `About <b>${fmt(actKcal(x.a, x.min, x.i))} kcal</b> burned, plus ${afterburn(net, x.i)} kcal afterburn. Gym Bro adds about ${fmt(Math.min(x.ctx === 'log' ? 700 : 1000, round(net * (x.ctx === 'log' ? 0.6 : 0.7), 10)))} kcal to today's food.`; };
@@ -4170,7 +4202,7 @@ function render() {
   const sh = $('#sheet');
   if (UI.sheet) {
     const x = UI.sheet;
-    sh.innerHTML = x.chat ? chatSheet() : x.med ? medSheet() : x === 'mode' ? modeSheet() : x === 'goal' ? goalSheet() : x === 'day' ? daySheet() : x === 'addEx' ? addExSheet() : x.fin ? finSheet() : x.swap ? swapSheet() : x.food ? foodSheet() : x.busy !== undefined ? busySheet(x.busy) : x.repl !== undefined ? replSheet(x.repl) : x.out ? outSheet() : x.act ? actSheet() : x.move ? moveSheet(x.move) : x.skipday ? skipDaySheet() : helpSheet(x.help);
+    sh.innerHTML = x.chat ? chatSheet() : x.med ? medSheet() : x === 'mode' ? modeSheet() : x === 'goal' ? goalSheet() : x === 'day' ? daySheet() : x.plan ? planSheet(x.plan) : x === 'addEx' ? addExSheet() : x.fin ? finSheet() : x.swap ? swapSheet() : x.food ? foodSheet() : x.busy !== undefined ? busySheet(x.busy) : x.repl !== undefined ? replSheet(x.repl) : x.out ? outSheet() : x.act ? actSheet() : x.move ? moveSheet(x.move) : x.skipday ? skipDaySheet() : helpSheet(x.help);
     sh.hidden = false;
   } else { sh.hidden = true; sh.innerHTML = ''; }
   const cl = $('#chat-log'); if (cl) cl.scrollTop = cl.scrollHeight;
@@ -4510,6 +4542,18 @@ const A = {
   avoidOn(el) { if (!S.core.gym.avoid.includes(el.dataset.v)) S.core.gym.avoid.push(el.dataset.v); UI.sheet = null; saveCore(); tankSay('soft', 'Every session is ' + AREAS[el.dataset.v] + '-friendly now. Heal up. Then we go again.'); render(); },
   avoidOff() { S.core.gym.avoid = []; Object.values((medC().injury || {}).areas || {}).forEach(x => { if (x.hurt !== 'no') x.hurt = 'no'; }); saveCore(); tankSay('happy', 'Back to full program. Easy at first, OK?'); render(); },
   dayOpen() { UI.sheet = 'day'; render(); },
+  planOpen(el) { UI.sheet = { plan: el.dataset.v }; render(); },
+  planSet(el) {
+    const [k, v] = el.dataset.v.split('|'), o = S.core.overrides;
+    // today's rest goes through the skip report, as before
+    if (k === TODAY() && v === 'REST') { A.dayApply({ dataset: { v: 'REST' } }); return; }
+    if (v === 'UNDO') { const sw = (S.core.swapped || {})[k]; if (sw) { delete o[sw]; delete S.core.swapped[sw]; delete S.core.swapped[k]; } delete o[k]; }
+    else o[k] = v;
+    for (const key in o) if (key < addDays(TODAY(), -14)) delete o[key];
+    markMoved(k); UI.sheet = null; UI.sess = null; saveCore(); syncPlan();
+    tankSay(v === 'REST' ? 'grumpy' : 'neutral', v === 'UNDO' ? 'Back to the plan. Good.' : v === 'REST' ? 'Rest ' + whenTxt(k) + '. Walk 20 minutes, at least.' : PLAN_NAME(v) + ' ' + whenTxt(k) + '. Locked in.');
+    render();
+  },
   dayApply(el) {
     const v = el.dataset.v, k = TODAY(), tk = addDays(k, 1), o = S.core.overrides, orig = weekPlan()[parseKey(k).getDay()];
     if (v === 'REST' && !el.dataset.ok) { UI.sheet = { skipday: { reason: '', note: '' } }; render(); return; }
@@ -4833,10 +4877,16 @@ const A = {
   faParse() {
     const F = UI.sheet.food, q = val('fa-q'); if (!q) { toast('Type what you had.'); return; }
     const parsed = parseFoodText(q);
-    parsed.filter(x => x.id).forEach(x => F.items.push({ id: x.id, q: x.q, alts: x.alts }));
+    parsed.filter(x => x.id).forEach(x => faPut(F, { id: x.id, q: x.q, alts: x.alts }));
     F.miss = parsed.filter(x => !x.id).map(x => x.text); F.q = ''; render();
   },
-  faPick(el) { const F = UI.sheet.food; F.items.push({ id: el.dataset.v, q: 1, alts: [el.dataset.v] }); F.q = ''; render(); },
+  faPick(el) { const F = UI.sheet.food; faPut(F, { id: el.dataset.v, q: 1, alts: [el.dataset.v] }); F.q = ''; render(); },
+  foodEdit(el) {
+    const d = getDay(TODAY()), i = +el.dataset.v, r = d && d.food && d.food[i]; if (!r) return;
+    const group = r.oid ? d.food.filter(f => f.oid === r.oid) : [r];
+    UI.sheet = { food: { q: '', items: group.map(recItem), view: 'main', edit: { i, oid: r.oid || '' } } }; render();
+  },
+  faSwapI(el) { const F = UI.sheet.food, i = +el.dataset.v; F.swapI = F.swapI === i ? undefined : i; F.q = ''; render(); setTimeout(() => { const t = $('#fa-q'); if (t) t.focus(); }, 60); },
   faQty(el) { const [i, dlt] = el.dataset.v.split('|').map(Number), it = UI.sheet.food.items[i]; it.q = dlt > 0 ? it.q + (it.q < 1 ? 0.5 : 1) : Math.max(0.5, it.q - (it.q <= 1 ? 0.5 : 1)); render(); },
   faDel(el) { UI.sheet.food.items.splice(+el.dataset.v, 1); render(); },
   faAlt(el) { const it = UI.sheet.food.items[+el.dataset.v], i = it.alts.indexOf(it.id); it.id = it.alts[(i + 1) % it.alts.length]; render(); },
@@ -4859,7 +4909,7 @@ const A = {
   aiTick(el) { const x = UI.sheet.food.ai.res.items[+el.dataset.v]; x.on = el.checked; render(); },
   aiMealAdd() {
     const F = UI.sheet.food;
-    F.ai.res.items.filter(x => x.on).forEach(x => F.items.push({ custom: aiScaled(x), q: 1 }));
+    F.ai.res.items.filter(x => x.on).forEach(x => faPut(F, { custom: aiScaled(x), q: 1 }));
     if (F.ai.url) URL.revokeObjectURL(F.ai.url);
     F.ai = null; F.view = 'main'; render(); toast('Added. Check the total, then Add to today.');
   },
@@ -4874,7 +4924,7 @@ const A = {
     const seen = S.core.myFoods.find(f => f.bc === code && f.per100);
     if (seen) { F.prod = seen.per100; F.loading = false; render(); return; }
     const typed = S.core.myFoods.find(f => f.bc === code);
-    if (typed) { F.items.push({ id: typed.id, q: 1, alts: [typed.id] }); F.view = 'main'; F.code = ''; render(); toast('Found it: ' + typed.n); return; }
+    if (typed) { faPut(F, { id: typed.id, q: 1, alts: [typed.id] }); F.view = 'main'; F.code = ''; render(); toast('Found it: ' + typed.n); return; }
     F.prod = null; F.loading = true; render();
     try {
       const r = await fetch(`https://world.openfoodfacts.org/api/v2/product/${code}.json?fields=product_name,brands,nutriments,serving_quantity,serving_quantity_unit,serving_size,product_quantity,product_quantity_unit`);
@@ -4892,7 +4942,7 @@ const A = {
       f = { id: 'my:' + Date.now().toString(36), n: P.n, por: lbl, k: Math.round(P.k100 * m), p: Math.round(P.p100 * m), fat: Math.round(P.f100 * m), c: Math.round(P.c100 * m), s: Math.round(P.s100 * m), bc: P.code, per100: P };
       S.core.myFoods.push(f); if (S.core.myFoods.length > 200) S.core.myFoods.shift();
     }
-    F.items.push({ id: f.id, q: 1, alts: [f.id] }); F.view = 'main'; F.miss = []; saveCore(); render();
+    faPut(F, { id: f.id, q: 1, alts: [f.id] }); F.view = 'main'; F.miss = []; saveCore(); render();
   },
   fcAdd() {
     const F = UI.sheet.food, n = val('fc-n'), k = num('fc-k');
@@ -4900,7 +4950,7 @@ const A = {
     const f = { id: 'my:' + Date.now().toString(36), n, por: val('fc-por') || '1 portion', k: Math.round(k), p: Math.round(num('fc-p') || 0), fat: Math.round(num('fc-fat') || 0), c: Math.round(num('fc-c') || 0), s: Math.round(num('fc-s') || 0) };
     if (F.code && !F.prod) f.bc = F.code; // a barcode the database didn't know: next scan finds this
     S.core.myFoods.push(f); if (S.core.myFoods.length > 200) S.core.myFoods.shift();
-    F.items.push({ id: f.id, q: 1, alts: [f.id] }); F.miss = (F.miss || []).filter(x => x !== F.cn); F.view = 'main'; F.code = ''; saveCore(); render();
+    faPut(F, { id: f.id, q: 1, alts: [f.id] }); F.miss = (F.miss || []).filter(x => x !== F.cn); F.view = 'main'; F.code = ''; saveCore(); render();
   },
   async foSearch() {
     const F = UI.sheet.food, q = val('fo-q'); if (!q) return;
@@ -4920,12 +4970,21 @@ const A = {
     const F = UI.sheet.food, r = F.res[+el.dataset.v], g = r.sq || 100, m = g / 100;
     const f = { id: 'my:' + Date.now().toString(36), n: r.n, por: r.sq ? (r.ss || g + ' g') : '100 g', k: Math.round(r.k100 * m), p: Math.round(r.p100 * m), fat: Math.round(r.f100 * m), c: Math.round(r.c100 * m), s: Math.round(r.s100 * m) };
     S.core.myFoods.push(f); if (S.core.myFoods.length > 200) S.core.myFoods.shift();
-    F.items.push({ id: f.id, q: 1, alts: [f.id] }); F.view = 'main'; F.miss = []; saveCore(); render();
+    faPut(F, { id: f.id, q: 1, alts: [f.id] }); F.view = 'main'; F.miss = []; saveCore(); render();
   },
   faSave() {
     const F = UI.sheet.food, d = todayDay(), oid = F.own !== undefined ? 'own' + Date.now().toString(36) : ''; d.food = d.food || [];
     let tot = 0, totP = 0; const names = [];
-    F.items.forEach(it => { const f = itemFood(it); if (!f) return; const rec = foodRec(f, it.q, { fid: it.id, exact: 1 }); if (oid) rec.oid = oid; tot += rec.k; totP += rec.p || 0; names.push(rec.n); d.food.push(rec); if (it.id) S.core.recentFoods = [it.id].concat(S.core.recentFoods.filter(x => x !== it.id)).slice(0, 12); });
+    // editing something you logged: it's replaced where it was, and a replaced meal keeps its place with the new numbers
+    if (F.edit) {
+      const old = F.edit.oid ? d.food.filter(f => f.oid === F.edit.oid) : [d.food[F.edit.i]].filter(Boolean), at = d.food.indexOf(old[0]);
+      d.food = d.food.filter(f => !old.includes(f));
+      const recs = F.items.map(it => { const f = itemFood(it); return f ? foodRec(f, it.q, { fid: it.id, q: it.q, ...(it.custom ? { cu: it.custom } : {}), exact: 1, ...(F.edit.oid ? { oid: F.edit.oid } : {}) }) : null; }).filter(Boolean);
+      d.food.splice(at < 0 ? d.food.length : at, 0, ...recs);
+      if (F.edit.oid && d.slotOv) for (const i in d.slotOv) if (d.slotOv[i].oid === F.edit.oid) { if (recs.length) Object.assign(d.slotOv[i], { n: recs.map(r => r.n).join(', ').slice(0, 80), k: recs.reduce((a, r) => a + r.k, 0), p: recs.reduce((a, r) => a + (r.p || 0), 0) }); else delete d.slotOv[i]; }
+      UI.sheet = null; touch(); saveCore(); syncPush(); render(); toast(recs.length ? 'Updated. ' + fmt(recs.reduce((a, r) => a + r.k, 0)) + ' kcal now.' : 'Removed.'); return;
+    }
+    F.items.forEach(it => { const f = itemFood(it); if (!f) return; const rec = foodRec(f, it.q, { fid: it.id, q: it.q, ...(it.custom ? { cu: it.custom } : {}), exact: 1 }); if (oid) rec.oid = oid; tot += rec.k; totP += rec.p || 0; names.push(rec.n); d.food.push(rec); if (it.id) S.core.recentFoods = [it.id].concat(S.core.recentFoods.filter(x => x !== it.id)).slice(0, 12); });
     // your own meal takes the planned one's place: the rest of the day is portioned around it
     if (oid && names.length) {
       const m = dayMeals(TODAY()).find(x => x.i === F.own); if (m && d.ate && d.ate.includes(m.key)) setAte(d, m, false);

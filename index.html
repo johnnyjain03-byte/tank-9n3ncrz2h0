@@ -196,6 +196,8 @@ th{font-size:13px;color:var(--muted);border-top:0}
 .shop.got .box{background:var(--green);border-color:var(--green)} .shop.got .box svg{opacity:1;width:16px;height:16px}
 .shop.got .t{color:var(--muted);text-decoration:line-through}
 .shop .t{font-weight:700} .shop .qty{font-weight:800;color:var(--muted);white-space:nowrap}
+.slink{display:inline-block;font-weight:800;font-size:14px;color:var(--blue);text-decoration:none;padding:6px 12px;border:2px solid var(--line);border-radius:999px;white-space:nowrap}
+.shop{flex-wrap:wrap} .slinkrow{flex-basis:100%;margin:-6px 0 0;padding:0 0 10px 44px}
 .shop .x{width:34px;height:34px;border-radius:50%;border:0;background:var(--soft);color:var(--muted);font-weight:800;flex:none}
 .aisle{font-size:14px;font-weight:800;color:var(--green);margin-top:8px}
 .pchips{display:flex;flex-wrap:wrap;gap:8px}
@@ -1332,6 +1334,7 @@ function pushStatus() {
     alerts: S.core.budget.alert && !S.core.budget.alert.down ? ['price'] : [],
     loc: S.core.loc ? { lat: S.core.loc.lat, lon: S.core.loc.lon } : null,
     noTape: !!S.core.noTape,
+    shop: S.core.shopRem && onlineOn() ? { every: S.core.shopRem.every, time: S.core.shopRem.time, start: S.core.shopRem.start, store: ONLINE[onlineShop()][0] } : null,
   };
 }
 async function syncPush() {
@@ -1383,7 +1386,7 @@ async function loadPrices() {
   try { const r = await fetch('prices.json?t=' + Date.now(), { cache: 'no-store' }); if (r.ok) { const p = await r.json(); if (p && p.items) { S.prices = p; try { localStorage.setItem('gymbro-prices', JSON.stringify(p)); } catch (e) {} } } } catch (e) {}
 }
 // the app updates itself: when a newer version is online, reload into it (your data stays on the phone)
-const APP_VERSION = '45';
+const APP_VERSION = '46';
 async function checkUpdate() {
   try {
     const v = (await (await fetch('version.txt?t=' + Date.now(), { cache: 'no-store' })).text()).trim();
@@ -2023,11 +2026,23 @@ function parseFoodText(text) {
     return { text: part, q: Math.max(0.5, Math.min(20, q || 1)), id: hits[0] ? hits[0].id : null, alts: hits.map(h => h.id) };
   });
 }
-const itemFood = it => it.custom || foodById(it.id);
+// drinks and bowls made with water or milk: say what you used and the numbers follow (UK label values, per 100 ml)
+const LIQ = { proteinshake: [300, 'water'], coffeemilk: [30, 'semi'], tea: [20, 'semi'], teasugar: [20, 'semi'], porridge: [150, 'semi'], granolamilk: [125, 'semi'], cereal: [125, 'semi'], milk: [250, 'semi'], latte: [300, 'semi'], flatwhite: [200, 'semi'], cappuccino: [200, 'semi'], hotchoc: [250, 'semi'] };
+const BASES = { water: ['water', null], semi: ['semi-skimmed milk', 'Semi-skimmed milk'], skim: ['skimmed milk', 'Skimmed milk'], one: ['1% milk', '1% milk'], whole: ['whole milk', 'Whole milk'], oat: ['oat milk', 'Oat milk (unsweetened)'], soy: ['soy milk', 'Soy milk (unsweetened)'], almond: ['almond milk', 'Almond milk (unsweetened)'] };
+const baseMac = (b, ml) => { const n = (BASES[b] || [])[1]; return n && NUT[n] ? NUT[n].map(v => v * ml / 100) : [0, 0, 0, 0, 0]; };
+function withBase(f, b) {
+  const L = f && LIQ[f.id]; if (!L || !b || b === L[1] || !BASES[b]) return f;
+  const d = baseMac(b, L[0]).map((v, j) => v - baseMac(L[1], L[0])[j]), w = BASES[b][0];
+  return { ...f, n: f.id === 'milk' ? w[0].toUpperCase() + w.slice(1) : /with (water|milk)/.test(f.n) ? f.n.replace(/with (water|milk)/, 'with ' + w) : f.n + ' with ' + w, k: Math.max(0, Math.round(f.k + d[0])), p: Math.max(0, Math.round((f.p + d[1]) * 10) / 10), fat: Math.max(0, Math.round(((f.fat || 0) + d[2]) * 10) / 10), c: Math.max(0, Math.round(((f.c || 0) + d[3]) * 10) / 10), s: Math.max(0, Math.round(((f.s || 0) + d[4]) * 10) / 10) };
+}
+const itemFood = it => it.custom || withBase(foodById(it.id), it.base);
 // a logged food back into an editable item: the food it came from and how much, or its own numbers
-const recItem = r => { const f = r.fid && foodById(r.fid); if (f) return { id: r.fid, q: r.q || Math.max(0.5, round(r.k / (f.k || 1), 0.5)), alts: [r.fid] }; if (r.cu) return { custom: r.cu, q: r.q || 1 }; return { custom: { n: r.n.replace(/ ×[\d¼½¾]+$/, '').replace(/ \(out\)$/, ''), por: '1 portion', k: r.k, p: r.p, fat: r.fat || 0, c: r.c || 0, s: r.s || 0 }, q: 1 }; };
+const recItem = r => { const f = r.fid && foodById(r.fid); if (f) return { id: r.fid, q: r.q || Math.max(0.5, round(r.k / (f.k || 1), 0.5)), alts: [r.fid], ...(r.base ? { base: r.base } : {}) }; if (r.cu) return { custom: r.cu, q: r.q || 1 }; return { custom: { n: r.n.replace(/ ×[\d¼½¾]+$/, '').replace(/ \(out\)$/, ''), por: '1 portion', k: r.k, p: r.p, fat: r.fat || 0, c: r.c || 0, s: r.s || 0 }, q: 1 }; };
 // add to the list, or put it in place of the item you're changing (same amount)
 function faPut(F, it) { if (F.swapI !== undefined && F.items[F.swapI]) { F.items[F.swapI] = { ...it, q: F.items[F.swapI].q }; F.swapI = undefined; } else F.items.push(it); }
+// "a protein shake with oat milk": the milk you name becomes the shake's base rather than a separate glass
+const BASE_WORDS = [['oat', /\boat\s*milk/i], ['soy', /\bso(y|ya)\s*milk/i], ['almond', /\balmond\s*milk/i], ['whole', /\bwhole\s*milk|\bfull[- ]fat\s*milk/i], ['skim', /\bskimmed\s*milk|\bskim\s*milk/i], ['one', /\b1\s*%\s*milk/i], ['semi', /\bsemi[- ]?skimmed/i]];
+const baseIn = t => (BASE_WORDS.find(([, re]) => re.test(t)) || [])[0];
 const foodRec = (f, q, extra = {}) => ({ n: f.n + (q !== 1 ? ' ×' + fracTxt(q) : ''), k: Math.round(f.k * q), p: Math.round(f.p * q), fat: Math.round((f.fat || 0) * q), c: Math.round((f.c || 0) * q), s: Math.round((f.s || 0) * q), ...extra });
 
 /* ---------- UI state ---------- */
@@ -2196,6 +2211,7 @@ function viewToday() {
   ${clashCard()}
   ${wxCard()}
   ${wakeCard()}
+  ${shopTodayCard()}
   ${late ? ciCard() : ''}
   ${SESS[planFor(k)] && S.core.mode.type === 'normal' && !medWait() && !(getDay(k) || {}).session ? gymButton(planFor(k)) : ''}
   ${CARDIO[planFor(k)] && S.core.mode.type === 'normal' && !medWait() && !isDone(k, { id: 'cardio' }) ? '<button class="btn ghost block" data-a="dayOpen">Gym instead of the ride?</button>' : ''}
@@ -3125,12 +3141,63 @@ function foodHome() {
 }
 const homeSugHTML = sug => sug.map(n => `<button class="pchip" data-a="homeAdd" data-v="${esc(n)}">+ ${esc(n)}</button>`).join('');
 function shopState() { const wk = weekStart(TODAY()); const s = S.core.shop[wk] = S.core.shop[wk] || { got: {}, hide: {} }; s.got = s.got || {}; s.hide = s.hide || {}; return s; }
+/* ---------- order online: no supermarket lets other apps fill your basket, so Gym Bro opens each item in the shop's
+   own app or site (search, or the exact product you saved), you add it there and tick it here ---------- */
+const ONLINE = {
+  tesco: ['Tesco', q => 'https://www.tesco.com/groceries/en-GB/search?query=' + q, 'tesco.com'],
+  sainsburys: ["Sainsbury's", q => 'https://www.sainsburys.co.uk/gol-ui/SearchResults/' + q, 'sainsburys.co.uk'],
+  asda: ['Asda', q => 'https://groceries.asda.com/search/' + q, 'asda.com'],
+  morrisons: ['Morrisons', q => 'https://groceries.morrisons.com/search?q=' + q, 'morrisons.com'],
+  ocado: ['Ocado', q => 'https://www.ocado.com/search?q=' + q, 'ocado.com'],
+  waitrose: ['Waitrose', q => 'https://www.waitrose.com/ecom/shop/search?searchTerm=' + q, 'waitrose.com'],
+  iceland: ['Iceland', q => 'https://www.iceland.co.uk/search?q=' + q, 'iceland.co.uk'],
+  coop: ['Co-op', q => 'https://shop.coop.co.uk/search?term=' + q, 'coop.co.uk'],
+};
+// your budget store, if it delivers (M&S food is on Ocado; Aldi and Lidl don't deliver)
+const STORE_ONLINE = { tesco: 'tesco', tescocc: 'tesco', express: 'tesco', sainsburys: 'sainsburys', asda: 'asda', morrisons: 'morrisons', ocado: 'ocado', ms: 'ocado', waitrose: 'waitrose', coop: 'coop' };
+const onlineShop = () => ONLINE[S.core.shopOnline] ? S.core.shopOnline : STORE_ONLINE[S.core.budget.store] || 'tesco';
+const onlineOn = () => !S.core.budget.region || S.core.budget.region === 'UK';
+// what a supermarket search understands
+const SHOP_Q = { 'Greek yogurt 0%': 'fat free greek yogurt', 'Greek yogurt 2%': '2% greek yogurt', 'Lean beef mince 5%': '5% fat beef mince', 'Turkey mince': 'turkey breast mince', 'Chocolate whey': 'chocolate whey protein', 'Vanilla whey': 'vanilla whey protein', 'Egg whites': 'liquid egg whites', 'King prawns (raw)': 'raw king prawns', 'Tuna in spring water (tin)': 'tuna chunks in spring water', 'Edamame (frozen)': 'frozen edamame beans', 'Fresh parsley & mint': 'fresh parsley', 'Light crème fraîche': 'half fat creme fraiche', 'Mixed salad leaves': 'mixed salad leaves bag', 'Shawarma spice mix': 'shawarma seasoning', 'Wholemeal pitta': 'wholemeal pitta bread', 'Skyr': 'skyr yogurt', 'Fresh ginger': 'root ginger', 'Red chilli': 'red chillies', 'Garlic': 'garlic bulb', 'Rocket': 'rocket salad', 'Chicken thigh fillets': 'boneless chicken thighs', 'Cod fillet': 'cod fillets', 'Salmon fillet': 'salmon fillets', 'Roasted red peppers (jar)': 'roasted red peppers jar' };
+const shopQuery = n => SHOP_Q[n] || n.replace(/\s*\((tin|jar|frozen|raw)\)/i, (m, w) => ' ' + w.toLowerCase());
+const savedProd = n => ((S.core.shopProd || {})[n] || {})[onlineShop()];
+const shopUrl = n => savedProd(n) || ONLINE[onlineShop()][1](encodeURIComponent(shopQuery(n)));
+// order days: every 2, 3 or 7 days from the day you set it up
+const shopDue = (k = TODAY()) => { const R2 = S.core.shopRem; return !!R2 && diffDays(k, R2.start) >= 0 && diffDays(k, R2.start) % R2.every === 0; };
+// a product link you copied in the shop's app: only that shop's own links are kept
+function shopSaveProd(n, t) {
+  const sh = onlineShop(), m = String(t || '').trim().match(/https?:\/\/[^\s]+/); if (!n || !m) return false;
+  let u; try { u = new URL(m[0]); } catch (e) { return false; }
+  if (u.protocol !== 'https:' || !(u.hostname === ONLINE[sh][2] || u.hostname.endsWith('.' + ONLINE[sh][2]))) return false;
+  const P = S.core.shopProd = S.core.shopProd || {}; (P[n] = P[n] || {})[sh] = u.href.slice(0, 400);
+  UI.shopLast = ''; UI.shopPaste = false; saveCore(); render(); toast('Saved. Next time ' + n + ' opens straight on it.'); return true;
+}
+function shopTodayCard() {
+  const R2 = S.core.shopRem; if (!R2 || !onlineOn() || !shopDue() || R2.seen === TODAY()) return '';
+  const now = new Date(); if (now.getHours() * 60 + now.getMinutes() < toMin(R2.time) - 120) return '';
+  return `<div class="banner travel"><h3>Order day</h3><p class="small">Your ${esc(ONLINE[onlineShop()][0])} list for the next ${R2.every} days is ready: only what you're missing.</p><button class="btn small blue" data-a="shopOrderGo">Open the list</button></div>`;
+}
+function orderCard() {
+  if (!onlineOn()) return `<div class="card"><h2>Order online</h2><p class="small muted">Shop links are for UK supermarkets for now.</p></div>`;
+  const sh = onlineShop(), name = ONLINE[sh][0], R2 = S.core.shopRem, saved = Object.values(S.core.shopProd || {}).filter(x => x[sh]).length;
+  return `<div class="card">
+    <h2>Order online</h2>
+    <div class="pchips">${Object.entries(ONLINE).map(([k, x]) => `<button class="pchip ${sh === k ? 'on' : ''}" data-a="shopOnline" data-v="${k}">${esc(x[0])}</button>`).join('')}</div>
+    <p class="small">Tap <b>${esc(name)} ↗</b> on an item below, add it to your basket there, come back and tick it. Save your exact product once and the link goes straight to it next time${saved ? ` (${saved} saved)` : ''}. After your first order, ${esc(name)}'s favourites make reordering even quicker.</p>
+    <div class="row"><button class="btn small" data-a="shopCopy">Copy the list</button>${R2 ? `<button class="btn small ghost" data-a="shopOrderGo">List for ${R2.every} days</button>` : ''}</div>
+    <h3>Order reminder</h3>
+    <div class="pchips">${[[0, 'Off'], [2, 'Every 2 days'], [3, 'Every 3 days'], [7, 'Weekly']].map(([v, l]) => `<button class="pchip ${(R2 ? R2.every : 0) === v ? 'on' : ''}" data-a="shopRem" data-v="${v}">${l}</button>`).join('')}</div>
+    ${R2 ? `<div class="row" style="flex-wrap:nowrap;align-items:center"><span class="small">At</span><input id="shop-time" type="time" value="${esc(R2.time)}" style="max-width:130px"><span class="small muted">Next: ${esc(shopDue() ? 'today' : shortDate(addDays(TODAY(), R2.every - diffDays(TODAY(), R2.start) % R2.every)))}</span></div>
+      <p class="small muted">${pushState() === 'on' ? 'Gym Bro sends a notification then, with the list ready.' : 'It shows on Today. Turn on notifications in Me to get a buzz too.'}</p>` : ''}
+  </div>`;
+}
 function foodShop() {
   const st = shopState(), n = UI.shopRange, mode = UI.shopMode, list = shopPlan(n, mode), hidden = list.filter(x => st.hide[x.key]).length, c = priceCtx();
   UI.shopRows = Object.fromEntries(list.map(x => [x.key, x]));
   const rng = n === 1 ? 'today' : 'the next ' + n + ' days';
   const got = key => key.startsWith('x:') ? st.got[key] : boughtToday(key);
-  const row = (key, name, qty, extra, sub) => `<div class="shop ${got(key) ? 'got' : ''}"><button class="tick" data-a="shopTick" data-v="${esc(key)}"><span class="box">${CHECK}</span><span class="t">${esc(name)}${sub ? `<small>${sub}</small>` : ''}</span><span class="qty">${qty}</span></button><button class="x" data-a="${extra ? 'extraDel' : 'shopHide'}" data-v="${esc(key)}" aria-label="Remove ${esc(name)}">×</button></div>`;
+  const sh = ONLINE[onlineShop()][0], link = name => onlineOn() ? `<a class="slink" href="${esc(shopUrl(name))}" target="_blank" rel="noopener" data-a="shopGo" data-v="${esc(name)}" aria-label="Find ${esc(name)} at ${esc(sh)}">${savedProd(name) ? '★ ' : ''}${esc(sh)} ↗</a>` : '';
+  const row = (key, name, qty, extra, sub) => `<div class="shop ${got(key) ? 'got' : ''}"><button class="tick" data-a="shopTick" data-v="${esc(key)}"><span class="box">${CHECK}</span><span class="t">${esc(name)}${sub ? `<small>${sub}</small>` : ''}</span><span class="qty">${qty}</span></button><button class="x" data-a="${extra ? 'extraDel' : 'shopHide'}" data-v="${esc(key)}" aria-label="Remove ${esc(name)}">×</button>${onlineOn() ? `<div class="slinkrow">${link(name)}</div>` : ''}</div>`;
   const shown = list.filter(x => !st.hide[x.key]), buy = shown.filter(x => x.q > 0.01 && !(mode !== 'exact' && x.staple)), staples = shown.filter(x => mode !== 'exact' && x.staple && x.q > 0.01), enough = shown.filter(x => mode === 'min' && !(x.q > 0.01));
   const sub = x => {
     if (mode === 'exact') return '';
@@ -3143,8 +3210,11 @@ function foodShop() {
   };
   const qty = x => mode === 'exact' ? niceQty(x.q, x.u) : packTxt(x.n, x.u, x.packs);
   const cost = c ? buy.reduce((a, x) => a + ingCost(x.n, x.q, x.u, c), 0) : 0;
-  return `<div class="card">
+  const L = UI.shopLast && onlineOn() ? UI.shopLast : '';
+  return `${orderCard()}<div class="card">
     <h2>Shopping list</h2>
+    ${L ? `<div class="banner good"><p class="small"><b>${esc(L)}</b> in your basket? Tick it below. Want that exact product next time? In the ${esc(sh)} app tap Share → Copy link, then:</p>
+      ${UI.shopPaste ? `<div class="row" style="flex-wrap:nowrap"><input id="shop-url" type="url" placeholder="Paste the product link"><button class="btn small green" data-a="shopSaveUrl">Save</button></div>` : `<div class="row"><button class="btn small green" data-a="shopPasteGo">Save it</button>${savedProd(L) ? '<button class="btn small ghost" data-a="shopForget">Forget saved one</button>' : ''}<button class="btn small ghost" data-a="shopLastX">Done</button></div>`}</div>` : ''}
     <div class="pchips">${[1, 2, 3, 4, 5, 6, 7].map(d => `<button class="pchip ${n === d ? 'on' : ''}" data-a="shopRange" data-v="${d}">${d === 1 ? 'Today' : d + ' days'}</button>`).join('')}</div>
     <div class="segs">${[['packs', 'Store packs'], ['min', 'Minimum shop'], ['exact', 'Exact amounts']].map(([v, l]) => `<button class="seg ${mode === v ? 'on' : ''}" data-a="shopMode" data-v="${v}">${l}</button>`).join('')}</div>
     <p class="small muted">${mode === 'min' ? `Only what you're missing for ${rng}, in the smallest packs that cover it. What you ticked as bought earlier counts as at home.` : mode === 'packs' ? `Everything for ${rng} in supermarket packs, with how many days each lasts on your menu.` : `Exactly what the meals use for ${rng}. For loose veg, or if you have things at home.`} Tick what you buy; × hides what you don't need.</p>
@@ -3877,7 +3947,7 @@ const sugHTML = q => q && q.trim().length >= 2 ? foodMatches(q.split(/,|\band\b|
 function foodItemRow(it, i) {
   const f = itemFood(it); if (!f) return '';
   const sw = UI.sheet && UI.sheet.food && UI.sheet.food.swapI === i;
-  return `<div class="frow" ${sw ? 'style="outline:2px solid var(--blue);border-radius:12px"' : ''}><span class="t"><b>${esc(f.n)}</b><span>${fracTxt(it.q)} × ${esc(f.por)} · ${fmt(f.k * it.q)} kcal · P ${Math.round(f.p * it.q)}</span><span>${(it.alts || []).length > 1 ? `<button class="linkbtn" data-a="faAlt" data-v="${i}">Next match</button> · ` : ''}<button class="linkbtn" data-a="faSwapI" data-v="${i}">${sw ? 'Keep it' : 'Change'}</button></span></span>
+  return `<div class="frow" ${sw ? 'style="outline:2px solid var(--blue);border-radius:12px"' : ''}><span class="t"><b>${esc(f.n)}</b><span>${fracTxt(it.q)} × ${esc(f.por)} · ${fmt(f.k * it.q)} kcal · P ${Math.round(f.p * it.q)}</span><span>${(it.alts || []).length > 1 ? `<button class="linkbtn" data-a="faAlt" data-v="${i}">Next match</button> · ` : ''}<button class="linkbtn" data-a="faSwapI" data-v="${i}">${sw ? 'Keep it' : 'Change'}</button></span>${LIQ[it.id] ? `<label class="small" style="display:flex;gap:6px;align-items:center;margin-top:4px">Made with <select data-base="${i}" style="width:auto;padding:6px 8px;font-size:15px">${Object.entries(BASES).filter(([b]) => b !== 'water' || LIQ[it.id][1] === 'water').map(([b, [l]]) => `<option value="${b}" ${(it.base || LIQ[it.id][1]) === b ? 'selected' : ''}>${l}</option>`).join('')}</select></label>` : ''}</span>
     <button class="qbtn" data-a="faQty" data-v="${i}|-1" aria-label="Less">−</button><span class="qn">${fracTxt(it.q)}</span><button class="qbtn" data-a="faQty" data-v="${i}|1" aria-label="More">+</button><button class="qbtn" data-a="faDel" data-v="${i}" aria-label="Remove">×</button></div>`;
 }
 const burnTxt = x => { const net = actNet(x.a, x.min, x.i); return `About <b>${fmt(actKcal(x.a, x.min, x.i))} kcal</b> burned, plus ${afterburn(net, x.i)} kcal afterburn. Gym Bro adds about ${fmt(Math.min(x.ctx === 'log' ? 700 : 1000, round(net * (x.ctx === 'log' ? 0.6 : 0.7), 10)))} kcal to today's food.`; };
@@ -4701,6 +4771,26 @@ const A = {
   prefToggle(el) { const ex = S.core.food.exclude, n = el.dataset.v, i = ex.indexOf(n); if (i >= 0) ex.splice(i, 1); else ex.push(n); saveCore(); render(); },
   prefReset() { S.core.food.exclude = []; saveCore(); render(); },
   shopRange(el) { UI.shopRange = +el.dataset.v; render(); },
+  shopOnline(el) { S.core.shopOnline = el.dataset.v; UI.shopLast = ''; saveCore(); syncPush(); render(); },
+  shopGo(el) { UI.shopLast = el.dataset.v; UI.shopPaste = false; setTimeout(render, 400); },
+  shopLastX() { UI.shopLast = ''; UI.shopPaste = false; render(); },
+  async shopPasteGo() {
+    let t = ''; try { t = await navigator.clipboard.readText(); } catch (e) {}
+    if (!shopSaveProd(UI.shopLast, t)) { UI.shopPaste = true; render(); setTimeout(() => { const i = $('#shop-url'); if (i) i.focus(); }, 60); }
+  },
+  shopSaveUrl() { if (!shopSaveProd(UI.shopLast, val('shop-url'))) toast('That isn\'t a ' + ONLINE[onlineShop()][0] + ' link. In their app: Share → Copy link.', 3500); },
+  shopForget() { const p = (S.core.shopProd || {})[UI.shopLast]; if (p) delete p[onlineShop()]; saveCore(); UI.shopLast = ''; render(); toast('Forgotten. The button searches again.'); },
+  shopCopy() {
+    const list = shopPlan(UI.shopRange, UI.shopMode).filter(x => x.q > 0.01 && !(UI.shopMode !== 'exact' && x.staple) && !shopState().hide[x.key]);
+    const txt = 'Gym Bro shopping list, ' + (UI.shopRange === 1 ? 'today' : 'next ' + UI.shopRange + ' days') + '\n' + list.map(x => '• ' + x.n + ': ' + (UI.shopMode === 'exact' ? niceQty(x.q, x.u) : packTxt(x.n, x.u, x.packs)).replace(/<[^>]+>/g, '')).join('\n') + S.core.food.extras.map(x => '\n• ' + x.n).join('');
+    try { navigator.clipboard.writeText(txt).then(() => toast('Copied. Paste it wherever you like.'), () => toast('Could not copy.')); } catch (e) { toast('Could not copy.'); }
+  },
+  shopRem(el) {
+    const v = +el.dataset.v; S.core.shopRem = v ? { every: v, time: (S.core.shopRem || {}).time || '20:00', start: TODAY() } : null;
+    if (v) { UI.shopRange = v; UI.shopMode = 'min'; }
+    saveCore(); syncPush(); render(); toast(v ? 'Order reminder every ' + (v === 7 ? 'week' : v + ' days') + ', starting today.' : 'Order reminder off.');
+  },
+  shopOrderGo() { const R2 = S.core.shopRem; if (R2) { R2.seen = TODAY(); UI.shopRange = R2.every; } UI.shopMode = 'min'; UI.food = 'shop'; saveCore(); go('food'); window.scrollTo(0, 0); },
   shopMode(el) { UI.shopMode = el.dataset.v; render(); },
   // ticking = bought today: Gym Bro then knows what's at home and how long it lasts
   shopTick(el) {
@@ -4876,8 +4966,13 @@ const A = {
   foodOpen() { UI.sheet = { food: { q: '', items: [], view: 'main' } }; render(); setTimeout(() => { const t = $('#fa-q'); if (t) t.focus(); }, 60); },
   faParse() {
     const F = UI.sheet.food, q = val('fa-q'); if (!q) { toast('Type what you had.'); return; }
-    const parsed = parseFoodText(q);
-    parsed.filter(x => x.id).forEach(x => faPut(F, { id: x.id, q: x.q, alts: x.alts }));
+    // the milk is matched on its own first, so "oat milk" never turns into porridge
+    const b = baseIn(q), re = b && BASE_WORDS.find(x => x[0] === b)[1];
+    const rest = b ? q.replace(re, ' ').replace(/\b(with|and)\s*(?=$|,|\band\b)/gi, ' ').replace(/\s+/g, ' ').trim() : q;
+    let parsed = b && /^(?:\s*\b(a|an|the|glass|cup|mug|of|some|splash|bit)\b\s*)*$/i.test(rest) ? [] : parseFoodText(rest);
+    let liq = b && parsed.find(x => x.id && LIQ[x.id] && x.id !== 'milk');
+    if (b && !liq) { parsed = parsed.filter(x => x.id !== 'milk'); parsed.push({ id: 'milk', q: 1, alts: ['milk'] }); liq = parsed[parsed.length - 1]; }
+    parsed.filter(x => x.id).forEach(x => faPut(F, { id: x.id, q: x.q, alts: x.alts, ...(x === liq ? { base: b } : {}) }));
     F.miss = parsed.filter(x => !x.id).map(x => x.text); F.q = ''; render();
   },
   faPick(el) { const F = UI.sheet.food; faPut(F, { id: el.dataset.v, q: 1, alts: [el.dataset.v] }); F.q = ''; render(); },
@@ -4979,12 +5074,12 @@ const A = {
     if (F.edit) {
       const old = F.edit.oid ? d.food.filter(f => f.oid === F.edit.oid) : [d.food[F.edit.i]].filter(Boolean), at = d.food.indexOf(old[0]);
       d.food = d.food.filter(f => !old.includes(f));
-      const recs = F.items.map(it => { const f = itemFood(it); return f ? foodRec(f, it.q, { fid: it.id, q: it.q, ...(it.custom ? { cu: it.custom } : {}), exact: 1, ...(F.edit.oid ? { oid: F.edit.oid } : {}) }) : null; }).filter(Boolean);
+      const recs = F.items.map(it => { const f = itemFood(it); return f ? foodRec(f, it.q, { fid: it.id, q: it.q, ...(it.base ? { base: it.base } : {}), ...(it.custom ? { cu: it.custom } : {}), exact: 1, ...(F.edit.oid ? { oid: F.edit.oid } : {}) }) : null; }).filter(Boolean);
       d.food.splice(at < 0 ? d.food.length : at, 0, ...recs);
       if (F.edit.oid && d.slotOv) for (const i in d.slotOv) if (d.slotOv[i].oid === F.edit.oid) { if (recs.length) Object.assign(d.slotOv[i], { n: recs.map(r => r.n).join(', ').slice(0, 80), k: recs.reduce((a, r) => a + r.k, 0), p: recs.reduce((a, r) => a + (r.p || 0), 0) }); else delete d.slotOv[i]; }
       UI.sheet = null; touch(); saveCore(); syncPush(); render(); toast(recs.length ? 'Updated. ' + fmt(recs.reduce((a, r) => a + r.k, 0)) + ' kcal now.' : 'Removed.'); return;
     }
-    F.items.forEach(it => { const f = itemFood(it); if (!f) return; const rec = foodRec(f, it.q, { fid: it.id, q: it.q, ...(it.custom ? { cu: it.custom } : {}), exact: 1 }); if (oid) rec.oid = oid; tot += rec.k; totP += rec.p || 0; names.push(rec.n); d.food.push(rec); if (it.id) S.core.recentFoods = [it.id].concat(S.core.recentFoods.filter(x => x !== it.id)).slice(0, 12); });
+    F.items.forEach(it => { const f = itemFood(it); if (!f) return; const rec = foodRec(f, it.q, { fid: it.id, q: it.q, ...(it.base ? { base: it.base } : {}), ...(it.custom ? { cu: it.custom } : {}), exact: 1 }); if (oid) rec.oid = oid; tot += rec.k; totP += rec.p || 0; names.push(rec.n); d.food.push(rec); if (it.id) S.core.recentFoods = [it.id].concat(S.core.recentFoods.filter(x => x !== it.id)).slice(0, 12); });
     // your own meal takes the planned one's place: the rest of the day is portioned around it
     if (oid && names.length) {
       const m = dayMeals(TODAY()).find(x => x.i === F.own); if (m && d.ate && d.ate.includes(m.key)) setAte(d, m, false);
@@ -5049,6 +5144,8 @@ async function compress(file) {
 }
 document.addEventListener('change', async e => {
   if (e.target.id === 'import-in' && e.target.files.length) { importBackup(e.target.files[0]); return; }
+  if (e.target.dataset && e.target.dataset.base !== undefined && UI.sheet && UI.sheet.food) { const it = UI.sheet.food.items[+e.target.dataset.base]; if (it) { it.base = e.target.value; render(); } return; }
+  if (e.target.id === 'shop-time' && S.core.shopRem && /^\d\d:\d\d$/.test(e.target.value)) { S.core.shopRem.time = e.target.value; saveCore(); syncPush(); render(); return; }
   if (e.target.id === 'chat-health') { S.core.chatHealth = e.target.checked; saveCore(); return; }
   if (e.target.dataset && e.target.dataset.home) { const q = parseFloat(String(e.target.value).replace(',', '.')); if (isFinite(q) && q >= 0) { homeSet(e.target.dataset.home, q); if (UI.home) UI.home.res = null; render(); } return; }
   if (e.target.id === 'meal-in' && e.target.files.length && UI.sheet && UI.sheet.food) {

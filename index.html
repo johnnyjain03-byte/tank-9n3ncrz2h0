@@ -338,7 +338,7 @@ const EX = {
   wpull: { n: 'Weighted pull-up', sets: 4, lo: 5, hi: 8, inc: 2.5, start: 7.5, main: true, note: 'kg on a dip belt', how: ['Dip belt with a plate. Hang with straight arms, hands a bit wider than shoulders.', 'Pull your chest to the bar, elbows down to your ribs.', 'Lower all the way in 2 seconds. No swinging.'] },
   idb: { n: 'Incline dumbbell press', sets: 3, lo: 8, hi: 12, inc: 2, start: 24, note: 'kg per dumbbell', how: ['Bench at 30°. Dumbbells at your chest, palms forward.', 'Press up and slightly together.', 'Lower slowly until you feel a stretch in your chest.'] },
   csrow: { n: 'Chest-supported row', sets: 3, lo: 8, hi: 12, inc: 2.5, start: 50, how: ['Chest on the pad of a row machine or an incline bench.', 'Pull your elbows back to your hips, squeeze 1 second.', 'Let the weight down slowly. Chest stays on the pad.'] },
-  lat: { n: 'Lateral raise', sets: 3, lo: 12, hi: 20, inc: 1, start: 10, note: 'kg per dumbbell', how: ['Stand tall, slight bend in the elbows.', 'Raise the dumbbells out to the side, up to shoulder height.', 'Light weight, no swinging. Lower in 2 seconds.'] },
+  lat: { n: 'Lateral raise', sets: 4, lo: 12, hi: 20, inc: 1, start: 10, note: 'kg per dumbbell', how: ['Stand tall, slight bend in the elbows.', 'Raise the dumbbells out to the side, up to shoulder height.', 'Light weight, no swinging. Lower in 2 seconds.'] },
   push: { n: 'Triceps pushdown', sets: 3, lo: 10, hi: 15, inc: 2.5, start: 30, how: ['Rope on the high cable.', 'Elbows glued to your sides, push down until your arms are straight.', 'Squeeze 1 second, let it up slowly.'] },
   curl: { n: 'EZ-bar curl', sets: 3, lo: 10, hi: 15, inc: 2.5, start: 27.5, how: ['Stand tall, elbows at your sides.', 'Curl up without leaning back.', 'Lower in 2–3 seconds.'] },
   squat: { n: 'Back squat', sets: 4, lo: 6, hi: 8, inc: 5, start: 60, main: true, how: ['Bar on your upper back, feet shoulder-width, toes slightly out. Set the safety bars just below your lowest point.', 'Big breath, tight stomach, sit down between your heels until your thighs are at least level with the floor.', 'Drive up through the whole foot, knees pointing where your toes point.'] },
@@ -378,7 +378,7 @@ Object.assign(EX, {
   dbrow: { n: 'One-arm dumbbell row', sets: 3, lo: 8, hi: 12, inc: 2, start: 30, note: 'kg, reps per arm', how: ['One hand and knee on a bench, back flat.', 'Pull the dumbbell to your hip.', 'Lower slowly. All reps one side, then switch.'] },
   cablelat: { n: 'Cable lateral raise', sets: 3, lo: 12, hi: 20, inc: 2.5, start: 5, how: ['Low cable, handle in the hand furthest from the machine.', 'Raise your arm out to the side to shoulder height.', 'Lower slowly.'] },
   reardelt: { n: 'Reverse pec deck', sets: 3, lo: 12, hi: 20, inc: 5, start: 30, how: ['Face the pec deck, handles at shoulder height.', 'Open your arms back, squeeze your shoulder blades.', 'Return slowly.'] },
-  ohext: { n: 'Overhead cable triceps extension', sets: 2, lo: 10, hi: 15, inc: 2.5, start: 20, how: ['Rope on the cable, face away, rope behind your head.', 'Straighten your arms forward and up.', 'Bend back slowly.'] },
+  ohext: { n: 'Overhead cable triceps extension', sets: 3, lo: 10, hi: 15, inc: 2.5, start: 20, how: ['Rope on the cable, face away, rope behind your head.', 'Straighten your arms forward and up.', 'Bend back slowly.'] },
   cgbench: { n: 'Close-grip bench press', sets: 3, lo: 6, hi: 10, inc: 2.5, start: 50, how: ['Hands shoulder-width on the bar.', 'Lower to your lower chest, elbows close to your body.', 'Press up.'] },
   hammer: { n: 'Hammer curl', sets: 2, lo: 10, hi: 15, inc: 1, start: 12, note: 'kg per dumbbell', how: ['Dumbbells at your sides, palms facing in.', 'Curl up without swinging.', 'Lower slowly.'] },
   revlunge: { n: 'Reverse lunge', sets: 3, lo: 8, hi: 12, inc: 2, start: 12, note: 'kg per dumbbell, reps per leg', how: ['Step back with one leg.', 'Lower the back knee almost to the floor.', 'Push through the front heel to stand. Kinder to knees than walking lunges.'] },
@@ -411,17 +411,17 @@ const ALTS = {
   lext: ['gobletsq', 'stepup', 'hipthrust', 'glutebridge', 'seatcurl', 'pullthrough'], scalf: ['calf', 'lpcalf'], crunch: ['deadbug', 'plank', 'hlr'],
   // for the exercises special requests add
   pecdeck: ['fly', 'machpress'], inclinemach: ['idb', 'machpress'], cablelat: ['lat'], reardelt: ['face'], hammer: ['curl'], ohext: ['push', 'dip'],
-  hacksq: ['lpress', 'gobletsq'], seatcurl: ['lcurl'], latpd: ['assistpull', 'pull'], dbrow: ['csrow', 'crow'], hipthrust: ['glutebridge'], pullthrough: ['glutebridge', 'rdl'],
+  hacksq: ['lpress', 'gobletsq'], seatcurl: ['lcurl', 'pullthrough', 'glutebridge'], latpd: ['assistpull', 'pull'], dbrow: ['csrow', 'crow'], hipthrust: ['glutebridge'], pullthrough: ['glutebridge', 'rdl'],
 };
 const AREAS = { knee: 'knee', back: 'lower back', shoulder: 'shoulder' };
 const SESS = {
-  UA: { n: 'Upper 1', sub: 'Chest & back, heavy', ex: ['bench', 'wpull', 'idb', 'csrow', 'lat', 'push', 'curl'], info: 'Upper body, heavy. Chest and back first, then shoulders and arms.' },
-  LA: { n: 'Legs 1', sub: 'Squat day', ex: ['squat', 'rdl', 'bss', 'lcurl', 'calf', 'hlr'], info: 'Legs built around the squat. Thighs, glutes, hamstrings, calves and abs.' },
+  UA: { n: 'Upper 1', sub: 'Chest & back, heavy', ex: ['bench', 'wpull', 'idb', 'csrow', 'lat', 'ohext', 'curl'], info: 'Upper body, heavy. Chest and back first, then shoulders and arms.' },
+  LA: { n: 'Legs 1', sub: 'Squat day', ex: ['squat', 'rdl', 'bss', 'seatcurl', 'calf', 'hlr'], info: 'Legs built around the squat. Thighs, glutes, hamstrings, calves and abs.' },
   UB: { n: 'Upper 2', sub: 'Shoulders & chest', ex: ['ohp', 'incb', 'pull', 'crow', 'dip', 'lat', 'face'], info: 'Upper body again: shoulders and upper chest first, then lighter back and chest work.' },
-  LB: { n: 'Legs 2', sub: 'Deadlift day', ex: ['dl', 'lpress', 'lunge', 'lext', 'scalf', 'crunch'], info: 'Legs built around the deadlift. Back of the legs and glutes, then leg press and lunges.' },
+  LB: { n: 'Legs 2', sub: 'Deadlift day', ex: ['dl', 'lpress', 'seatcurl', 'lext', 'scalf', 'crunch'], info: 'Legs built around the deadlift. Back of the legs and glutes, then leg press, leg curls and extensions.' },
   FA: { n: 'Full body 1', sub: 'Squat & bench', ex: ['squat', 'bench', 'csrow', 'rdl', 'lat', 'curl'], info: 'Whole body in one session: legs, chest, back, shoulders and arms.' },
-  FB: { n: 'Full body 2', sub: 'Deadlift & press', ex: ['dl', 'ohp', 'wpull', 'bss', 'fly', 'push'], info: 'Whole body: deadlift and overhead press are the big lifts.' },
-  FC: { n: 'Full body 3', sub: 'Legs & pull-ups', ex: ['lpress', 'incb', 'pull', 'lcurl', 'face', 'calf', 'hlr'], info: 'Whole body, a bit lighter: leg press, incline bench and pull-ups.' },
+  FB: { n: 'Full body 2', sub: 'Deadlift & press', ex: ['dl', 'ohp', 'wpull', 'bss', 'fly', 'ohext', 'lat'], info: 'Whole body: deadlift and overhead press are the big lifts.' },
+  FC: { n: 'Full body 3', sub: 'Legs & pull-ups', ex: ['lpress', 'incb', 'pull', 'seatcurl', 'face', 'calf', 'hlr'], info: 'Whole body, a bit lighter: leg press, incline bench and pull-ups.' },
 };
 const CARDIO = {
   Z2: { n: 'Easy ride, 45 min', sub: 'You can still talk in full sentences' },
@@ -455,6 +455,9 @@ const R = {
   strapatsada: { n: 'Greek tomato & feta scrambled eggs', tag: 'hot', d: 'Strapatsada: eggs in a thick fresh-tomato sauce', k: 560, p: 42, fat: 27, c: 36, s: 8, min: 15,
     ing: [['Eggs', 3, 'pcs', 'Dairy & eggs'], ['Egg whites', 100, 'ml', 'Dairy & eggs'], ['Tomato', 2, 'pcs', 'Fruit & veg'], ['Feta', 30, 'g', 'Dairy & eggs'], ['Olive oil', 5, 'ml', 'Cupboard'], ['Dried oregano', 0.5, 'tsp', 'Cupboard'], ['Sourdough bread', 60, 'g', 'Bread & grains']],
     steps: ['Grate the tomatoes on a box grater, skins left behind.', 'Cook them in the oil with a pinch of salt 8–10 min, until the liquid is gone and it\'s thick.', 'Whisk the eggs and whites, pour in and stir gently on low heat until just set.', 'Crumble the feta and oregano over. Toast to dip.'] },
+  huevos: { n: 'Huevos rancheros', tag: 'hot', cu: 'latin', d: 'Mexican breakfast: eggs in spiced beans, warm tortilla', k: 660, p: 36, fat: 31, c: 56, s: 9, min: 15,
+    ing: [['Eggs', 3, 'pcs', 'Dairy & eggs'], ['Black beans (tin)', 100, 'g', 'Cupboard'], ['Chopped tomatoes (tin)', 0.5, 'tin', 'Cupboard'], ['Garlic', 1, 'clove', 'Fruit & veg'], ['Ground cumin', 0.5, 'tsp', 'Cupboard'], ['Smoked paprika', 0.5, 'tsp', 'Cupboard'], ['Chilli flakes', 0.25, 'tsp', 'Cupboard'], ['Olive oil', 5, 'ml', 'Cupboard'], ['Tortilla wraps', 1, 'pcs', 'Bread & grains'], ['Avocado', 0.25, 'pcs', 'Fruit & veg'], ['Fresh coriander', 0.25, 'bunch', 'Fruit & veg']],
+    steps: ['Sliced garlic and the spices in the oil for 1 min, then the tomatoes and rinsed beans. Simmer 5 min until thick, season.', 'Make 3 dips, crack in the eggs, lid on, 4–6 min until the whites are set.', 'Warm the tortilla in a dry pan.', 'Eggs and beans over the tortilla, sliced avocado and coriander on top.'] },
   shakshuka: { n: 'Shakshuka with feta', tag: 'hot', d: 'Eggs baked in smoky pepper and tomato sauce', k: 650, p: 37, fat: 29, c: 61, s: 25, min: 25,
     ing: [['Eggs', 3, 'pcs', 'Dairy & eggs'], ['Chopped tomatoes (tin)', 1, 'tin', 'Cupboard'], ['Red pepper', 1, 'pcs', 'Fruit & veg'], ['Onion', 0.5, 'pcs', 'Fruit & veg'], ['Feta', 30, 'g', 'Dairy & eggs'], ['Sourdough bread', 60, 'g', 'Bread & grains'], ['Olive oil', 5, 'ml', 'Cupboard'], ['Smoked paprika', 1, 'tsp', 'Cupboard'], ['Garlic', 2, 'clove', 'Fruit & veg'], ['Ground cumin', 1, 'tsp', 'Cupboard'], ['Chilli flakes', 0.5, 'tsp', 'Cupboard']],
     steps: ['Fry sliced onion and pepper in the oil for 6 min, until soft.', 'Add the sliced garlic, paprika, cumin and chilli for 1 min, then the tomatoes and a pinch of salt. Simmer 10 min until thick.', 'Make 3 holes, crack in the eggs, lid on, 5–7 min until the whites are set.', 'Crumble feta on top. Eat with toast.'] },
@@ -467,7 +470,7 @@ const R = {
   appleoats: { n: 'Apple-cinnamon protein oats', tag: 'cold', d: 'Like apple pie, made the night before', k: 605, p: 45, fat: 12, c: 77, s: 31, min: 5,
     ing: [['Rolled oats', 70, 'g', 'Cupboard'], ['Semi-skimmed milk', 250, 'ml', 'Dairy & eggs'], ['Vanilla whey', 30, 'g', 'Cupboard'], ['Apple', 1, 'pcs', 'Fruit & veg'], ['Greek yogurt 0%', 50, 'g', 'Dairy & eggs'], ['Cinnamon', 1, 'tsp', 'Cupboard']],
     steps: ['Grate the apple into a jar.', 'Stir in oats, milk, whey, yogurt and cinnamon.', 'Fridge overnight. Eat cold.'] },
-  prawnmango: { n: 'Warm prawn & mango salad', tag: 'hot', d: 'Chilli-garlic prawns, mango, avocado, lime', k: 690, p: 44, fat: 24, c: 76, s: 19, min: 20,
+  prawnmango: { n: 'Warm prawn & mango salad', tag: 'hot', cu: 'asian', d: 'Chilli-garlic prawns, mango, avocado, lime', k: 690, p: 44, fat: 24, c: 76, s: 19, min: 20,
     ing: [['King prawns (raw)', 220, 'g', 'Meat & fish'], ['Mango', 0.5, 'pcs', 'Fruit & veg'], ['Avocado', 0.5, 'pcs', 'Fruit & veg'], ['Basmati rice', 60, 'g', 'Bread & grains'], ['Mixed salad leaves', 60, 'g', 'Fruit & veg'], ['Red pepper', 0.5, 'pcs', 'Fruit & veg'], ['Red chilli', 1, 'pcs', 'Fruit & veg'], ['Garlic', 2, 'clove', 'Fruit & veg'], ['Lime', 1, 'pcs', 'Fruit & veg'], ['Olive oil', 10, 'ml', 'Cupboard']],
     steps: ['Cook the rice.', 'Fry the prawns in half the oil with garlic and chilli, 3 min until pink.', 'Toss leaves, pepper, mango and avocado with lime juice, the rest of the oil and salt.', 'Top with the warm rice and hot prawns.'] },
   greekchicken: { n: 'Greek chicken bowl with tzatziki', tag: 'bowl', d: 'Lemon-oregano chicken, couscous, feta', k: 780, p: 74, fat: 20, c: 74, s: 12, min: 30,
@@ -518,10 +521,10 @@ const R = {
   gambas: { n: 'Spanish garlic prawns with white beans', tag: 'hot', d: 'Smoky paprika, spinach, toast to mop it up', k: 565, p: 52, fat: 13, c: 53, s: 6, min: 15,
     ing: [['King prawns (raw)', 220, 'g', 'Meat & fish'], ['Cannellini beans (tin)', 120, 'g', 'Cupboard'], ['Spinach', 100, 'g', 'Fruit & veg'], ['Cherry tomatoes', 100, 'g', 'Fruit & veg'], ['Garlic', 3, 'clove', 'Fruit & veg'], ['Smoked paprika', 1, 'tsp', 'Cupboard'], ['Olive oil', 10, 'ml', 'Cupboard'], ['Sourdough bread', 60, 'g', 'Bread & grains'], ['Lemon', 0.5, 'pcs', 'Fruit & veg']],
     steps: ['Oil, sliced garlic and paprika in a pan for 1 min.', 'Prawns and tomatoes in, 3 min.', 'Add the beans and spinach, 2 min until wilted. Lemon and salt.', 'Toast to mop up the juices.'] },
-  steakeggs: { n: 'Steak & eggs with avocado', tag: 'hot', d: 'Seared steak, fried eggs, crispy potatoes', k: 700, p: 59, fat: 36, c: 35, s: 6, min: 25,
+  steakeggs: { n: 'Steak & eggs with avocado', tag: 'hot', cu: 'american', d: 'Seared steak, fried eggs, crispy potatoes', k: 700, p: 59, fat: 36, c: 35, s: 6, min: 25,
     ing: [['Rump steak', 180, 'g', 'Meat & fish'], ['Eggs', 2, 'pcs', 'Dairy & eggs'], ['Avocado', 0.5, 'pcs', 'Fruit & veg'], ['Baby potatoes', 200, 'g', 'Fruit & veg'], ['Cherry tomatoes', 80, 'g', 'Fruit & veg'], ['Rocket', 30, 'g', 'Fruit & veg'], ['Olive oil', 5, 'ml', 'Cupboard']],
     steps: ['Boil the potatoes 12 min, halve, fry cut-side down in the oil until crisp. Keep warm.', 'Salt the steak. Very hot pan, 2–3 min per side for medium. Rest 5 min, slice.', 'Fry the eggs in the same pan, 2–3 min.', 'Plate the steak, eggs, sliced avocado, tomatoes, rocket and potatoes.'] },
-  steak: { n: 'Steak, chimichurri & crispy potatoes', tag: 'hot', d: 'Steakhouse plate at home', k: 725, p: 54, fat: 34, c: 49, s: 4, min: 35,
+  steak: { n: 'Steak, chimichurri & crispy potatoes', tag: 'hot', cu: 'latin', d: 'Steakhouse plate at home', k: 725, p: 54, fat: 34, c: 49, s: 4, min: 35,
     ing: [['Sirloin steak', 220, 'g', 'Meat & fish'], ['Baby potatoes', 300, 'g', 'Fruit & veg'], ['Olive oil', 15, 'ml', 'Cupboard'], ['Fresh parsley', 0.5, 'bunch', 'Fruit & veg'], ['Garlic', 1, 'clove', 'Fruit & veg'], ['Red wine vinegar', 10, 'ml', 'Cupboard'], ['Red chilli', 0.5, 'pcs', 'Fruit & veg'], ['Rocket', 50, 'g', 'Fruit & veg'], ['Dried oregano', 1, 'tsp', 'Cupboard']],
     steps: ['Boil the potatoes 12 min, smash flat, roast at 220 °C with 5 ml oil for 20 min.', 'Chimichurri: finely chopped parsley, garlic, chilli, oregano, vinegar, 10 ml oil and salt. Let it sit while the steak cooks.', 'Salt the steak well. Very hot pan, 3 min per side for medium. Rest 5 min.', 'Slice, spoon chimichurri over, potatoes and rocket on the side.'] },
   spagbol: { n: 'Spaghetti bolognese', tag: 'hot', d: 'Lean beef, slow-ish sauce, parmesan', k: 775, p: 63, fat: 19, c: 87, s: 19, min: 35,
@@ -536,9 +539,51 @@ const R = {
   peppers: { n: 'Greek beef & feta stuffed peppers', tag: 'hot', d: 'Gemista-style: beef, rice, tomato, oregano', k: 640, p: 49, fat: 20, c: 70, s: 21, min: 40,
     ing: [['Red pepper', 2, 'pcs', 'Fruit & veg'], ['Lean beef mince 5%', 160, 'g', 'Meat & fish'], ['Basmati rice', 50, 'g', 'Bread & grains'], ['Onion', 0.25, 'pcs', 'Fruit & veg'], ['Garlic', 1, 'clove', 'Fruit & veg'], ['Chopped tomatoes (tin)', 0.5, 'tin', 'Cupboard'], ['Dried oregano', 1, 'tsp', 'Cupboard'], ['Feta', 30, 'g', 'Dairy & eggs'], ['Olive oil', 5, 'ml', 'Cupboard'], ['Fresh parsley', 0.25, 'bunch', 'Fruit & veg']],
     steps: ['Oven 200 °C. Cook the rice 10 min. Halve the peppers, take out the seeds, bake them cut side up 10 min while you make the filling.', 'Brown the mince with the chopped onion in the oil 5 min. Garlic and oregano 1 min, then half the tomatoes and the rice. Season.', 'Fill the peppers, spoon the rest of the tomatoes around them, feta on top. Bake 15–20 min.', 'Parsley on top.'] },
-  gochujang: { n: 'Korean gochujang beef bowl', tag: 'bowl', d: 'Sticky-spicy beef, rice, cucumber, fried egg', k: 765, p: 61, fat: 18, c: 89, s: 12, min: 20,
+  gochujang: { n: 'Korean gochujang beef bowl', tag: 'bowl', cu: 'asian', d: 'Sticky-spicy beef, rice, cucumber, fried egg', k: 765, p: 61, fat: 18, c: 89, s: 12, min: 20,
     ing: [['Lean beef mince 5%', 200, 'g', 'Meat & fish'], ['Basmati rice', 90, 'g', 'Bread & grains'], ['Gochujang paste', 20, 'g', 'Cupboard'], ['Soy sauce', 10, 'ml', 'Cupboard'], ['Garlic', 2, 'clove', 'Fruit & veg'], ['Honey', 5, 'g', 'Cupboard'], ['Cucumber', 0.5, 'pcs', 'Fruit & veg'], ['Eggs', 1, 'pcs', 'Dairy & eggs'], ['Sesame seeds', 5, 'g', 'Cupboard']],
     steps: ['Cook the rice.', 'Brown the mince on high heat 6 min. Add garlic for 1 min.', 'Stir in gochujang, soy, honey and a splash of water. Cook until sticky.', 'Fry the egg. Bowl: rice, beef, cucumber, egg, sesame.'] },
+  // Asian
+  stirfry: { n: 'Chicken & veg noodle stir-fry', tag: 'hot', cu: 'asian', d: 'Chinese-style: soy, ginger, garlic, crunchy veg', k: 630, p: 59, fat: 12, c: 68, s: 11, min: 20,
+    ing: [['Chicken breast', 180, 'g', 'Meat & fish'], ['Egg noodles', 70, 'g', 'Bread & grains'], ['Broccoli', 100, 'g', 'Fruit & veg'], ['Red pepper', 0.5, 'pcs', 'Fruit & veg'], ['Spring onions', 2, 'pcs', 'Fruit & veg'], ['Garlic', 2, 'clove', 'Fruit & veg'], ['Fresh ginger', 10, 'g', 'Fruit & veg'], ['Soy sauce', 15, 'ml', 'Cupboard'], ['Honey', 5, 'g', 'Cupboard'], ['Olive oil', 5, 'ml', 'Cupboard'], ['Sesame seeds', 5, 'g', 'Cupboard']],
+    steps: ['Cook the noodles as the pack says (about 4 min), drain and rinse in cold water.', 'Slice the chicken into thin strips. Stir-fry in the oil on high heat 5–6 min, until no pink is left inside.', 'Add the broccoli, sliced pepper and spring onions for 3 min, then the grated garlic and ginger for 1 min.', 'Add the noodles, soy and honey with a splash of water, toss 1 min. Sesame seeds on top. Keeps 2 days.'] },
+  thaicurry: { n: 'Thai red chicken curry', tag: 'bowl', cu: 'asian', d: 'Light coconut milk, green beans, rice', k: 620, p: 53, fat: 14, c: 70, s: 9, min: 25,
+    ing: [['Chicken breast', 180, 'g', 'Meat & fish'], ['Light coconut milk', 120, 'ml', 'Cupboard'], ['Thai red curry paste', 25, 'g', 'Cupboard'], ['Green beans', 80, 'g', 'Fruit & veg'], ['Red pepper', 0.5, 'pcs', 'Fruit & veg'], ['Basmati rice', 70, 'g', 'Bread & grains'], ['Lime', 0.5, 'pcs', 'Fruit & veg'], ['Fresh coriander', 0.25, 'bunch', 'Fruit & veg']],
+    steps: ['Cook the rice.', 'Fry the curry paste in a splash of the coconut milk for 1 min, until it smells good.', 'Add the sliced chicken for 2 min, then the rest of the coconut milk, the green beans and sliced pepper. Simmer 10 min, until the chicken is cooked through.', 'Lime juice and coriander on top. More paste next time for more heat.'] },
+  teriyaki: { n: 'Teriyaki salmon with rice & broccoli', tag: 'hot', cu: 'asian', d: 'Japanese-style sticky glaze', k: 710, p: 45, fat: 26, c: 71, s: 11, min: 25,
+    ing: [['Salmon fillet', 160, 'g', 'Meat & fish'], ['Basmati rice', 70, 'g', 'Bread & grains'], ['Broccoli', 120, 'g', 'Fruit & veg'], ['Soy sauce', 15, 'ml', 'Cupboard'], ['Honey', 10, 'g', 'Cupboard'], ['Garlic', 1, 'clove', 'Fruit & veg'], ['Fresh ginger', 5, 'g', 'Fruit & veg'], ['Spring onions', 1, 'pcs', 'Fruit & veg'], ['Sesame seeds', 5, 'g', 'Cupboard']],
+    steps: ['Oven 200 °C. Cook the rice.', 'Glaze: soy, honey, grated garlic and ginger. Brush half over the salmon and bake 12–15 min, until it flakes.', 'Boil or steam the broccoli 4 min.', 'Simmer the rest of the glaze 1 min until sticky and spoon it over. Spring onion and sesame on top.'] },
+  beefbroc: { n: 'Beef & broccoli stir-fry', tag: 'hot', cu: 'asian', d: 'The takeaway favourite, done lean', k: 620, p: 52, fat: 15, c: 70, s: 7, min: 20,
+    ing: [['Rump steak', 180, 'g', 'Meat & fish'], ['Broccoli', 150, 'g', 'Fruit & veg'], ['Basmati rice', 70, 'g', 'Bread & grains'], ['Soy sauce', 15, 'ml', 'Cupboard'], ['Honey', 5, 'g', 'Cupboard'], ['Garlic', 2, 'clove', 'Fruit & veg'], ['Fresh ginger', 10, 'g', 'Fruit & veg'], ['Olive oil', 5, 'ml', 'Cupboard'], ['Spring onions', 1, 'pcs', 'Fruit & veg']],
+    steps: ['Cook the rice.', 'Slice the steak thin, across the grain, so it stays tender. Sear in the oil on very high heat for 2 min, then take it out.', 'Broccoli in with a splash of water, lid on, 3 min. Grated garlic and ginger for 1 min.', 'Steak back in with the soy, honey and a splash of water. Toss until glossy. Spring onion on top.'] },
+  // Indian
+  tikka: { n: 'Chicken tikka with raita & rice', tag: 'hot', cu: 'indian', d: 'Yogurt-spiced chicken, cool cucumber raita', k: 590, p: 68, fat: 5, c: 68, s: 8, min: 30,
+    ing: [['Chicken breast', 200, 'g', 'Meat & fish'], ['Greek yogurt 0%', 120, 'g', 'Dairy & eggs'], ['Garam masala', 1, 'tsp', 'Cupboard'], ['Smoked paprika', 1, 'tsp', 'Cupboard'], ['Garlic', 1, 'clove', 'Fruit & veg'], ['Fresh ginger', 5, 'g', 'Fruit & veg'], ['Lemon', 0.5, 'pcs', 'Fruit & veg'], ['Basmati rice', 70, 'g', 'Bread & grains'], ['Cucumber', 0.25, 'pcs', 'Fruit & veg'], ['Red onion', 0.25, 'pcs', 'Fruit & veg'], ['Fresh coriander', 0.25, 'bunch', 'Fruit & veg']],
+    steps: ['Mix half the yogurt with the garam masala, paprika, grated garlic and ginger, lemon juice and salt. Coat the chicken chunks (10 min, or overnight).', 'Grill, or bake at 220 °C, 15–18 min, turning once, until charred at the edges and no pink is left inside.', 'Cook the rice. Raita: the rest of the yogurt with grated cucumber, salt and chopped coriander.', 'Serve with sliced red onion and a squeeze of lemon.'] },
+  tikkamasala: { n: 'Lighter chicken tikka masala', tag: 'hot', cu: 'indian', d: 'Creamy tomato curry with yogurt, not cream', k: 640, p: 60, fat: 11, c: 76, s: 13, min: 30,
+    ing: [['Chicken breast', 180, 'g', 'Meat & fish'], ['Chopped tomatoes (tin)', 0.5, 'tin', 'Cupboard'], ['Greek yogurt 2%', 60, 'g', 'Dairy & eggs'], ['Onion', 0.5, 'pcs', 'Fruit & veg'], ['Garlic', 2, 'clove', 'Fruit & veg'], ['Fresh ginger', 10, 'g', 'Fruit & veg'], ['Garam masala', 1.5, 'tsp', 'Cupboard'], ['Ground cumin', 1, 'tsp', 'Cupboard'], ['Smoked paprika', 1, 'tsp', 'Cupboard'], ['Olive oil', 5, 'ml', 'Cupboard'], ['Basmati rice', 70, 'g', 'Bread & grains'], ['Fresh coriander', 0.25, 'bunch', 'Fruit & veg']],
+    steps: ['Cook the rice. Fry the chopped onion in the oil 6 min, until golden.', 'Garlic, ginger and the spices for 1 min, then the chicken chunks for 3 min.', 'Tomatoes and a splash of water. Simmer 12 min, until the chicken is cooked through.', 'Take the pan off the heat and stir in the yogurt: off the heat it won\'t split. Coriander on top.'] },
+  dal: { n: 'Red lentil & spinach dal with eggs', tag: 'bowl', cu: 'indian', d: 'Vegetarian comfort food, batch-friendly', k: 715, p: 43, fat: 23, c: 79, s: 15, min: 25,
+    ing: [['Red lentils', 70, 'g', 'Cupboard'], ['Light coconut milk', 60, 'ml', 'Cupboard'], ['Chopped tomatoes (tin)', 0.5, 'tin', 'Cupboard'], ['Spinach', 80, 'g', 'Fruit & veg'], ['Onion', 0.5, 'pcs', 'Fruit & veg'], ['Garlic', 2, 'clove', 'Fruit & veg'], ['Fresh ginger', 5, 'g', 'Fruit & veg'], ['Garam masala', 1, 'tsp', 'Cupboard'], ['Ground cumin', 1, 'tsp', 'Cupboard'], ['Eggs', 2, 'pcs', 'Dairy & eggs'], ['Olive oil', 5, 'ml', 'Cupboard'], ['Wholemeal pitta', 1, 'pcs', 'Bread & grains']],
+    steps: ['Fry the chopped onion in the oil 5 min. Garlic, ginger and the spices for 1 min.', 'Rinse the lentils and add them with the tomatoes, coconut milk and 250 ml water. Simmer 15–20 min, stirring now and then, until thick.', 'Boil the eggs 8 min. Stir the spinach into the dal until it wilts, then season.', 'Halved eggs on top, warm pitta to dip. Keeps 3 days and freezes well.'] },
+  keema: { n: 'Beef keema with peas', tag: 'hot', cu: 'indian', d: 'Spiced mince, peas and rice: Indian home cooking', k: 725, p: 63, fat: 16, c: 81, s: 15, min: 30,
+    ing: [['Lean beef mince 5%', 200, 'g', 'Meat & fish'], ['Frozen peas', 80, 'g', 'Frozen'], ['Onion', 0.5, 'pcs', 'Fruit & veg'], ['Garlic', 2, 'clove', 'Fruit & veg'], ['Fresh ginger', 10, 'g', 'Fruit & veg'], ['Garam masala', 1, 'tsp', 'Cupboard'], ['Ground cumin', 1, 'tsp', 'Cupboard'], ['Chilli flakes', 0.5, 'tsp', 'Cupboard'], ['Chopped tomatoes (tin)', 0.5, 'tin', 'Cupboard'], ['Basmati rice', 70, 'g', 'Bread & grains'], ['Greek yogurt 0%', 50, 'g', 'Dairy & eggs'], ['Olive oil', 5, 'ml', 'Cupboard'], ['Fresh coriander', 0.25, 'bunch', 'Fruit & veg']],
+    steps: ['Cook the rice. Fry the chopped onion in the oil 5 min.', 'Mince in, break it up and brown it 5 min. Garlic, ginger and the spices for 1 min.', 'Tomatoes and a splash of water, simmer 12 min. Peas in for the last 3 min.', 'Coriander on top, a spoon of yogurt on the side.'] },
+  tandooriwrap: { n: 'Tandoori chicken wraps', tag: 'cold', cu: 'indian', d: 'Spiced chicken, crunchy salad, cucumber raita', k: 665, p: 66, fat: 12, c: 72, s: 11, min: 25,
+    ing: [['Chicken breast', 180, 'g', 'Meat & fish'], ['Greek yogurt 0%', 100, 'g', 'Dairy & eggs'], ['Garam masala', 1, 'tsp', 'Cupboard'], ['Smoked paprika', 1, 'tsp', 'Cupboard'], ['Lemon', 0.5, 'pcs', 'Fruit & veg'], ['Garlic', 1, 'clove', 'Fruit & veg'], ['Tortilla wraps', 2, 'pcs', 'Bread & grains'], ['Mixed salad leaves', 40, 'g', 'Fruit & veg'], ['Cucumber', 0.25, 'pcs', 'Fruit & veg'], ['Red onion', 0.25, 'pcs', 'Fruit & veg']],
+    steps: ['Mix half the yogurt with the garam masala, paprika, grated garlic, lemon juice and salt. Coat the chicken strips.', 'Pan-fry or grill 6–8 min, until charred at the edges and no pink is left inside.', 'Raita: the rest of the yogurt with grated cucumber and salt.', 'Wraps: leaves, chicken, sliced onion, raita. Roll tight. Good cold for lunch.'] },
+  // Mexican & Latin
+  burrito: { n: 'Chicken burrito bowl', tag: 'bowl', cu: 'latin', d: 'Spiced chicken, rice, beans, fresh salsa', k: 740, p: 65, fat: 10, c: 92, s: 11, min: 25,
+    ing: [['Chicken breast', 180, 'g', 'Meat & fish'], ['Fajita seasoning', 1, 'tbsp', 'Cupboard'], ['Basmati rice', 70, 'g', 'Bread & grains'], ['Black beans (tin)', 100, 'g', 'Cupboard'], ['Sweetcorn (tin)', 60, 'g', 'Cupboard'], ['Cherry tomatoes', 100, 'g', 'Fruit & veg'], ['Red onion', 0.25, 'pcs', 'Fruit & veg'], ['Lime', 0.5, 'pcs', 'Fruit & veg'], ['Fresh coriander', 0.25, 'bunch', 'Fruit & veg'], ['Greek yogurt 0%', 50, 'g', 'Dairy & eggs'], ['Olive oil', 5, 'ml', 'Cupboard']],
+    steps: ['Cook the rice. Toss the chicken strips with the seasoning and oil, pan-fry 6–7 min until no pink is left inside.', 'Salsa: chopped tomatoes, red onion, coriander, lime juice and salt.', 'Warm the rinsed beans and the sweetcorn.', 'Bowl: rice, beans, sweetcorn, chicken, salsa and a spoon of yogurt instead of sour cream. Keeps 2 days.'] },
+  fajitas: { n: 'Sheet-pan chicken fajitas', tag: 'hot', cu: 'latin', d: 'One tray, warm wraps, salsa', k: 740, p: 62, fat: 17, c: 85, s: 19, min: 25,
+    ing: [['Chicken breast', 180, 'g', 'Meat & fish'], ['Red pepper', 1, 'pcs', 'Fruit & veg'], ['Red onion', 0.5, 'pcs', 'Fruit & veg'], ['Fajita seasoning', 1, 'tbsp', 'Cupboard'], ['Olive oil', 5, 'ml', 'Cupboard'], ['Tortilla wraps', 2, 'pcs', 'Bread & grains'], ['Greek yogurt 0%', 50, 'g', 'Dairy & eggs'], ['Cherry tomatoes', 80, 'g', 'Fruit & veg'], ['Lime', 0.5, 'pcs', 'Fruit & veg'], ['Fresh coriander', 0.25, 'bunch', 'Fruit & veg']],
+    steps: ['Oven 220 °C. Slice the chicken, pepper and onion into strips and toss with the seasoning and oil on a tray.', 'Roast 15–20 min, turning once, until the chicken is cooked through and the edges char.', 'Quick salsa: chopped tomatoes, coriander, lime juice and salt. Warm the wraps.', 'Fill the wraps with chicken, peppers, salsa and a spoon of yogurt.'] },
+  chilli: { n: 'Chilli con carne', tag: 'hot', cu: 'latin', d: 'Beef, beans and smoky spice: make a batch', k: 745, p: 61, fat: 16, c: 87, s: 17, min: 40,
+    ing: [['Lean beef mince 5%', 180, 'g', 'Meat & fish'], ['Black beans (tin)', 100, 'g', 'Cupboard'], ['Chopped tomatoes (tin)', 0.5, 'tin', 'Cupboard'], ['Onion', 0.5, 'pcs', 'Fruit & veg'], ['Red pepper', 0.5, 'pcs', 'Fruit & veg'], ['Garlic', 2, 'clove', 'Fruit & veg'], ['Ground cumin', 1, 'tsp', 'Cupboard'], ['Smoked paprika', 1, 'tsp', 'Cupboard'], ['Chilli flakes', 0.5, 'tsp', 'Cupboard'], ['Beef stock cube', 0.5, 'pcs', 'Cupboard'], ['Tomato purée', 10, 'g', 'Cupboard'], ['Olive oil', 5, 'ml', 'Cupboard'], ['Basmati rice', 60, 'g', 'Bread & grains'], ['Greek yogurt 0%', 40, 'g', 'Dairy & eggs']],
+    steps: ['Fry the chopped onion and pepper in the oil 5 min.', 'Mince in and brown it 5 min. Garlic, the spices and purée for 1 min.', 'Tomatoes, rinsed beans, the crumbled stock cube and a splash of water. Simmer 20–25 min with the lid half on, until thick.', 'Cook the rice and serve with a spoon of yogurt. Make 3 portions and freeze 2.'] },
+  tacos: { n: 'Spicy turkey tacos', tag: 'hot', cu: 'latin', d: 'Soft wraps, salsa, yogurt: Friday-night food', k: 755, p: 55, fat: 26, c: 73, s: 11, min: 20,
+    ing: [['Turkey mince', 200, 'g', 'Meat & fish'], ['Fajita seasoning', 1, 'tbsp', 'Cupboard'], ['Tortilla wraps', 2, 'pcs', 'Bread & grains'], ['Cherry tomatoes', 80, 'g', 'Fruit & veg'], ['Red onion', 0.25, 'pcs', 'Fruit & veg'], ['Mixed salad leaves', 30, 'g', 'Fruit & veg'], ['Greek yogurt 0%', 40, 'g', 'Dairy & eggs'], ['Lime', 0.5, 'pcs', 'Fruit & veg'], ['Fresh coriander', 0.25, 'bunch', 'Fruit & veg'], ['Olive oil', 5, 'ml', 'Cupboard']],
+    steps: ['Brown the mince in the oil 6–8 min, until cooked through. Add the seasoning and a splash of water, cook 2 min until it coats the meat.', 'Salsa: chopped tomatoes, red onion, coriander, lime juice and salt.', 'Warm the wraps in a dry pan (cut them in half for taco size).', 'Fill: leaves, turkey, salsa and a spoon of yogurt.'] },
   skyr: { n: 'Skyr with berries & honey', tag: 'cold', d: 'Snack', k: 205, p: 28, fat: 1, c: 20, s: 19, min: 1,
     ing: [['Skyr', 250, 'g', 'Dairy & eggs'], ['Frozen berries', 80, 'g', 'Frozen'], ['Honey', 5, 'g', 'Cupboard']], steps: ['Berries and a little honey on the skyr.'] },
   cottage: { n: 'Cottage cheese & tomatoes on rice cakes', tag: 'cold', d: 'Snack', k: 270, p: 24, fat: 9, c: 22, s: 8, min: 3,
@@ -577,9 +622,9 @@ const R = {
     steps: ['Toast the bread.', 'Melt the butter, wilt the spinach, add the whisked eggs and whites. Stir on low heat until just set.', 'Onto the toast.'] },
 };
 const POOLS = {
-  b: ['shakshuka', 'omelette', 'yog', 'strapatsada', 'avoomelette', 'turkish', 'salmontoast', 'appleoats'],
-  l: ['prawnmango', 'greekchicken', 'puttanesca', 'tabbouleh', 'pestopasta', 'nicoise', 'tunabeans', 'harissasalmon', 'steaksalad', 'shawarma'],
-  d: ['steakeggs', 'spagbol', 'cod', 'souvlaki', 'prawncream', 'prawnpasta', 'kofta', 'moussaka', 'salmontray', 'meatballs', 'peppers', 'gambas', 'steak', 'gochujang'],
+  b: ['shakshuka', 'omelette', 'yog', 'strapatsada', 'avoomelette', 'turkish', 'salmontoast', 'appleoats', 'huevos'],
+  l: ['prawnmango', 'greekchicken', 'puttanesca', 'tabbouleh', 'pestopasta', 'nicoise', 'tunabeans', 'harissasalmon', 'steaksalad', 'shawarma', 'stirfry', 'dal', 'tandooriwrap', 'burrito'],
+  d: ['steakeggs', 'spagbol', 'cod', 'souvlaki', 'prawncream', 'prawnpasta', 'kofta', 'moussaka', 'salmontray', 'meatballs', 'peppers', 'gambas', 'steak', 'gochujang', 'thaicurry', 'teriyaki', 'beefbroc', 'tikka', 'tikkamasala', 'keema', 'fajitas', 'chilli', 'tacos'],
   s: ['skyr', 'cottage', 'shake', 'edamame', 'applenuts', 'pbtoast', 'hummuspitta'],
 };
 // the "No time" button's options for each main meal
@@ -853,7 +898,7 @@ function weekCostWith(pools, c = priceCtx()) {
 const basePools = () => ({ b: ranked('b'), l: ranked('l'), d: ranked('d'), s: ranked('s') });
 // Pricey recipes (salmon, prawns, steak, cod) are treats, not the base of the menu. A bigger budget
 // never means steak every night: the menu is picked for your goal first, and money only limits it.
-const LUX = new Set(['salmontoast', 'prawnmango', 'harissasalmon', 'steaksalad', 'cod', 'prawnpasta', 'salmontray', 'gambas', 'steak', 'steakeggs', 'prawncream']);
+const LUX = new Set(['salmontoast', 'prawnmango', 'harissasalmon', 'steaksalad', 'cod', 'prawnpasta', 'salmontray', 'gambas', 'steak', 'steakeggs', 'prawncream', 'teriyaki', 'beefbroc']);
 const LUX_MAX = { tight: { b: 0, l: 0, d: 0 }, normal: { b: 1, l: 1, d: 1 }, comfort: { b: 1, l: 1, d: 2 } };
 function tierPools(tier, c) {
   const P = basePools(), out = {};
@@ -873,7 +918,7 @@ function tierCosts() { const c = priceCtx(); if (!c) return null; const o = {}; 
 let BP = null;
 function budgetPools() {
   const b = S.core.budget, c = priceCtx();
-  const key = JSON.stringify([TODAY(), S.core.goal, S.core.food.focus, S.core.food.exclude, S.core.food.fav, b.store, S.core.food.whey, b.region, b.like, b.cur, b.weekly, b.tier, S.prices && S.prices.updated]);
+  const key = JSON.stringify([TODAY(), S.core.goal, S.core.food.focus, S.core.food.exclude, S.core.food.fav, S.core.food.cuisines, S.core.food.explore, b.store, S.core.food.whey, b.region, b.like, b.cur, b.weekly, b.tier, S.prices && S.prices.updated]);
   if (BP && BP.key === key) return BP.v;
   // Smart is the default. Treat only if you picked it; a big budget alone doesn't buy more steak.
   let v = tierPools('normal', c);
@@ -882,7 +927,7 @@ function budgetPools() {
 }
 // a fixed basket (every recipe once) shows how prices moved, whatever the menu is this week
 // (the recipes are saved with the budget, so adding new recipes never looks like a price rise)
-const BASKET_V1 = Object.keys(R).filter(id => !R[id].quick && !['avoomelette', 'steakeggs', 'strapatsada', 'puttanesca', 'pestopasta', 'tunabeans', 'spagbol', 'prawncream', 'moussaka', 'peppers'].includes(id));
+const BASKET_V1 = Object.keys(R).filter(id => !R[id].quick && !['avoomelette', 'steakeggs', 'strapatsada', 'puttanesca', 'pestopasta', 'tunabeans', 'spagbol', 'prawncream', 'moussaka', 'peppers', 'huevos', 'stirfry', 'thaicurry', 'teriyaki', 'beefbroc', 'tikka', 'tikkamasala', 'dal', 'keema', 'tandooriwrap', 'burrito', 'fajitas', 'chilli', 'tacos'].includes(id));
 const basketIds = () => Object.keys(R).filter(id => !R[id].quick);
 const basketIndex = (c, ids = basketIds()) => ids.filter(id => R[id]).reduce((s, id) => s + recipeCost(id, 1, c), 0);
 function priceCheck() {
@@ -1115,7 +1160,7 @@ const DEFAULT_CORE = () => ({
   plans: [],
   gym: { swap: {}, avoid: [] },
   overrides: {}, timeOv: {},
-  food: { focus: 'normal', exclude: [], extras: [], swaps: {}, fav: [], whey: { g: 30, p: 24, k: 120 } },
+  food: { focus: 'normal', exclude: [], extras: [], swaps: {}, fav: [], whey: { g: 30, p: 24, k: 120 }, cuisines: [], explore: true },
   budget: { region: '', like: 'US', cur: '', weekly: 0, tier: '', supp: 0, ref: null, seen: '', alert: null, store: '' },
   myFoods: [], recentFoods: [],
   mode: { type: 'normal', since: TODAY(), sick: '', rampStart: null },
@@ -1240,7 +1285,7 @@ async function loadPrices() {
   try { const r = await fetch('prices.json?t=' + Date.now(), { cache: 'no-store' }); if (r.ok) { const p = await r.json(); if (p && p.items) { S.prices = p; try { localStorage.setItem('gymbro-prices', JSON.stringify(p)); } catch (e) {} } } } catch (e) {}
 }
 // the app updates itself: when a newer version is online, reload into it (your data stays on the phone)
-const APP_VERSION = '26';
+const APP_VERSION = '27';
 async function checkUpdate() {
   try {
     const v = (await (await fetch('version.txt?t=' + Date.now(), { cache: 'no-store' })).text()).trim();
@@ -1346,7 +1391,7 @@ function ranked(poolKey) {
   return list.map((id, i) => [id, score(id), i]).sort((a, b) => a[1] - b[1] || a[2] - b[2]).map(x => x[0]);
 }
 // real-kitchen amounts: whole eggs, ¼ of a lemon, ½ a tin, grams in 5–25 g steps. Never "3.25 eggs".
-const HALVES = ['Beef stock cube', 'Aubergine', 'Banana', 'Avocado', 'Mango', 'Cucumber', 'Red pepper', 'Onion', 'Red onion', 'Lemon', 'Lime', 'Courgette', 'Red chilli', 'Tomato', 'Apple'];
+const HALVES = ['Spring onions', 'Beef stock cube', 'Aubergine', 'Banana', 'Avocado', 'Mango', 'Cucumber', 'Red pepper', 'Onion', 'Red onion', 'Lemon', 'Lime', 'Courgette', 'Red chilli', 'Tomato', 'Apple'];
 function scaleQty(q, u, f, name) {
   const x = q * f;
   if (u === 'g' || u === 'ml') return Math.max(5, x < 100 ? round(x, 5) : x < 250 ? round(x, 10) : round(x, 25));
@@ -1385,17 +1430,35 @@ function mealTimes(k) {
   return [b, l, dn, aft, Math.min(dn + 90, sleep - 60), (b + l) / 2].map(q);
 }
 const mealOrder = ms => ms.slice().sort((a, b) => a.at - b.at);
-// each week a different set from the recipes that fit you (best-ranked first); favourites are in every week
-function weekPick(arr, n, seed) {
-  const fav = (S.core.food.fav || []).filter(id => arr.includes(id)).slice(0, n), rest = arr.filter(id => !fav.includes(id)), m = n - fav.length;
-  const top = rest.slice(0, n + 4 - fav.length);
-  if (top.length <= m) return fav.concat(top);
+// the cuisine groups you can pick: one shows once it has enough lunches and dinners to fill a week
+const CUISINES = { med: 'Mediterranean', asian: 'Asian', indian: 'Indian', latin: 'Mexican & Latin', american: 'Lighter American', european: 'European classics' };
+const cuOf = id => R[id].cu || 'med';
+const cuOn = () => Object.keys(CUISINES).filter(c => POOLS.l.concat(POOLS.d).filter(id => cuOf(id) === c).length >= 4);
+// each week a different set from the recipes that fit you; favourites every week; your cuisines first,
+// plus (if you like) one dinner a week from a cuisine you don't usually pick
+function weekPick(arr, n, seed, slot) {
+  const F = S.core.food, cu = (F.cuisines || []).filter(c => CUISINES[c]), ranked = F.focus !== 'normal' || ['lose', 'gain', 'muscle'].includes(S.core.goal.type);
+  const fav = (F.fav || []).filter(id => arr.includes(id)).slice(0, n);
+  let rest = arr.filter(id => !fav.includes(id)), m = n - fav.length, extra = [];
+  if (cu.length && slot !== 'b') {
+    const mine = rest.filter(id => cu.includes(cuOf(id))), other = rest.filter(id => !cu.includes(cuOf(id)));
+    if (slot === 'd' && F.explore && other.length && m > 1) { extra = [other[(seed * 3) % other.length]]; m--; }
+    // not enough of your cuisines to fill the week: all of them, then the others take turns
+    if (mine.length <= m) {
+      const o2 = other.filter(id => !extra.includes(id)), st2 = o2.length ? (seed * (m + 1)) % o2.length : 0;
+      return fav.concat(mine, [...Array(Math.min(m - mine.length, o2.length))].map((_, j) => o2[(st2 + j) % o2.length]), extra);
+    }
+    rest = mine;
+  }
+  // ranked for your goal: the best few; otherwise the whole list takes turns
+  const top = ranked ? rest.slice(0, m + 4) : rest;
+  if (top.length <= m) return fav.concat(top, extra);
   const st = (seed * (m + 1)) % top.length; // step one further each week, so the sets mix instead of alternating
-  return fav.concat([...Array(m)].map((_, j) => top[(st + j) % top.length]));
+  return fav.concat([...Array(m)].map((_, j) => top[(st + j) % top.length]), extra);
 }
 function dayMealsWith(k, pools) {
   const wd = (parseKey(k).getDay() + 6) % 7, wk = weekStart(k), seed = Math.floor(diffDays(wk, '2026-01-05') / 7);
-  const B = weekPick(pools.b, 4, seed), L = weekPick(pools.l, 4, seed), D = weekPick(pools.d, 5, seed), Sn = pools.s;
+  const B = weekPick(pools.b, 4, seed, 'b'), L = weekPick(pools.l, 4, seed, 'l'), D = weekPick(pools.d, 5, seed, 'd'), Sn = pools.s;
   const rot = (arr, i) => arr[((i + seed) % arr.length + arr.length) % arr.length];
   const training = !!SESS[planFor(k)], T = targets(dayMode(k), k), sw = S.core.food.swaps[wk] || {};
   const pickSw = (id, i) => (sw[wd + '-' + i] && R[sw[wd + '-' + i]]) ? sw[wd + '-' + i] : id;
@@ -1962,14 +2025,39 @@ function lastLog(ex, beforeKey) {
   for (const k of keys) { const d = getDay(k); if (d.lifts && d.lifts[ex]) return { k, ...d.lifts[ex] }; }
   return null;
 }
+// small single-joint moves: the last set can go to failure, they need less rest
+const ISO = new Set(['lat', 'push', 'curl', 'lcurl', 'seatcurl', 'lext', 'calf', 'scalf', 'face', 'fly', 'pecdeck', 'ohext', 'hammer', 'cablelat', 'reardelt', 'crunch', 'lpcalf']);
+const restTxt = id => EX[id].main ? '2–3 min' : ISO.has(id) ? '60–90 s' : 'about 2 min';
+// your last few logs of an exercise, newest first
+function lastLogs(ex, n, beforeKey = TODAY()) {
+  const out = [];
+  for (const k of allDayKeys().filter(x => x < beforeKey).reverse()) { const d = getDay(k); if (d.lifts && d.lifts[ex]) { out.push({ k, ...d.lifts[ex] }); if (out.length >= n) break; } }
+  return out;
+}
+// stuck: the same weight missed 3 sessions in a row (the classic StrongLifts / Starting Strength rule)
+const stalled = ex => { const L = lastLogs(ex, 3); return L.length === 3 && EX[ex].inc > 0 && L.every(l => !liftOk(l, EX[ex]) && l.w > 0 && l.w === L[0].w); };
+// a lighter week: same weights, half the sets
+const lightOn = (k = TODAY()) => { const L = S.core.light; return !!(L && k >= L.start && k <= L.end); };
+const setsOf = E => lightOn() ? Math.max(1, Math.ceil(E.sets / 2)) : E.sets;
+function lightCard() {
+  const L = S.core.light;
+  if (lightOn()) return `<div class="banner good"><h3>Lighter week until ${esc(shortDate(L.end))}</h3><p class="small">Same weights, half the sets. Fatigue drops, then you go again. <button class="linkbtn" data-a="lightEnd">End it early</button></p></div>`;
+  if (S.core.mode.type !== 'normal' || (L && diffDays(TODAY(), L.end) < 28)) return '';
+  const st = Object.keys(EX).filter(id => EX[id].main && stalled(id));
+  if (st.length < 2) return '';
+  return `<div class="banner warn"><h3>${st.length} main lifts are stuck</h3><p class="small">${st.map(id => esc(EX[id].n)).join(', ')}. Take a lighter week: same weights, half the sets, for 7 days. It clears fatigue without costing muscle.</p><button class="btn small" data-a="lightStart">Start a lighter week</button></div>`;
+}
 function liftOk(l, E) { if (typeof l.ok === 'boolean') return l.ok; return Array.isArray(l.r) && l.r.length >= E.sets && l.r.every(n => +n >= E.hi); }
 function suggestion(ex) {
   const E = EX[ex], last = lastLog(ex, TODAY());
   let w = startW(ex);
   if (last) w = liftOk(last, E) && E.inc ? last.w + E.inc : last.w;
+  // stuck 3 times: 10% lighter, then build back up
+  const reset = !!(last && stalled(ex));
+  if (reset) w = Math.max(0, round(last.w * 0.9, E.inc >= 2.5 ? 2.5 : 1));
   const f = rampFactor();
   if (f < 1 && w > 0) w = round(w * f, E.inc >= 2.5 ? 2.5 : 1);
-  return { w, last, up: !!(last && liftOk(last, E) && E.inc) };
+  return { w, last, reset, up: !!(last && liftOk(last, E) && E.inc) };
 }
 function tankTip(area) {
   const list = TIPS[area], i = (UI.tip[area] || 0) % list.length;
@@ -1998,7 +2086,7 @@ function viewTrain() {
   const injury = av.length ? `<div class="banner warn"><h3>${av.map(a => AREAS[a][0].toUpperCase() + AREAS[a].slice(1)).join(' + ')}-friendly mode</h3><p class="small">Exercises that load your ${av.map(a => AREAS[a]).join(' or ')} are swapped automatically. Pain for more than a week, or sharp pain? See a physio.</p><button class="btn ghost small" data-a="avoidOff">My ${av.map(a => AREAS[a]).join(' and ')} feel${av.length > 1 ? '' : 's'} fine again</button></div>` : '';
   const exs = sessionExercises(UI.sess, k), b = sessBurn(UI.sess);
   return `
-  ${modeBanner()}${tankTip('gym')}${segs}${todayNote}${injury}${UI.sess === plan ? resultCard(k) : ''}${d.session === UI.sess ? '' : gymButton(UI.sess)}
+  ${modeBanner()}${tankTip('gym')}${segs}${todayNote}${injury}${lightCard()}${UI.sess === plan ? resultCard(k) : ''}${d.session === UI.sess ? '' : gymButton(UI.sess)}
   <div class="card">
     <div><h2>${ss.n}: ${esc(ss.sub)}</h2><p class="muted">About ${b.min} min${UI.sess === plan ? ' at <button class="linkbtn" data-a="moveOpen" data-v="' + k + '">' + planTime(k) + '</button>' : ''} · <button class="linkbtn" data-a="help" data-v="sess:${UI.sess}">What to do at the gym</button>${UI.sess === plan ? ' · <button class="linkbtn" data-a="dayOpen">Can\'t train today?</button>' : ''}</p></div>
     <div class="burn">You burn about <b>${fmt(b.kcal)} kcal</b> in this session, plus about <b>${b.epoc} kcal</b> of afterburn over the next day. It's already in your calories.</div>
@@ -2018,6 +2106,12 @@ const SOURCES = [
   ['ISSN position stand: creatine', 'https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5469049/'],
   ['Calories burned: 2024 Compendium of Physical Activities', 'https://pacompendium.com/'],
   ['Afterburn after lifting: Schuenke et al. 2002', 'https://pubmed.ncbi.nlm.nih.gov/11882927/'],
+  ['Seated vs lying leg curls: Maeo et al. 2021 (summary)', 'https://sci-sport.com/en/?p=7685'],
+  ['Overhead triceps extensions: Maeo et al. 2023 (summary)', 'https://sci-sport.com/en/triceps-hypertrophy-impact-of-arm-position/'],
+  ['Closer to failure and muscle growth: Robinson et al. 2024', 'https://lida.sport-iat.de/ta/Record/4089104?lng=en'],
+  ['Rest between sets: Singer et al. 2024', 'https://www.frontiersin.org/journals/sports-and-active-living/articles/10.3389/fspor.2024.1429789/text'],
+  ['A week off vs training through: Coleman et al. 2024', 'https://peerj.com/articles/16777'],
+  ['Deloading, coaches\' consensus: Bell et al. 2023', 'https://pmc.ncbi.nlm.nih.gov/articles/PMC10511399/'],
   ['Body fat from tape measures: US Navy method, Hodgdon & Beckett 1984', 'https://apps.dtic.mil/sti/pdfs/ADA143890.pdf'],
   ['No spot fat loss from ab exercises: Vispute et al. 2011', 'https://pubmed.ncbi.nlm.nih.gov/21804427/'],
   ['No spot fat loss from training one leg: Ramírez-Campillo et al. 2013', 'https://pubmed.ncbi.nlm.nih.gov/23222084/'],
@@ -2028,10 +2122,13 @@ function whyCard() {
     <p class="small">Built from sports-science guidelines and research reviews, not gym myths.</p>
     <ol class="steps">
       <li><span><b>Every muscle twice a week.</b> The 2026 ACSM guidelines: train each major muscle at least 2 days a week.</span></li>
-      <li><span><b>About 10–20 hard sets per muscle a week.</b> More sets, more growth, up to a point. ${four ? 'Your 4 days give chest, back and thighs 13–16 sets, shoulders and arms about 10.' : 'Your 3 full-body days give each big muscle about 10 sets.'}</span></li>
+      <li><span><b>About 10–20 hard sets per muscle a week.</b> More sets, more growth, up to a point. ${four ? 'Your 4 days give chest, back, quads and glutes 11–15 sets, hamstrings, shoulders and arms about 10.' : 'Your 3 full-body days give each big muscle about 8–12 sets.'}</span></li>
       <li><span><b>Heavy first, lighter after.</b> Main lifts at 4–8 reps for strength, the rest at 8–20 for size. Any rep range builds muscle if the sets are hard.</span></li>
-      <li><span><b>Stop 1–2 reps before failure.</b> Going all the way isn't needed and makes you more sore.</span></li>
+      <li><span><b>Stop 1–2 reps before failure on big lifts.</b> On the last set of small moves (curls, raises, extensions), go until you can't do another clean rep: closer to failure grows muscle a bit more, and small muscles recover fast.</span></li>
+      <li><span><b>Rest 2–3 min on main lifts, about 2 min on other big moves, 60–90 s on small ones.</b> Longer rest means more good reps.</span></li>
+      <li><span><b>Stretched positions grow more.</b> Seated leg curls and overhead triceps extensions train the muscle long, which studies link to more growth.</span></li>
       <li><span><b>Add weight when you hit all the reps.</b> That's the ✓ button. Small steps, every week.</span></li>
+      <li><span><b>Stuck 3 sessions in a row?</b> Gym Bro drops that lift 10% and you build back up: the classic fix coaches use. If 2 main lifts stall, take a lighter week (half the sets) to clear fatigue.</span></li>
       <li><span><b>Protein ${G.prot} g per kg.</b> Muscle gains top out around 1.6–2.2 g/kg. ${G.rate < 0 ? 'You\'re losing fat too, so you sit at the top.' : ''}</span></li>
       <li><span><b>Lose at most 0.5–1% of your weight a week.</b> Faster than that and muscle goes with the fat.</span></li>
       <li><span><b>Cardio mostly easy.</b> Easy rides burn fat without wrecking your legs for squats.</span></li>
@@ -2098,7 +2195,7 @@ function sessionExercises(key, k) {
 // what you did today, extras included
 function sessionResult(k) {
   const d = getDay(k) || {}, ids = Object.keys(d.lifts || {}), added = new Set(d.addEx || []), w = currentWeight();
-  const sets = ids.reduce((a, id) => a + (EX[id] ? EX[id].sets : 0), 0), min = 10 + ids.length * 9, net = Math.round(4 * w * min / 60);
+  const sets = ids.reduce((a, id) => a + (EX[id] ? setsOf(EX[id]) : 0), 0), min = 10 + ids.length * 9, net = Math.round(4 * w * min / 60);
   return { n: ids.length, extra: ids.filter(id => added.has(id)).length, sets, min, kcal: Math.round(5 * w * min / 60), epoc: Math.max(30, Math.min(110, Math.round(net * 0.12))), up: ids.filter(id => EX[id] && d.lifts[id].ok && EX[id].inc).map(id => EX[id].n), miss: ids.filter(id => EX[id] && !d.lifts[id].ok).map(id => EX[id].n) };
 }
 function resultCard(k) {
@@ -2121,9 +2218,9 @@ function exCard(id, d, x = {}) {
   const w = dr.w !== undefined && dr.w !== null ? dr.w : saved ? saved.w : sg.w;
   const st = dr.st !== undefined ? dr.st : saved ? (liftOk(saved, E) ? 'ok' : 'miss') : '';
   const open = UI.how === id;
-  const goal = E.inc ? (sg.up ? 'up from ' + sg.last.w : sg.last ? 'same as last time' : 'starting guess') : 'add a rep each time';
+  const goal = E.inc ? (sg.reset ? 'stuck 3 times: 10% lighter, build back up' : sg.up ? 'up from ' + sg.last.w : sg.last ? 'same as last time' : 'starting guess') : 'add a rep each time';
   return `<div class="ex ${E.main ? 'main' : ''}">
-    <div class="ex-top"><button class="exname" data-a="how" data-v="${id}"><b>${esc(E.n)}</b><span>${E.sets} sets × ${repsOf(E).join('–')} reps${E.note ? ' · ' + esc(E.note) : ''}</span></button>${E.main ? '<span class="tag">Main</span>' : ''}</div>
+    <div class="ex-top"><button class="exname" data-a="how" data-v="${id}"><b>${esc(E.n)}</b><span>${setsOf(E)} sets × ${repsOf(E).join('–')} reps${E.note ? ' · ' + esc(E.note) : ''}</span></button>${E.main ? '<span class="tag">Main</span>' : ''}</div>
     ${x.why === 'req' ? `<p class="small" style="font-weight:700;color:var(--violet)">Extra for your request: ${esc(REQS[x.req].n)}${x.id !== x.orig ? ' (instead of ' + esc(EX[x.orig].n) + ')' : ''}</p>` : x.why === 'added' ? `<p class="small" style="font-weight:700;color:var(--blue)">Extra, added by you · <button class="linkbtn" data-a="addExDel" data-v="${id}">Remove</button></p>` : x.why ? `<p class="small" style="font-weight:700;color:var(--blue)">Instead of ${esc(EX[x.orig].n)} (${x.why === 'today' ? 'just today' : x.why === 'always' ? 'always' : (AREAS[S.core.gym.avoid.find(a => (EX[x.orig].stress || []).includes(a))] || 'injury') + '-friendly'})${x.why !== 'injury' ? ` · <button class="linkbtn" data-a="exUndo" data-v="${x.orig}">Undo</button>` : ''}</p>` : ''}
     <div class="meal-act" style="margin-top:0"><button class="linkbtn" data-a="how" data-v="${id}">${open ? 'Hide how-to' : 'How to do it'}</button>${x.why === 'added' ? '' : `<button class="linkbtn" data-a="exSwap" data-v="${x.orig || id}">Swap</button>`}</div>
     ${open ? `<div class="how">${exHowHTML(id)}</div>` : ''}
@@ -2149,8 +2246,8 @@ function gymQueue(G) {
   const keep = new Set(all.filter(x => EX[x.id].main).concat(all.filter(x => !EX[x.id].main).slice(0, 2)));
   return all.filter(x => keep.has(x));
 }
-const gymSets = (G, id) => G.short ? Math.max(2, EX[id].sets - 1) : EX[id].sets;
-const gymRestSec = id => EX[id].main ? 150 : 75;
+const gymSets = (G, id) => G.short ? Math.max(2, setsOf(EX[id]) - 1) : setsOf(EX[id]);
+const gymRestSec = id => EX[id].main ? 150 : ISO.has(id) ? 75 : 120;
 function gymW(id) { const dr = UI.draft[id] || {}, d = getDay(TODAY()) || {}, saved = d.lifts && d.lifts[id]; return dr.w !== undefined && dr.w !== null ? dr.w : saved ? saved.w : suggestion(id).w; }
 // warm-up sets before a heavy lift: lighter and fewer reps, so they never tire you
 function warmups(id, w) {
@@ -2231,7 +2328,7 @@ function viewGym() {
       <button class="btn blue block" data-a="gymWarm">Warm-ups done</button>`;
   else main = `<p class="gym-big">Set ${G.set} of ${sets}: ${reps} reps${bw ? '' : ` at ${w} kg`}</p>
       ${bw ? '' : `<div class="gym-w"><button class="btn ghost" data-a="gymW" data-v="-${step}">−</button><input id="gym-w" data-ex="${id}" inputmode="decimal" value="${w}"><button class="btn ghost" data-a="gymW" data-v="${step}">+</button></div>`}
-      <p class="small muted">Stop with 1–2 reps left in the tank. Rest ${E.main ? '2–3 min' : '60–90 s'} after.</p>
+      <p class="small muted">${ISO.has(id) && G.set === sets ? 'Last set: keep going until you can\'t do another clean rep.' : 'Stop with 1–2 reps left in the tank.'} Rest ${restTxt(id)} after.</p>
       <button class="btn blue block" data-a="gymSet">Set done</button>`;
   return `<div class="card">${top}
     <p class="small muted">Exercise ${G.i + 1} of ${n}${E.main ? ' · Main lift' : ''}</p>
@@ -2249,10 +2346,10 @@ const macLine = m => `<div class="mac"><span><b>${fmt(m.k)}</b> kcal</span><span
 function viewFood() {
   const segs = `<div class="segs">${[['today', 'Today'], ['week', 'Week'], ['shop', 'Shop'], ['budget', 'Budget'], ['prefs', 'My foods']].map(([v, l]) => `<button class="seg ${UI.food === v ? 'on' : ''}" data-a="foodTab" data-v="${v}">${l}</button>`).join('')}</div>`;
   const menuCard = `<div class="card" style="gap:8px"><div class="spread"><span class="lbl">Menu for</span><button class="linkbtn" data-a="goalOpen">Change</button></div>
-    <div class="gchips"><span>${esc(GOALS[S.core.goal.type].n)}</span><span>${esc(FOCUS[S.core.food.focus].n)}</span>${S.core.food.exclude.length ? `<span>${S.core.food.exclude.length} foods crossed out</span>` : ''}</div></div>`;
+    <div class="gchips"><span>${esc(GOALS[S.core.goal.type].n)}</span><span>${esc(FOCUS[S.core.food.focus].n)}</span>${(S.core.food.cuisines || []).length ? `<span>${S.core.food.cuisines.map(c => esc(CUISINES[c])).join(' + ')}</span>` : ''}${S.core.food.exclude.length ? `<span>${S.core.food.exclude.length} foods crossed out</span>` : ''}</div></div>`;
   if (UI.food === 'week') return segs + menuCard + foodWeek();
   if (UI.food === 'shop') return segs + foodShop();
-  if (UI.food === 'prefs') return segs + menuCard + foodPrefs() + wheyCard();
+  if (UI.food === 'prefs') return segs + menuCard + cuisineCard() + foodPrefs() + wheyCard();
   if (UI.food === 'budget') return segs + foodBudget();
   const k = TODAY(), d = getDay(k) || {}, T = targets(S.core.mode.type, k), e = eaten(k), ate = d.ate || [], meals = dayMeals(k);
   const mini = (l, v, t, cls) => `<div class="mini"><span>${l}</span><b>${v}<small class="muted" style="font-size:13px"> / ${t} g</small></b><div class="bar ${cls}"><i style="width:${Math.min(100, v / t * 100)}%"></i></div></div>`;
@@ -2305,6 +2402,15 @@ function wheyCard() {
     <p class="small muted">Copy these from the tub's label (per scoop or per serving). Every shake and recipe uses them, and "scoops" match your scoop.</p>
     <div class="grid3"><label class="field"><span>1 scoop, g</span><input id="wh-g" inputmode="decimal" value="${W.g}"></label><label class="field"><span>Protein, g</span><input id="wh-p" inputmode="decimal" value="${W.p}"></label><label class="field"><span>kcal</span><input id="wh-k" inputmode="decimal" value="${W.k}"></label></div>
     <button class="btn ghost small" data-a="wheySave">Save</button></div>`;
+}
+function cuisineCard() {
+  const F = S.core.food, on = F.cuisines || [];
+  const count = c => POOLS.l.concat(POOLS.d).filter(id => cuOf(id) === c).length;
+  return `<div class="card"><h2>Favourite cuisines</h2>
+    <p class="small muted">Pick up to 3. Your lunches and dinners come mostly from these; your goal and budget still decide first. None picked: a mix of everything.</p>
+    <div class="pchips">${cuOn().map(c => `<button class="pchip ${on.includes(c) ? 'on' : ''}" data-a="cuToggle" data-v="${c}" ${!on.includes(c) && on.length >= 3 ? 'disabled' : ''}>${esc(CUISINES[c])} <span class="muted">${count(c)}</span></button>`).join('')}</div>
+    ${on.length ? `<label class="row small" style="gap:8px;flex-wrap:nowrap"><input type="checkbox" data-a="cuExplore" ${F.explore ? 'checked' : ''} style="width:20px;height:20px"> Explore: one dinner a week from a cuisine you don't usually pick</label>` : ''}
+  </div>`;
 }
 function foodPrefs() {
   const all = {}; Object.values(R).forEach(r => r.ing.forEach(i => { all[i[0]] = i[3]; }));
@@ -2380,7 +2486,9 @@ const PACKS = {
   'Chickpeas (tin)': [[240], 365, 'tin'], 'Chilli flakes': [[20], 365, 'jar'], 'Chocolate whey': [[1000, 2500], 365], 'Chopped tomatoes (tin)': [[1], 365, 'tin'],
   'Cinnamon': [[20], 365, 'jar'], 'Cod fillet': [[250, 400], 2], 'Cottage cheese': [[300, 600], 5], 'Courgette': [[1, 3], 7], 'Couscous': [[500, 1000], 365],
   'Cucumber': [[1], 7], 'Dijon mustard': [[200], 180, 'jar'], 'Dried oregano': [[20], 365, 'jar'], 'Spaghetti': [[500, 1000], 365], 'Penne': [[500, 1000], 365],
-  'Tomato purée': [[200], 30, 'tube'], 'Beef stock cube': [[8], 365, 'box'], 'Light crème fraîche': [[300], 7, 'tub'], 'Green pesto': [[190], 14, 'jar'], 'Aubergine': [[1], 7], 'Edamame (frozen)': [[500], 90], 'Egg whites': [[500, 1000], 7, 'carton'], 'Eggs': [[6, 12], 21],
+  'Tomato purée': [[200], 30, 'tube'], 'Egg noodles': [[250], 365], 'Broccoli': [[350], 7, 'head'], 'Fresh ginger': [[50], 21], 'Spring onions': [[8], 7, 'bunch'],
+  'Light coconut milk': [[400], 365, 'tin'], 'Thai red curry paste': [[190], 30, 'jar'], 'Fresh coriander': [[1], 5], 'Garam masala': [[20], 365, 'jar'], 'Red lentils': [[500, 1000], 365],
+  'Frozen peas': [[1000], 90], 'Tortilla wraps': [[8], 7, 'pack'], 'Black beans (tin)': [[240], 365, 'tin'], 'Sweetcorn (tin)': [[260], 365, 'tin'], 'Fajita seasoning': [[4], 365, 'sachet'], 'Beef stock cube': [[8], 365, 'box'], 'Light crème fraîche': [[300], 7, 'tub'], 'Green pesto': [[190], 14, 'jar'], 'Aubergine': [[1], 7], 'Edamame (frozen)': [[500], 90], 'Egg whites': [[500, 1000], 7, 'carton'], 'Eggs': [[6, 12], 21],
   'Feta': [[200], 5], 'Fresh basil': [[1], 5], 'Fresh dill': [[1], 5], 'Fresh parsley & mint': [[1], 5], 'Fresh parsley': [[1], 5], 'Frozen berries': [[500, 1000], 90],
   'Garlic': [[10], 30, 'bulb'], 'Gochujang paste': [[170, 500], 180, 'tub'], 'Granola': [[500, 1000], 60], 'Greek yogurt 0%': [[500, 1000], 7], 'Greek yogurt 2%': [[500, 1000], 7],
   'Green beans': [[200, 400], 5], 'Ground cumin': [[20], 365, 'jar'], 'Harissa paste': [[90, 190], 30, 'jar'], 'Honey': [[340], 365, 'jar'], 'Hummus': [[200, 300], 5],
@@ -2889,7 +2997,7 @@ const videoLink = name => 'https://www.youtube.com/results?search_query=' + enco
 function exHowHTML(id) {
   const E = EX[id];
   return `<ol>${E.how.map(s => `<li>${esc(s)}</li>`).join('')}</ol>
-    <p class="muted">${E.sets} sets of ${repsOf(E).join('–')} reps. Rest ${E.main ? '2–3 min' : '60–90 s'} between sets.</p>
+    <p class="muted">${setsOf(E)} sets of ${repsOf(E).join('–')} reps. Rest ${restTxt(id)} between sets.${ISO.has(id) ? ' Last set: keep going until you can\'t do another clean rep.' : ' Stop with 1–2 reps left in the tank.'}</p>
     <a class="vid" href="${videoLink(E.n)}" target="_blank" rel="noopener">▶ Watch a video</a>`;
 }
 const SKIP_REASONS = { pain: 'Pain or injury', equip: 'No equipment', time: 'No time', tired: 'Too tired', other: 'Other' };
@@ -3799,6 +3907,15 @@ const A = {
     if (!(g >= 10 && g <= 80) || !(p > 0 && p < g) || !(k >= p * 3 && k <= g * 6)) { toast('Check the numbers: scoop 10–80 g, protein less than the scoop, kcal from the label.'); return; }
     S.core.food.whey = { g, p, k }; applyWhey(); BP = null; saveCore(); render(); toast(`Saved: ${p} g protein in a ${g} g scoop.`);
   },
+  cuToggle(el) {
+    const F = S.core.food, c = el.dataset.v; F.cuisines = F.cuisines || [];
+    if (F.cuisines.includes(c)) F.cuisines = F.cuisines.filter(x => x !== c);
+    else if (F.cuisines.length < 3) F.cuisines = F.cuisines.concat(c);
+    BP = null; saveCore(); render(); toast(F.cuisines.length ? 'Menu: mostly ' + F.cuisines.map(x => CUISINES[x]).join(', ') + '.' : 'Menu: a mix of everything.');
+  },
+  cuExplore(el) { S.core.food.explore = el.checked; BP = null; saveCore(); render(); },
+  lightStart() { S.core.light = { start: TODAY(), end: addDays(TODAY(), 6) }; saveCore(); render(); toast('Lighter week: same weights, half the sets. Back to normal on ' + shortDate(addDays(TODAY(), 7)) + '.', 3500); },
+  lightEnd() { S.core.light = { start: S.core.light.start, end: addDays(TODAY(), -1) }; saveCore(); render(); },
   favToggle(el) {
     const F = S.core.food, id = el.dataset.v; F.fav = F.fav || [];
     const on = !F.fav.includes(id); F.fav = on ? F.fav.concat(id) : F.fav.filter(x => x !== id);

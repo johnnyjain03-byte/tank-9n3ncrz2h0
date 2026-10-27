@@ -1377,7 +1377,7 @@ async function loadPrices() {
   try { const r = await fetch('prices.json?t=' + Date.now(), { cache: 'no-store' }); if (r.ok) { const p = await r.json(); if (p && p.items) { S.prices = p; try { localStorage.setItem('gymbro-prices', JSON.stringify(p)); } catch (e) {} } } } catch (e) {}
 }
 // the app updates itself: when a newer version is online, reload into it (your data stays on the phone)
-const APP_VERSION = '42';
+const APP_VERSION = '43';
 async function checkUpdate() {
   try {
     const v = (await (await fetch('version.txt?t=' + Date.now(), { cache: 'no-store' })).text()).trim();
@@ -2719,11 +2719,12 @@ function gymHurtHTML(G, x) {
 /* ---------- Food ---------- */
 const macLine = m => `<div class="mac"><span><b>${fmt(m.k)}</b> kcal</span><span>P <b>${m.p}</b></span><span>F <b>${m.fat}</b></span><span>C <b>${m.c}</b></span><span class="sug">Sugar <b>${m.s}</b> g</span></div>`;
 function viewFood() {
-  const segs = `<div class="segs">${[['today', 'Today'], ['week', 'Week'], ['shop', 'Shop'], ['budget', 'Budget'], ['prefs', 'My foods']].map(([v, l]) => `<button class="seg ${UI.food === v ? 'on' : ''}" data-a="foodTab" data-v="${v}">${l}</button>`).join('')}</div>`;
+  const segs = `<div class="segs">${[['today', 'Today'], ['week', 'Week'], ['home', 'At home'], ['shop', 'Shop'], ['budget', 'Budget'], ['prefs', 'My foods']].map(([v, l]) => `<button class="seg ${UI.food === v ? 'on' : ''}" data-a="foodTab" data-v="${v}">${l}</button>`).join('')}</div>`;
   const menuCard = `<div class="card" style="gap:8px"><div class="spread"><span class="lbl">Menu for</span><button class="linkbtn" data-a="goalOpen">Change</button></div>
     <div class="gchips"><span>${esc(GOALS[S.core.goal.type].n)}</span><span>${esc(FOCUS[S.core.food.focus].n)}</span>${(S.core.food.cuisines || []).length ? `<span>${S.core.food.cuisines.map(c => esc(CUISINES[c])).join(' + ')}</span>` : ''}${S.core.food.exclude.length ? `<span>${S.core.food.exclude.length} foods crossed out</span>` : ''}</div></div>`;
   if (UI.food === 'week') return segs + menuCard + foodWeek();
   if (UI.food === 'shop') return segs + foodShop();
+  if (UI.food === 'home') return segs + foodHome();
   if (UI.food === 'prefs') return segs + menuCard + cuisineCard() + foodPrefs() + wheyCard();
   if (UI.food === 'budget') return segs + foodBudget();
   const k = TODAY(), d = getDay(k) || {}, T = targets(S.core.mode.type, k), e = eaten(k), ate = d.ate || [], meals = dayMeals(k);
@@ -2949,11 +2950,11 @@ function useUp(lots, x, q, waste) {
 }
 // what's left at home of what you bought before today, after the meals since then
 function pantryLots(key) {
-  const lots = (S.core.pantry || []).filter(p => p.k === key && p.d < TODAY()).sort((a, b) => a.d < b.d ? -1 : 1).map(p => ({ ...p }));
+  const lots = (S.core.pantry || []).filter(p => p.k === key && (p.d < TODAY() || p.home)).sort((a, b) => a.d < b.d ? -1 : 1).map(p => ({ ...p }));
   for (let x = lots.length ? lots[0].d : TODAY(); x < TODAY(); x = addDays(x, 1)) useUp(lots, x, dayNeeds(x)[key] || 0);
   return lots.filter(L => L.q > 0.01 && addDays(L.d, L.life) >= TODAY());
 }
-const boughtToday = key => (S.core.pantry || []).some(p => p.k === key && p.d === TODAY());
+const boughtToday = key => (S.core.pantry || []).some(p => p.k === key && p.d === TODAY() && !p.home);
 // exact: what the meals use. packs: supermarket packs. min: only the packs you're missing, after what's at home.
 function shopPlan(n, mode) {
   const days = [...Array(n)].map((_, i) => addDays(TODAY(), i)), aisle = {}, keys = new Set();
@@ -2997,6 +2998,78 @@ function niceQty(q, u) {
   if (u === 'tsp' || u === 'tbsp') return '1 jar';
   return Math.round(q) + ' ' + u;
 }
+/* ---------- at home: what's left, and meals that use it up ---------- */
+// Your stock is what you ticked on the shopping list, minus what the plan used since. Anything you correct or add here
+// becomes what's there now (a "home" lot), so the shopping list's "missing only" view knows about it too.
+let ING_NAMES = null;
+const ingNames = () => ING_NAMES || (ING_NAMES = [...new Set(Object.values(R).flatMap(r => r.ing.filter(i => !['tsp', 'tbsp'].includes(i[2])).map(i => i[0])))].sort());
+const ingUnit = n => { for (const id in R) { const x = R[id].ing.find(i => i[0] === n); if (x) return x[2]; } return 'g'; };
+const homeStaple = key => /\|(tsp|tbsp)$/.test(key) || packOf(key.split('|')[0])[1] >= 60;
+function homeStock() {
+  return [...new Set((S.core.pantry || []).map(p => p.k))].map(key => {
+    const lots = pantryLots(key), q = lots.reduce((a, L) => a + L.q, 0), [n, u] = key.split('|');
+    return q > 0.01 && !/^(tsp|tbsp)$/.test(u) ? { key, n, u, q, by: lots.map(L => addDays(L.d, L.life)).sort()[0] } : null;
+  }).filter(Boolean).sort((a, b) => (a.by < b.by ? -1 : a.by > b.by ? 1 : 0) || (a.n < b.n ? -1 : 1));
+}
+function homeSet(key, q) {
+  const n = key.split('|')[0];
+  S.core.pantry = (S.core.pantry || []).filter(p => p.k !== key);
+  if (q > 0.01) S.core.pantry.push({ k: key, q, d: TODAY(), life: packOf(n)[1], home: 1 });
+  saveCore();
+}
+const useByTxt = by => { const n = diffDays(by, TODAY()); return n < 0 ? 'past its keep-by date' : n === 0 ? 'use today' : n === 1 ? 'use by tomorrow' : n <= 3 ? 'use within ' + n + ' days' : 'keeps till ' + shortDate(by); };
+const unitWord = u => u === 'pcs' ? 'pcs' : u === 'tin' ? 'tins' : u === 'bunch' ? 'bunch' : u === 'clove' ? 'cloves' : u;
+// Re-pick the next n days' meals to use up what's at home: perishables first, a few missing items allowed
+// ("mainly, not only"), no repeats in the window, and only when a meal uses clearly more of your stock than the plan's.
+function homePlan(n) {
+  const stock = {}, undo = {}, changes = [], used = new Set(), nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+  homeStock().forEach(x => { stock[x.key] = { q: x.q, life: diffDays(x.by, TODAY()) }; });
+  for (let dd = 0; dd < n; dd++) {
+    const k = addDays(TODAY(), dd), d = getDay(k) || {}, wk = weekStart(k), wd = (parseKey(k).getDay() + 6) % 7;
+    for (const i of [0, 1, 2, 3, 4]) {
+      const m = dayMeals(k).find(x => x.i === i); if (!m) continue;
+      if ((d.ate || []).includes(m.key) || (d.slotOv || {})[i] || (dd === 0 && m.at && m.at < nowMin - 30)) continue;
+      const need = (nm, q, u) => scaleQty(q, u, m.f, nm);
+      const score = id => R[id].ing.reduce((t, [nm, q, u]) => { const key = nm + '|' + u, st = stock[key]; if (homeStaple(key)) return t; if (st && st.q > 0.01) return t + Math.min(1, st.q / need(nm, q, u)) * (st.life <= 2 ? 3 : st.life <= 4 ? 2 : 1); return t - 0.4; }, 0);
+      let best = m.id, bs = score(m.id);
+      budgetPools()[SLOT_POOL[i]].filter(id => okRecipe(id) && !R[id].quick && !used.has(id)).forEach(id => { const sc = score(id); if (sc > bs + 0.9) { best = id; bs = sc; } });
+      if (best !== m.id) {
+        const sw = S.core.food.swaps[wk] = S.core.food.swaps[wk] || {}, sk = wd + '-' + i;
+        if (!((wk + '|' + sk) in undo)) undo[wk + '|' + sk] = sw[sk] || null;
+        sw[sk] = best; changes.push({ k, i, from: m.id, to: best });
+      }
+      used.add(best);
+      R[best].ing.forEach(([nm, q, u]) => { const st = stock[nm + '|' + u]; if (st) st.q -= need(nm, q, u); });
+    }
+  }
+  if (changes.length) S.core.food.homeUndo = { at: TODAY(), undo };
+  saveCore();
+  return { changes, left: Object.entries(stock).filter(([key, x]) => x.q > 0.01 && x.life <= 3 && !homeStaple(key)).map(([key]) => key.split('|')[0]) };
+}
+function foodHome() {
+  const st = homeStock(), H = UI.home = UI.home || { q: '', days: 2 };
+  const sug = H.q.length >= 2 ? ingNames().filter(n => n.toLowerCase().includes(H.q.toLowerCase())).slice(0, 8) : [];
+  const res = H.res;
+  return `<div class="card">
+    <h2>What's at home</h2>
+    <p class="small muted">From what you ticked on the shopping list, minus what your meals used since. Fix anything that's wrong, and add what you bought elsewhere.</p>
+    ${st.length ? st.map(x => { const n = diffDays(x.by, TODAY()); return `<div class="shop"><span class="t" style="flex:1">${esc(x.n)}<small style="${n <= 1 ? 'color:var(--orange);font-weight:700' : ''}">${esc(useByTxt(x.by))}</small></span>
+      <input class="hq" data-home="${esc(x.key)}" inputmode="decimal" value="${x.u === 'g' || x.u === 'ml' ? Math.round(x.q) : +x.q.toFixed(2)}" aria-label="${esc(x.n)} amount" style="width:76px;text-align:center;font-weight:800"><span class="small" style="width:44px">${esc(unitWord(x.u))}</span>
+      <button class="btn small ghost" data-a="homeGone" data-v="${esc(x.key)}" aria-label="${esc(x.n)} is gone">Gone</button></div>`; }).join('') : '<p class="small">Nothing yet. Tick things on the shopping list when you buy them, or add them below.</p>'}
+    <label class="field" style="margin-top:10px"><span>Add something you have</span><input id="home-q" type="text" value="${esc(H.q)}" placeholder="e.g. chicken, eggs, spinach" autocomplete="off"></label>
+    <div id="home-sug" class="pchips">${homeSugHTML(sug)}</div>
+  </div>
+  <div class="card">
+    <h2>Use it up</h2>
+    <p class="small">Gym Bro re-picks your meals to use what's at home first, the things that go off soonest before the rest. A few extra items can still be needed.</p>
+    <div class="segs">${[1, 2, 3].map(n => `<button class="seg ${H.days === n ? 'on' : ''}" data-a="homeDays" data-v="${n}">${n === 1 ? 'Today' : n + ' days'}</button>`).join('')}</div>
+    <button class="btn green block" data-a="homePlanGo" ${st.length ? '' : 'disabled'}>Plan meals from what I have</button>
+    ${res ? `<div class="banner ${res.changes.length ? 'good' : 'travel'}">${res.changes.length ? `<h3>${res.changes.length} meal${res.changes.length > 1 ? 's' : ''} changed</h3>${res.changes.map(c => `<p class="small"><b>${esc(c.k === TODAY() ? 'Today' : parseKey(c.k).toLocaleDateString('en-GB', { weekday: 'long' }))} ${esc(SLOTS[c.i].toLowerCase())}:</b> ${esc(R[c.to].n)} <span class="muted">(was ${esc(R[c.from].n)})</span></p>`).join('')}` : '<p class="small">Your plan already uses what you have well. Nothing to change.</p>'}
+      ${res.left.length ? `<p class="small"><b>Still to use soon:</b> ${esc(res.left.join(', '))}. Add it to a meal with Edit, or freeze it.</p>` : ''}
+      ${res.changes.length ? '<div class="row"><button class="btn small" data-a="foodTab" data-v="shop">What I still need to buy</button><button class="btn small ghost" data-a="homeUndo">Undo</button></div>' : ''}</div>` : ''}
+  </div>`;
+}
+const homeSugHTML = sug => sug.map(n => `<button class="pchip" data-a="homeAdd" data-v="${esc(n)}">+ ${esc(n)}</button>`).join('');
 function shopState() { const wk = weekStart(TODAY()); const s = S.core.shop[wk] = S.core.shop[wk] || { got: {}, hide: {} }; s.got = s.got || {}; s.hide = s.hide || {}; return s; }
 function foodShop() {
   const st = shopState(), n = UI.shopRange, mode = UI.shopMode, list = shopPlan(n, mode), hidden = list.filter(x => st.hide[x.key]).length, c = priceCtx();
@@ -4455,6 +4528,19 @@ const A = {
   // a meal you already ticked keeps its new numbers
   meRefresh(d, key) { if ((d.ate || []).includes(key)) { const m = dayMeals(TODAY()).find(x => x.key === key); if (m) setAte(d, m, true); } },
   // no time for a meal: a grab-and-go option, skip it, or eat out
+  homeGone(el) { homeSet(el.dataset.v, 0); if (UI.home) UI.home.res = null; render(); },
+  homeAdd(el) {
+    const n = el.dataset.v, u = ingUnit(n), key = n + '|' + u, have = homeStock().find(x => x.key === key);
+    homeSet(key, (have ? have.q : 0) + (packOf(n)[0][0] || 1)); UI.home.q = ''; UI.home.res = null; render();
+    toast(n + ' added. Change the amount if it\'s not right.');
+  },
+  homeDays(el) { UI.home.days = +el.dataset.v; render(); },
+  homePlanGo() { UI.home.res = homePlan(UI.home.days); render(); },
+  homeUndo() {
+    const H = S.core.food.homeUndo; if (!H) return;
+    for (const [kk, v] of Object.entries(H.undo)) { const [wk, sk] = kk.split('|'), sw = S.core.food.swaps[wk] = S.core.food.swaps[wk] || {}; if (v) sw[sk] = v; else delete sw[sk]; }
+    delete S.core.food.homeUndo; UI.home.res = null; saveCore(); render(); toast('Back to your planned meals.');
+  },
   replOpen(el) { UI.sheet = { repl: +el.dataset.v }; render(); },
   replOwn(el) { UI.sheet = { food: { q: '', items: [], view: 'main', own: +el.dataset.v } }; render(); setTimeout(() => { const t = $('#fa-q'); if (t) t.focus(); }, 60); },
   replPick(el) {
@@ -4511,13 +4597,13 @@ const A = {
     for (const w in S.core.shop) if (w < addDays(weekStart(TODAY()), -14)) delete S.core.shop[w];
     if (key.startsWith('x:')) { st.got[key] = !st.got[key]; saveCore(); render(); return; }
     const P = S.core.pantry = (S.core.pantry || []).filter(p => p.d >= addDays(TODAY(), -30)), x = (UI.shopRows || {})[key];
-    if (boughtToday(key)) S.core.pantry = P.filter(p => !(p.k === key && p.d === TODAY()));
+    if (boughtToday(key)) S.core.pantry = P.filter(p => !(p.k === key && p.d === TODAY() && !p.home));
     else if (x && x.q > 0) P.push({ k: key, q: x.q, d: TODAY(), life: packOf(x.n)[1] });
     saveCore(); render();
   },
   shopHide(el) { shopState().hide[el.dataset.v] = 1; saveCore(); render(); },
   shopUnhide() { shopState().hide = {}; saveCore(); render(); },
-  shopClear() { shopState().got = {}; S.core.pantry = (S.core.pantry || []).filter(p => p.d !== TODAY()); saveCore(); render(); },
+  shopClear() { shopState().got = {}; S.core.pantry = (S.core.pantry || []).filter(p => p.d !== TODAY() || p.home); saveCore(); render(); },
   extraAdd() { const n = val('ex-n'); if (!n) { toast('Type what you want to buy.'); return; } S.core.food.extras.push({ id: Date.now().toString(36), n }); saveCore(); render(); },
   extraDel(el) { const id = el.dataset.v.slice(2); S.core.food.extras = S.core.food.extras.filter(x => x.id !== id); saveCore(); render(); },
   saveWeight() {
@@ -4837,6 +4923,7 @@ async function compress(file) {
 }
 document.addEventListener('change', async e => {
   if (e.target.id === 'import-in' && e.target.files.length) { importBackup(e.target.files[0]); return; }
+  if (e.target.dataset && e.target.dataset.home) { const q = parseFloat(String(e.target.value).replace(',', '.')); if (isFinite(q) && q >= 0) { homeSet(e.target.dataset.home, q); if (UI.home) UI.home.res = null; render(); } return; }
   if (e.target.id === 'meal-in' && e.target.files.length && UI.sheet && UI.sheet.food) {
     const F = UI.sheet.food, f = e.target.files[0]; F.q = val('fa-q') || F.q;
     F.ai = { blob: f, url: URL.createObjectURL(f), hint: F.q || '' }; F.view = 'ai'; render(); return;
@@ -4882,6 +4969,7 @@ document.addEventListener('input', e => {
     const tot = R2.items.filter(y => y.on).reduce((a, y) => { const w = aiScaled(y); a.k += w.k; a.p += w.p; return a; }, { k: 0, p: 0 }), t = $('#ai-tot'); if (t) t.innerHTML = `<b>${fmt(tot.k)}</b> kcal · P ${Math.round(tot.p)}`;
     return;
   }
+  if (el.id === 'home-q' && UI.home) { UI.home.q = el.value; const box = $('#home-sug'); if (box) box.innerHTML = homeSugHTML(el.value.length >= 2 ? ingNames().filter(n => n.toLowerCase().includes(el.value.toLowerCase())).slice(0, 8) : []); return; }
   if (el.id === 'ac-min' && UI.sheet && UI.sheet.act) { const v = num('ac-min'); if (v > 0) { UI.sheet.act.min = v; const b = $('#ac-burn'); if (b) b.innerHTML = burnTxt(UI.sheet.act); } return; }
   if (!el.dataset.ex) return;
   const dr = UI.draft[el.dataset.ex] = UI.draft[el.dataset.ex] || {}; dr.w = num(el.id);

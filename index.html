@@ -167,6 +167,7 @@ input::placeholder{color:#7A8499}
 .mact{display:flex;flex-wrap:wrap;gap:8px;padding:0 14px 14px}
 .pill{border:1.5px solid var(--line);background:var(--surface);color:var(--green);border-radius:999px;padding:9px 14px;font-weight:800;font-size:14px;line-height:1.1;white-space:nowrap}
 .pill.on{background:var(--green);border-color:var(--green);color:#fff}
+.medit{padding:0 14px 14px}
 .mnote{margin:0;padding:0 14px 14px;font-size:14px;font-weight:700;color:var(--blue)}
 .favbtn{flex:none;width:44px;height:44px;margin:-6px -6px 0 0;border:0;background:none;display:grid;place-items:center}
 .favbtn svg{width:24px;height:24px;fill:none;stroke:var(--muted);stroke-width:2}
@@ -632,6 +633,86 @@ const POOLS = {
   d: ['steakeggs', 'spagbol', 'cod', 'souvlaki', 'prawncream', 'prawnpasta', 'kofta', 'moussaka', 'salmontray', 'meatballs', 'peppers', 'gambas', 'steak', 'gochujang', 'thaicurry', 'teriyaki', 'beefbroc', 'tikka', 'tikkamasala', 'keema', 'fajitas', 'chilli', 'tacos'],
   s: ['skyr', 'cottage', 'shake', 'edamame', 'applenuts', 'pbtoast', 'hummuspitta'],
 };
+// nutrition of each ingredient, typical UK label values: kcal, protein, fat, carbs, sugar per 100 g / 100 ml,
+// or per item for pcs, tins, cloves, bunches and spoons. Meat and fish raw, grains dry, tins drained.
+const NUT = {
+  'Almonds': [610, 21, 54, 7, 4], 'Apple': [75, 0.5, 0.2, 17, 15], 'Aubergine': [60, 2.5, 0.5, 6, 5], 'Avocado': [240, 3, 24, 3, 0.8],
+  'Baby potatoes': [70, 1.8, 0.1, 15, 1], 'Balsamic vinegar': [120, 0.5, 0, 25, 20], 'Banana': [100, 1.2, 0.3, 23, 17],
+  'Basmati rice': [355, 8, 1, 78, 0.5], 'Beef stock cube': [25, 1, 1.5, 2, 0.5], 'Black beans (tin)': [110, 7.5, 0.5, 15, 0.5],
+  'Broccoli': [34, 2.8, 0.4, 4, 1.5], 'Butter': [740, 0.6, 82, 0.6, 0.6], 'Cannellini beans (tin)': [95, 6.5, 0.5, 13, 0.5],
+  'Capers': [25, 2, 0.5, 2, 0.4], 'Carrots': [34, 0.6, 0.3, 7.9, 7.4], 'Cherry tomatoes': [18, 0.8, 0.2, 3, 3],
+  'Chicken breast': [110, 24, 1.5, 0, 0], 'Chicken thigh fillets': [145, 18.5, 8, 0, 0], 'Chickpeas (tin)': [120, 7.2, 2.6, 14, 0.5],
+  'Chilli flakes': [6, 0.2, 0.3, 1, 0.2], 'Chocolate whey': [390, 74, 6.5, 10, 6], 'Chopped tomatoes (tin)': [80, 4.5, 0.5, 13, 12],
+  'Cinnamon': [6, 0.1, 0, 2, 0], 'Cod fillet': [80, 18, 0.7, 0, 0], 'Cottage cheese': [98, 11, 4.3, 3.4, 3], 'Courgette': [34, 2.4, 0.4, 3.6, 3.4],
+  'Couscous': [360, 13, 1.5, 73, 1.5], 'Cucumber': [36, 1.8, 0.3, 5.4, 5], 'Dijon mustard': [140, 7, 11, 3, 2],
+  'Dried oregano': [3, 0.1, 0.1, 0.7, 0], 'Edamame (frozen)': [125, 11, 5, 7, 2], 'Egg noodles': [360, 13, 2, 70, 2],
+  'Egg whites': [48, 11, 0.2, 0.7, 0.7], 'Eggs': [72, 6.5, 5, 0.3, 0.2], 'Fajita seasoning': [20, 0.5, 0.5, 3.5, 1], 'Feta': [265, 14, 21, 1.5, 1.5],
+  'Fresh basil': [7, 0.9, 0.2, 0.8, 0], 'Fresh coriander': [7, 0.6, 0.2, 1, 0.2], 'Fresh dill': [13, 1, 0.3, 2, 0],
+  'Fresh ginger': [80, 1.8, 0.8, 15, 1.7], 'Fresh parsley': [11, 0.9, 0.2, 1.9, 0.3], 'Fresh parsley & mint': [13, 1, 0.2, 2, 0.3],
+  'Frozen berries': [40, 0.9, 0.3, 7, 6], 'Frozen peas': [70, 5.5, 1, 9, 4], 'Garam masala': [8, 0.3, 0.3, 1, 0], 'Garlic': [4, 0.2, 0, 1, 0],
+  'Gochujang paste': [220, 4, 1.5, 46, 25], 'Granola': [450, 9, 17, 62, 20], 'Greek yogurt 0%': [54, 10.3, 0, 3, 3],
+  'Greek yogurt 2%': [73, 9.9, 2, 3.6, 3.6], 'Green beans': [28, 1.9, 0.3, 3.2, 2.3], 'Green pesto': [450, 5, 45, 5, 2],
+  'Ground cumin': [8, 0.4, 0.5, 0.9, 0], 'Harissa paste': [150, 2, 12, 8, 5], 'Honey': [330, 0.4, 0, 82, 82], 'Hummus': [300, 7, 25, 10, 0.5],
+  'Kalamata olives': [230, 1.5, 24, 2, 0], 'King prawns (raw)': [70, 15.5, 0.6, 0, 0], 'Lean beef mince 5%': [125, 21.5, 4.5, 0, 0],
+  'Lemon': [17, 0.6, 0.2, 2.5, 1.5], 'Light coconut milk': [75, 0.7, 7, 2, 1.5], 'Light crème fraîche': [165, 2.8, 15, 4.5, 4],
+  'Lime': [20, 0.5, 0.1, 5, 1], 'Linguine': [355, 12.5, 1.8, 71, 3], 'Mango': [120, 1.6, 0.8, 28, 26],
+  'Mixed salad leaves': [15, 1.2, 0.3, 1.8, 1.5], 'Olive oil': [820, 0, 91, 0, 0], 'Onion': [54, 1.5, 0.2, 11, 8], 'Orzo': [355, 12.5, 1.8, 71, 3],
+  'Parmesan': [400, 33, 29, 0, 0], 'Passata': [30, 1.3, 0.2, 5, 4.3], 'Peanut butter': [600, 25, 50, 12, 6], 'Penne': [355, 12.5, 1.8, 71, 3],
+  'Quinoa': [370, 14, 6, 64, 3], 'Red chilli': [4, 0.2, 0, 0.8, 0.5], 'Red lentils': [330, 24, 1.5, 49, 2], 'Red onion': [54, 1.5, 0.2, 11, 8],
+  'Red pepper': [39, 1.5, 0.4, 9.6, 6.3], 'Red wine vinegar': [20, 0, 0, 0.5, 0], 'Rice cakes': [28, 0.6, 0.2, 6, 0],
+  'Roasted red peppers (jar)': [30, 1, 0.3, 5, 4], 'Rocket': [25, 2.6, 0.7, 2, 2], 'Rolled oats': [375, 11, 8, 60, 1],
+  'Rump steak': [130, 22, 4.8, 0, 0], 'Salmon fillet': [210, 20.5, 14, 0, 0], 'Semi-skimmed milk': [47, 3.5, 1.7, 4.8, 4.8],
+  'Sesame seeds': [600, 18, 52, 1, 0.3], 'Shawarma spice mix': [20, 0.8, 0.8, 3, 0.3], 'Sirloin steak': [165, 21, 9, 0, 0],
+  'Skyr': [63, 11, 0.2, 4, 4], 'Smoked paprika': [6, 0.3, 0.3, 1, 0.2], 'Smoked salmon': [180, 23, 10, 0, 0],
+  'Sourdough bread': [240, 9, 1.5, 46, 2], 'Soy sauce': [70, 9, 0, 5, 1], 'Spaghetti': [355, 12.5, 1.8, 71, 3], 'Spinach': [25, 2.8, 0.8, 1.6, 0.4],
+  'Spring onions': [5, 0.3, 0, 1, 0.4], 'Sweet potato': [86, 1.6, 0.1, 20, 4.2], 'Sweetcorn (tin)': [85, 2.8, 1.3, 15, 4],
+  'Thai red curry paste': [120, 2, 7, 12, 6], 'Tomato': [16, 0.7, 0.2, 2.8, 2.6], 'Tomato purée': [95, 4.5, 0.2, 15, 13],
+  'Tortilla wraps': [180, 5, 4, 30, 1.5], 'Tuna in spring water (tin)': [120, 27.5, 0.7, 0, 0], 'Turkey mince': [134, 19.5, 6.1, 0, 0],
+  'Vanilla whey': [385, 77, 5, 8, 5], 'Walnuts': [690, 15, 69, 3, 2.6], 'Wholemeal pitta': [140, 6, 1, 25, 1.5]
+};
+// things you might use instead: same unit as what they replace
+Object.assign(NUT, {
+  'Skimmed milk': [35, 3.5, 0.2, 5, 5], '1% milk': [42, 3.5, 1, 4.8, 4.8], 'Whole milk': [64, 3.4, 3.6, 4.7, 4.7], 'Oat milk (unsweetened)': [45, 0.5, 1.5, 7, 3],
+  'Soy milk (unsweetened)': [33, 3.3, 1.8, 0.5, 0.5], 'Almond milk (unsweetened)': [13, 0.4, 1.1, 0, 0], 'Greek yogurt 5%': [95, 9, 5, 3.5, 3.5], 'Natural yogurt': [60, 5, 1.5, 7, 7],
+  'Low-fat cottage cheese': [72, 12.6, 1.5, 3, 3], 'Turkey breast': [105, 24, 1, 0, 0], 'Beef mince 10%': [175, 20, 10, 0, 0], 'Beef mince 20%': [250, 17, 20, 0, 0],
+  'Chicken mince': [120, 20, 4.5, 0, 0], 'Pollock fillet': [75, 17, 0.6, 0, 0], 'Wholewheat pasta': [340, 13, 2.5, 62, 3], 'Brown rice': [350, 7.5, 2.7, 72, 1],
+  'Rice noodles': [360, 6, 0.6, 82, 0], 'Wholemeal bread': [230, 10, 2.5, 38, 3], 'White bread': [235, 8, 1.6, 46, 3], 'Light feta': [180, 17, 12, 1, 1],
+  'Cheddar': [415, 25, 35, 0.1, 0.1], 'Reduced-fat hummus': [230, 7, 17, 11, 0.5], 'Almond butter': [615, 21, 55, 6, 4], 'Single cream': [190, 2.6, 18, 3, 3],
+  'Double cream': [440, 1.7, 47, 2.6, 2.6], 'Coconut milk (full fat)': [180, 1.4, 18, 3, 2], 'Tuna in oil (tin)': [200, 27, 10, 0, 0], 'Rapeseed oil': [820, 0, 91, 0, 0],
+});
+const SWAPS = {
+  'Semi-skimmed milk': ['Skimmed milk', '1% milk', 'Whole milk', 'Oat milk (unsweetened)', 'Soy milk (unsweetened)', 'Almond milk (unsweetened)'],
+  'Greek yogurt 0%': ['Greek yogurt 2%', 'Greek yogurt 5%', 'Skyr', 'Natural yogurt'], 'Greek yogurt 2%': ['Greek yogurt 0%', 'Greek yogurt 5%', 'Skyr', 'Natural yogurt'],
+  'Skyr': ['Greek yogurt 0%', 'Greek yogurt 2%', 'Greek yogurt 5%'], 'Cottage cheese': ['Low-fat cottage cheese'],
+  'Chicken breast': ['Chicken thigh fillets', 'Turkey breast'], 'Chicken thigh fillets': ['Chicken breast', 'Turkey breast'],
+  'Lean beef mince 5%': ['Beef mince 10%', 'Beef mince 20%', 'Turkey mince', 'Chicken mince'], 'Turkey mince': ['Lean beef mince 5%', 'Chicken mince', 'Beef mince 10%'],
+  'Rump steak': ['Sirloin steak'], 'Sirloin steak': ['Rump steak'], 'Cod fillet': ['Pollock fillet'], 'Salmon fillet': ['Cod fillet'],
+  'Spaghetti': ['Wholewheat pasta', 'Penne', 'Linguine'], 'Penne': ['Wholewheat pasta', 'Spaghetti'], 'Linguine': ['Wholewheat pasta', 'Spaghetti'], 'Orzo': ['Wholewheat pasta', 'Penne'],
+  'Basmati rice': ['Brown rice'], 'Egg noodles': ['Rice noodles'], 'Sourdough bread': ['Wholemeal bread', 'White bread'], 'Wholemeal pitta': ['Tortilla wraps'], 'Tortilla wraps': ['Wholemeal pitta'],
+  'Feta': ['Light feta', 'Cheddar'], 'Parmesan': ['Cheddar'], 'Hummus': ['Reduced-fat hummus'], 'Peanut butter': ['Almond butter'],
+  'Light crème fraîche': ['Single cream', 'Double cream', 'Greek yogurt 2%'], 'Light coconut milk': ['Coconut milk (full fat)'], 'Tuna in spring water (tin)': ['Tuna in oil (tin)'],
+  'Vanilla whey': ['Chocolate whey'], 'Chocolate whey': ['Vanilla whey'], 'Banana': ['Apple'], 'Apple': ['Banana'], 'Granola': ['Rolled oats'], 'Olive oil': ['Rapeseed oil'],
+  'Sweet potato': ['Baby potatoes'], 'Baby potatoes': ['Sweet potato'], 'Spinach': ['Rocket', 'Mixed salad leaves'], 'Rocket': ['Spinach', 'Mixed salad leaves'], 'Mixed salad leaves': ['Rocket', 'Spinach'],
+  'Chickpeas (tin)': ['Cannellini beans (tin)', 'Black beans (tin)'], 'Cannellini beans (tin)': ['Chickpeas (tin)', 'Black beans (tin)'], 'Black beans (tin)': ['Chickpeas (tin)', 'Cannellini beans (tin)'],
+};
+const PER_ITEM = new Set(['pcs', 'tin', 'clove', 'bunch', 'tsp', 'tbsp']);
+// one ingredient's kcal, protein, fat, carbs and sugar (protein powder from your tub's label)
+function ingMac(n, q, u) {
+  let v = NUT[n]; if (!v) return [0, 0, 0, 0, 0];
+  if (/whey/i.test(n)) { const W = S.core.food.whey || { g: 30, p: 24, k: 120 }; v = [W.k / W.g * 100, W.p / W.g * 100, v[2], v[3], v[4]]; }
+  const m = PER_ITEM.has(u) ? q : q / 100;
+  return v.map(x => x * m);
+}
+// a meal's ingredients as you'll have them: scaled to your portion, with anything you changed for that day
+function mealIng(m, k = TODAY()) {
+  const e = ((getDay(k) || {}).mealEdit || {})[m.key] || {};
+  return R[m.id].ing.map(([n, q, u, a], i) => { const base = scaleQty(q, u, m.f, n), sw = e.sw && NUT[e.sw[i]] ? e.sw[i] : ''; return { i, n: sw || n, orig: n, sw, u, a, base, q: e.q && e.q[i] !== undefined ? e.q[i] : base, off: (e.off || []).includes(i) }; });
+}
+// the meal's numbers with your changes: the recipe's numbers, minus what you left out, plus or minus what you changed
+function editedMeal(m, k) {
+  const d = mealIng(m, k).reduce((t, x) => { const a = ingMac(x.orig, x.base, x.u), b = x.off ? [0, 0, 0, 0, 0] : ingMac(x.n, x.q, x.u); return t.map((v, j) => v + b[j] - a[j]); }, [0, 0, 0, 0, 0]);
+  return { ...m, k: Math.max(0, Math.round(m.k + d[0])), p: Math.max(0, Math.round(m.p + d[1])), fat: Math.max(0, Math.round(m.fat + d[2])), c: Math.max(0, Math.round(m.c + d[3])), s: Math.max(0, Math.round(m.s + d[4])), edited: true };
+}
 // the "No time" button's options for each main meal
 const QUICK = { 0: ['qshake', 'qskyr', 'qeggs'], 1: ['qpitta', 'qbowl', 'qcous'], 2: ['qeggtoast', 'qcous', 'qpitta'] };
 const SLOTS = ['Breakfast', 'Lunch', 'Dinner', 'Afternoon snack', 'Evening snack', 'Morning snack'];
@@ -1273,7 +1354,7 @@ async function loadPrices() {
   try { const r = await fetch('prices.json?t=' + Date.now(), { cache: 'no-store' }); if (r.ok) { const p = await r.json(); if (p && p.items) { S.prices = p; try { localStorage.setItem('gymbro-prices', JSON.stringify(p)); } catch (e) {} } } } catch (e) {}
 }
 // the app updates itself: when a newer version is online, reload into it (your data stays on the phone)
-const APP_VERSION = '29';
+const APP_VERSION = '30';
 async function checkUpdate() {
   try {
     const v = (await (await fetch('version.txt?t=' + Date.now(), { cache: 'no-store' })).text()).trim();
@@ -1476,7 +1557,7 @@ function dayMealsWith(k, pools) {
   while (ids.length > 4 && (T.kcal - snackK - fixK) / mainK < 0.6) { ids.pop(); snackK = ids.slice(3).reduce((s, id) => s + R[id].k, 0); }
   const f = Math.round(Math.max(0.55, Math.min(1.6, (T.kcal - snackK - fixK) / mainK)) * 20) / 20;
   const at = mealTimes(k);
-  return ids.map((id, i) => { const r = R[id], ff = i < 3 ? ((had(i) || {}).f || f) : 1; return { id, i, key: id + '#' + i, slot: SLOTS[i], at: at[i], f: ff, k: Math.round(r.k * ff), p: Math.round(r.p * ff), fat: Math.round(r.fat * ff), c: Math.round(r.c * ff), s: Math.round(r.s * ff) }; }).filter(m => !(m.i < 3 && ov[m.i]));
+  return ids.map((id, i) => { const r = R[id], ff = i < 3 ? ((had(i) || {}).f || f) : 1; return { id, i, key: id + '#' + i, slot: SLOTS[i], at: at[i], f: ff, k: Math.round(r.k * ff), p: Math.round(r.p * ff), fat: Math.round(r.fat * ff), c: Math.round(r.c * ff), s: Math.round(r.s * ff) }; }).filter(m => !(m.i < 3 && ov[m.i])).map(m => (d0.mealEdit || {})[m.key] ? editedMeal(m, k) : m);
 }
 function eaten(k) {
   const d = getDay(k), tot = { kcal: 0, p: 0, fat: 0, c: 0, s: 0 };
@@ -2391,7 +2472,7 @@ function viewFood() {
 function mealCard(m, done, canEat) {
   const r = R[m.id], open = UI.open === m.key + (canEat ? '' : '-all');
   const fav = r.quick || POOLS.s.includes(m.id) ? null : (S.core.food.fav || []).includes(m.id);
-  const ing = r.ing.map(i => { const q = scaleQty(i[1], i[2], m.f, i[0]); return `<li>${esc(i[0])}: <b>${qtyTxt(q, i[2])}</b>${ingHint(i[0], q)}</li>`; }).join('');
+  const ing = (canEat ? mealIng(m) : r.ing.map(([n, q, u]) => ({ n, u, q: scaleQty(q, u, m.f, n) }))).map(x => x.off ? `<li class="muted"><s>${esc(x.n)}</s>: not today</li>` : `<li>${esc(x.n)}: <b>${qtyTxt(x.q, x.u)}</b>${ingHint(x.n, x.q)}</li>`).join('');
   return `<div class="meal ${done ? 'done' : ''}">
     <div class="meal-h">
       ${canEat ? `<button class="eat" data-a="eat" data-v="${m.i}" aria-label="Mark ${esc(r.n)} eaten" aria-pressed="${done}">${CHECK}</button>` : ''}
@@ -2401,11 +2482,26 @@ function mealCard(m, done, canEat) {
     </div>
     <div class="mact">
       <button class="pill ${open ? 'on' : ''}" data-a="openRecipe" data-v="${m.key + (canEat ? '' : '-all')}">${open ? 'Hide recipe' : 'Recipe · ' + (r.min ? r.min + ' min' : 'no cooking')}</button>
-      ${canEat ? `<button class="pill" data-a="swap" data-v="${m.i}">Swap</button>` : ''}
+      ${canEat ? `<button class="pill ${UI.edit === m.key ? 'on' : ''}" data-a="meOpen" data-v="${m.key}">${UI.edit === m.key ? 'Close edit' : 'Edit'}</button><button class="pill" data-a="swap" data-v="${m.i}">Swap</button>` : ''}
       ${canEat && m.i < 3 && !done ? `<button class="pill" data-a="busyOpen" data-v="${m.i}">No time?</button><button class="pill" data-a="outOpen" data-v="${m.i}">Eating out?</button>` : ''}
     </div>
     ${canEat && r.quick ? `<p class="mnote">Quick option today · <button class="linkbtn" data-a="busyUndo" data-v="${m.i}">Back to the plan</button></p>` : ''}
+    ${canEat && m.edited && UI.edit !== m.key ? `<p class="mnote">${esc(editNote(m))} · <button class="linkbtn" data-a="meReset" data-v="${m.key}">Undo</button></p>` : ''}
+    ${canEat && UI.edit === m.key ? mealEditor(m) : ''}
     ${open ? `<div class="recipe"><b>You need</b><ul>${ing}</ul><b>How to make it</b><ol>${r.steps.map(s => `<li>${esc(s)}</li>`).join('')}</ol></div>` : ''}
+  </div>`;
+}
+// what you changed, in a few words: "No banana", "More milk"
+function editNote(m) {
+  const L = mealIng(m), off = L.filter(x => x.off).map(x => x.n.toLowerCase()), ch = L.filter(x => !x.off && Math.abs(x.q - x.base) > 1e-6), sw = L.filter(x => !x.off && x.sw);
+  return [off.length ? 'No ' + off.join(', ') : '', sw.map(x => x.n.toLowerCase() + ' instead of ' + x.orig.toLowerCase()).join(', '), ch.length ? ch.map(x => (x.q > x.base ? 'more ' : 'less ') + x.n.toLowerCase()).join(', ') : ''].filter(Boolean).join('; ').replace(/^./, c => c.toUpperCase()) || 'Changed for today';
+}
+function mealEditor(m) {
+  return `<div class="medit">
+    <p class="small muted">Untick what you didn't have, swap it for what you used, or change the amount. The day's totals follow.</p>
+    ${mealIng(m).map(x => { const mac = ingMac(x.n, x.q, x.u), alts = SWAPS[x.orig] || []; return `<div class="ai-row" style="flex-wrap:wrap"><input type="checkbox" id="mec-${x.i}" ${x.off ? '' : 'checked'} aria-label="Had ${esc(x.n)}"><span class="t"><b>${esc(x.n)}</b><span>${Math.round(mac[0])} kcal · P ${Math.round(mac[1])}</span></span><input class="ai-g" id="meq-${x.i}" inputmode="decimal" value="${+(+x.q).toFixed(2)}" aria-label="${esc(x.n)} amount"><span class="small">${x.u === 'pcs' ? '' : x.u}</span>
+      ${alts.length ? `<select id="mes-${x.i}" class="small" style="flex-basis:100%;margin-left:30px" aria-label="Swap ${esc(x.orig)} for"><option value="">${x.sw ? 'Back to ' + esc(x.orig.toLowerCase()) : 'Swap for…'}</option>${alts.map(a => `<option value="${esc(a)}" ${x.sw === a ? 'selected' : ''}>${esc(a)}</option>`).join('')}</select>` : ''}</div>`; }).join('')}
+    <div class="row" style="margin-top:8px"><button class="btn small green" data-a="meSave" data-v="${m.key}">Save</button><button class="btn small ghost" data-a="meReset" data-v="${m.key}">Back to the recipe</button></div>
   </div>`;
 }
 function foodWeek() {
@@ -2521,7 +2617,8 @@ const PACKS = {
   'Tomato': [[1, 6], 7], 'Tuna in spring water (tin)': [[1, 4], 365, 'tin'], 'Turkey mince': [[500], 3], 'Vanilla whey': [[1000, 2500], 365], 'Walnuts': [[150], 180], 'Wholemeal pitta': [[6], 5, 'pack'],
 };
 const FREEZE = new Set(['Chicken breast', 'Chicken thigh fillets', 'Cod fillet', 'King prawns (raw)', 'Lean beef mince 5%', 'Rump steak', 'Salmon fillet', 'Sirloin steak', 'Smoked salmon', 'Turkey mince', 'Sourdough bread', 'Wholemeal pitta']);
-const packOf = n => PACKS[n] || [[1], 7];
+// a swapped-in item (whole milk for semi-skimmed) comes in the same packs as what it replaces
+const packOf = n => PACKS[n] || PACKS[Object.keys(SWAPS).find(k => SWAPS[k].includes(n))] || [[1], 7];
 // the packs that cover what you need with little left over; each extra pack counts as a quarter of the
 // smallest one, so 2.1 kg of chicken is 2 × 1 kg + 300 g, not 7 × 300 g
 function choosePacks(need, sizes) {
@@ -2557,7 +2654,7 @@ let NEEDS = {};
 function dayNeeds(k) {
   if (NEEDS[k]) return NEEDS[k];
   const o = {}, ate = k === TODAY() ? ((getDay(k) || {}).ate || []) : [];
-  dayMeals(k).filter(m => !ate.includes(m.key)).forEach(m => R[m.id].ing.forEach(([n, q, u]) => { const key = n + '|' + u; o[key] = (o[key] || 0) + scaleQty(q, u, m.f, n); }));
+  dayMeals(k).filter(m => !ate.includes(m.key)).forEach(m => mealIng(m, k).filter(x => !x.off).forEach(x => { const key = x.n + '|' + x.u; o[key] = (o[key] || 0) + x.q; }));
   return (NEEDS[k] = o);
 }
 // use the oldest first; anything past its keep-by date is gone
@@ -3936,6 +4033,24 @@ const A = {
     const on = !F.fav.includes(id); F.fav = on ? F.fav.concat(id) : F.fav.filter(x => x !== id);
     saveCore(); render(); toast(on ? R[id].n + ': in your menu every week.' : 'Back to taking turns with the others.');
   },
+  // change a meal for today: leave things out, change amounts
+  meOpen(el) { UI.edit = UI.edit === el.dataset.v ? null : el.dataset.v; render(); },
+  meSave(el) {
+    const key = el.dataset.v, k = TODAY(), m = dayMeals(k).find(x => x.key === key); if (!m) return;
+    const off = [], q = {}, sw = {};
+    mealIng(m, k).forEach(x => {
+      if (!($('#mec-' + x.i) || {}).checked) off.push(x.i);
+      const v = num('meq-' + x.i); if (v !== null && v >= 0 && Math.abs(v - x.base) > 1e-6) q[x.i] = v;
+      const el = $('#mes-' + x.i); if (el ? el.value : x.sw) sw[x.i] = el ? el.value : x.sw;
+    });
+    const d = todayDay(); d.mealEdit = d.mealEdit || {};
+    if (off.length || Object.keys(q).length || Object.keys(sw).length) d.mealEdit[key] = { off, q, sw }; else delete d.mealEdit[key];
+    A.meRefresh(d, key); UI.edit = null; touch(); render();
+    const m2 = dayMeals(k).find(x => x.key === key); toast(m2 ? `${R[m2.id].n}: ${fmt(m2.k)} kcal, ${m2.p} g protein now.` : 'Saved.', 3000);
+  },
+  meReset(el) { const d = todayDay(); if (d.mealEdit) delete d.mealEdit[el.dataset.v]; A.meRefresh(d, el.dataset.v); UI.edit = null; touch(); render(); },
+  // a meal you already ticked keeps its new numbers
+  meRefresh(d, key) { if ((d.ate || []).includes(key)) { const m = dayMeals(TODAY()).find(x => x.key === key); if (m) setAte(d, m, true); } },
   // no time for a meal: a grab-and-go option, skip it, or eat out
   busyOpen(el) { UI.sheet = { busy: +el.dataset.v }; render(); },
   busyPick(el) {

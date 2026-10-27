@@ -399,6 +399,14 @@ Object.assign(EX, {
   machsp: { n: 'Machine shoulder press', sets: 3, lo: 8, hi: 12, inc: 5, start: 40, how: ['Handles at shoulder height.', 'Press up.', 'Lower slowly.'] },
   inclinemach: { n: 'Incline machine press', sets: 3, lo: 8, hi: 12, inc: 5, start: 40, how: ['Seat so the handles are at your upper chest.', 'Press up and forward.', 'Lower slowly.'] },
 });
+// forearms, for the "Bigger forearms" request. Flexors, extensors, twisting and the brachioradialis (reverse curl).
+// Full range, slow, 10–20 reps: RP Strength's forearm guide; wrist curls, extensions and reverse curls: Built With Science's 30-day test.
+Object.assign(EX, {
+  wcurl: { n: 'Wrist curl', sets: 3, lo: 12, hi: 20, inc: 1, start: 10, note: 'kg per dumbbell', how: ['Sit, forearms on your thighs or a bench, palms up, wrists just past the edge.', 'Let the dumbbells roll down to your fingertips, then curl them back up and bend your wrists up as far as they go. Squeeze 1 second.', 'Lower in 2 seconds. Full range beats heavy weight.'] },
+  wext: { n: 'Reverse wrist curl', sets: 3, lo: 15, hi: 20, inc: 1, start: 5, note: 'kg per dumbbell', how: ['Same position as the wrist curl, palms down.', 'Lift the backs of your hands as high as you can, pause 1 second.', 'Lower slowly. Go light: this side of the forearm is much weaker.'] },
+  revcurl: { n: 'Reverse curl', sets: 3, lo: 10, hi: 15, inc: 2.5, start: 20, note: 'EZ bar or cable bar', how: ['Palms down, hands shoulder-width, elbows at your sides.', 'Curl up with straight wrists until your forearms are vertical.', 'Lower in 2–3 seconds. Wrists ache? Use the cable bar, it\'s kinder.'] },
+  pron: { n: 'Pronation & supination', sets: 3, lo: 10, hi: 15, inc: 1, start: 5, note: 'kg on one end of a dumbbell handle, reps per side', how: ['Sit, forearm on your thigh, elbow bent at 90°. Hold a dumbbell handle with weight on one end only, weight pointing up.', 'Slowly turn your palm down until the weight points sideways, then back up and over the other way.', 'Too easy? Hold further from the weight before you add more.'] },
+});
 const STRESS = {
   bench: ['shoulder'], wpull: ['shoulder'], idb: ['shoulder'], lat: ['shoulder'], squat: ['knee', 'back'], rdl: ['back'], bss: ['knee'], hlr: ['back'],
   ohp: ['shoulder', 'back'], incb: ['shoulder'], pull: ['shoulder'], dip: ['shoulder'], fly: ['shoulder'], dl: ['back'], lpress: ['knee'], lunge: ['knee'], lext: ['knee'], crunch: ['back'],
@@ -418,6 +426,7 @@ const ALTS = {
   // for the exercises special requests add
   pecdeck: ['fly', 'machpress'], inclinemach: ['idb', 'machpress'], cablelat: ['lat'], reardelt: ['face'], hammer: ['curl'], ohext: ['push', 'dip'],
   hacksq: ['lpress', 'gobletsq'], seatcurl: ['lcurl', 'pullthrough', 'glutebridge'], latpd: ['assistpull', 'pull'], dbrow: ['csrow', 'crow'], hipthrust: ['glutebridge'], pullthrough: ['glutebridge', 'rdl'],
+  wcurl: ['wext', 'pron'], wext: ['wcurl', 'pron'], revcurl: ['hammer', 'pron', 'wext'], pron: ['revcurl', 'wext'],
 };
 const AREAS = { knee: 'knee', back: 'lower back', shoulder: 'shoulder' };
 const SESS = {
@@ -1094,7 +1103,7 @@ const TALK = {
 };
 const POKES = ['What?', 'Stop poking me.', 'I\'m a capybara, not a button.', 'Poke me again and I eat your protein bars.', 'Fine. 10 push-ups. Right now. Then you can poke me.', 'That\'s {n} pokes. More reps than your last set.'];
 const REACT = {
-  creatine: 'Creatine in. Your muscles say thanks.', steps: 'Steps done. Your legs exist again.', sleep: 'Slept well? Good. Gains happen in bed. The sleeping kind.',
+  creatine: 'Creatine in. Your muscles say thanks.', forearm: 'Forearms done. Handshakes will never be the same.', steps: 'Steps done. Your legs exist again.', sleep: 'Slept well? Good. Gains happen in bed. The sleeping kind.',
   water: 'Hydrated. Not a raisin any more.', recover: 'Walk done. Recovery counts.', cardio: 'Ride done. Heart and lungs: upgraded.',
   travelTrain: 'Hotel workout done. Respect.', rest: 'Good. Resting is the job today.', fluids: 'Fluids in. Keep sipping.', protein: 'Protein in every meal. That\'s the way.',
   train: 'Session done. Was that so hard? Don\'t answer.',
@@ -1354,7 +1363,7 @@ async function loadPrices() {
   try { const r = await fetch('prices.json?t=' + Date.now(), { cache: 'no-store' }); if (r.ok) { const p = await r.json(); if (p && p.items) { S.prices = p; try { localStorage.setItem('gymbro-prices', JSON.stringify(p)); } catch (e) {} } } } catch (e) {}
 }
 // the app updates itself: when a newer version is online, reload into it (your data stays on the phone)
-const APP_VERSION = '31';
+const APP_VERSION = '32';
 async function checkUpdate() {
   try {
     const v = (await (await fetch('version.txt?t=' + Date.now(), { cache: 'no-store' })).text()).trim();
@@ -1576,6 +1585,14 @@ function setAte(d, meal, on) {
 }
 
 /* ---------- daily tasks & streak ---------- */
+// "Bigger forearms": 8 minutes at home on the first 3 days of the week without the gym (gym days already have a forearm exercise)
+function forearmHome(k) {
+  if (!reqs().includes('forearms') || dayMode(k) !== 'normal') return false;
+  const ws = weekStart(k);
+  return [0, 1, 2, 3, 4, 5, 6].map(i => addDays(ws, i)).filter(d => !SESS[planFor(d)]).slice(0, 3).includes(k);
+}
+// the first 2 weeks are 1 set of each while wrists and tendons get used to it
+const forearmNew = k => { const at = (S.core.goal.reqAt || {}).forearms; return !!at && k < addDays(at, 14); };
 function tasksFor(k) {
   const mode = dayMode(k), T = targets(mode, k), plan = planFor(k), L = [], h = healthDay(k);
   const stepsSub = h && h.steps ? fmt(h.steps) + ' so far (Apple Health)' : '';
@@ -1584,6 +1601,7 @@ function tasksFor(k) {
     else if (SESS[plan]) L.push({ id: 'train', label: 'Gym: ' + SESS[plan].n, sub: SESS[plan].sub, go: 'train' });
     else if (CARDIO[plan]) { const ind = (getDay(k) || {}).indoor; L.push(ind && INDOOR[ind] ? { id: 'cardio', label: 'Indoors: ' + indoorTxt(ind, plan), sub: 'Instead of the ride, because of the weather' } : { id: 'cardio', label: CARDIO[plan].n, sub: CARDIO[plan].sub }); }
     else L.push({ id: 'recover', label: '20-min walk', sub: 'Rest day' });
+    if (forearmHome(k)) L.push({ id: 'forearm', label: 'Forearms at home, ' + (forearmNew(k) ? '4' : '8') + ' min', sub: forearmNew(k) ? 'First 2 weeks: 1 set of each, easy' : 'Twist, lift, grip: 2 sets of each', help: 'forearm' });
     L.push({ id: 'creatine', label: 'Creatine 5 g' });
     L.push({ id: 'protein', label: 'Protein ' + T.protein + ' g', sub: 'Ticks itself when you tick meals', auto: 'protein' });
     L.push({ id: 'steps', label: fmt(T.steps) + ' steps', sub: stepsSub, auto: h ? 'steps' : undefined });
@@ -1983,6 +2001,7 @@ function viewToday() {
   ${wakeCard()}
   ${late ? ciCard() : ''}
   ${SESS[planFor(k)] && S.core.mode.type === 'normal' && !(getDay(k) || {}).session ? gymButton(planFor(k)) : ''}
+  ${CARDIO[planFor(k)] && S.core.mode.type === 'normal' && !isDone(k, { id: 'cardio' }) ? '<button class="btn ghost block" data-a="dayOpen">Gym instead of the ride?</button>' : ''}
   <div class="card">
     <div class="spread"><h2>Today</h2>${st ? `<span class="streak">${st}-day streak</span>` : ''}</div>
     <div class="tasks">${tasks.map(t => taskRow(k, t)).join('')}</div>
@@ -2119,7 +2138,7 @@ function finSheet() {
   </div>`;
 }
 // small single-joint moves: the last set can go to failure, they need less rest
-const ISO = new Set(['lat', 'push', 'curl', 'lcurl', 'seatcurl', 'lext', 'calf', 'scalf', 'face', 'fly', 'pecdeck', 'ohext', 'hammer', 'cablelat', 'reardelt', 'crunch', 'lpcalf']);
+const ISO = new Set(['lat', 'push', 'curl', 'lcurl', 'seatcurl', 'lext', 'calf', 'scalf', 'face', 'fly', 'pecdeck', 'ohext', 'hammer', 'cablelat', 'reardelt', 'crunch', 'lpcalf', 'wcurl', 'wext', 'revcurl', 'pron']);
 const restTxt = id => EX[id].main ? '2–3 min' : ISO.has(id) ? '60–90 s' : 'about 2 min';
 // your last few logs of an exercise, newest first
 function lastLogs(ex, n, beforeKey = TODAY()) {
@@ -2173,7 +2192,7 @@ function viewTrain() {
   }
   const ss = SESS[UI.sess];
   const moved = S.core.overrides[k];
-  const todayNote = !SESS[plan] && mode === 'normal' ? `<div class="banner travel"><p class="small"><b>No gym today.</b> ${plan === 'REST' ? 'Rest day: walk 20 min.' : CARDIO[plan] ? esc(CARDIO[plan].n) + ', easy pace.' : ''}${moved ? ' You changed today\'s plan. <button class="linkbtn" data-a="dayUndo">Undo</button>' : ''}</p></div>` : '';
+  const todayNote = !SESS[plan] && mode === 'normal' ? `<div class="banner travel"><p class="small"><b>No gym today.</b> ${plan === 'REST' ? 'Rest day: walk 20 min.' : CARDIO[plan] ? esc(CARDIO[plan].n) + ', easy pace. <button class="linkbtn" data-a="dayOpen">Gym instead?</button>' : ''}${moved ? ' You changed today\'s plan. <button class="linkbtn" data-a="dayUndo">Undo</button>' : ''}</p></div>` : '';
   const av = S.core.gym.avoid;
   const injury = av.length ? `<div class="banner warn"><h3>${av.map(a => AREAS[a][0].toUpperCase() + AREAS[a].slice(1)).join(' + ')}-friendly mode</h3><p class="small">Exercises that load your ${av.map(a => AREAS[a]).join(' or ')} are swapped automatically. Pain for more than a week, or sharp pain? See a physio.</p><button class="btn ghost small" data-a="avoidOff">My ${av.map(a => AREAS[a]).join(' and ')} feel${av.length > 1 ? '' : 's'} fine again</button></div>` : '';
   const exs = sessionExercises(UI.sess, k), b = sessBurn(UI.sess);
@@ -2246,6 +2265,7 @@ const REQS = {
   abs: { n: 'Visible abs', ex: ['crunch', 'hlr'], half: 'low', note: 'Weighted crunches build the abs; losing fat shows them. They appear around 12–15% body fat for men and 18–22% for women.' },
   posture: { n: 'Better posture', ex: ['face', 'reardelt'], half: 'up', note: 'A stronger upper back pulls your shoulders back. At a desk, stand up and move every 30–45 minutes.' },
   cycling: { n: 'Stronger on the bike', ex: ['bss', 'scalf'], half: 'low', note: 'Single-leg strength and calves for more power on the pedals. Once a week on the long ride: 6 × 2 min hard, 2 min easy.' },
+  forearms: { n: 'Bigger forearms', ex: ['wcurl', 'revcurl'], half: 'up', home: true, note: 'Wrist curls and reverse curls in two gym sessions, plus 8 minutes at home on 3 days without the gym. Forearms recover fast, so 5 short sessions a week works (coaches say 3–6). Slow and full range beats heavy. Achy wrists in the first 2 weeks are normal while your tendons adapt.' },
   chestfat: { n: 'Less chest fat', ex: ['pecdeck', 'idb'], half: 'up', fat: true, note: 'No exercise burns fat from one spot: studies keep finding the same. Chest fat goes with your overall fat loss, so Gym Bro keeps you at the fastest safe pace and builds the chest muscle underneath, which makes it look flatter and firmer. Firm, rubbery tissue right behind the nipple that stays when you\'re lean can be gynecomastia. That\'s for a doctor, not the gym.' },
   bellyfat: { n: 'Less belly fat', ex: [], fat: true, steps: 2000, note: 'Crunches don\'t burn belly fat. It goes with overall fat loss, and for men often last. Gym Bro adds 2,000 steps a day, keeps protein high and your deficit at the fastest safe pace. Sleep 7–9 hours: short sleep makes it harder.' },
 };
@@ -2990,6 +3010,7 @@ function reqCard() {
     <div class="pchips">${Object.entries(REQS).map(([k, r]) => `<button class="pchip ${on.includes(k) ? 'on' : ''}" data-a="reqToggle" data-v="${k}" ${!on.includes(k) && r.ex.length && nEx >= REQ_MAX ? 'disabled' : ''}>${esc(r.n)}</button>`).join('')}</div>
     ${on.map(r => { const Q = REQS[r], w = where(r); return `<div class="banner ${Q.fat ? 'warn' : 'good'}"><h3>${esc(Q.n)}</h3><p class="small">${esc(Q.note)}</p>
       ${w.length ? `<p class="small"><b>Added:</b> ${w.map(esc).join(', ')} (about ${w.length * 3} more sets a week).</p>` : ''}
+      ${Q.home ? `<p class="small"><b>At home:</b> 8 minutes on ${(ws => [0, 1, 2, 3, 4, 5, 6].map(i => addDays(ws, i)).filter(forearmHome).map(d => DOW[parseKey(d).getDay()]).join(', ') || 'your days without the gym')(weekStart(TODAY()))}. It's on your Today list${forearmNew(TODAY()) ? ', 1 set of each for the first 2 weeks' : ''}.</p>` : ''}
       ${Q.steps ? `<p class="small"><b>Steps:</b> ${fmt(targets('normal').steps)} a day now.</p>` : ''}
       ${Q.fat && !['lose', 'recomp'].includes(G.type) ? `<p class="small">Your goal is "${esc(GOALS[G.type].n)}", which doesn't lose fat. <button class="linkbtn" data-a="goalOpen">Change goal</button></p>` : ''}</div>`; }).join('')}
   </div>`;
@@ -3096,6 +3117,12 @@ const HELP = {
   fluids: { t: 'Fluids when you\'re ill', s: ['3 L a day: water, tea with honey, broth or soup.', 'Small sips often if your stomach is bad.'] },
   rest: { t: 'How to rest properly', s: ['No gym. No hard rides.', 'Symptoms only above the neck? A 20–30 min walk is fine.', 'Sleep as much as you can. Keep eating protein.', 'Switch the mode back to Normal when you feel better.'] },
   recover: { t: 'Rest day', s: ['Go for an easy 20-minute walk outside.', 'Optional: 10 minutes of stretching.', 'Still eat your meals and take creatine. Muscle grows on rest days.'] },
+  forearm: { t: 'Forearms at home, 8 min', s: [
+    'Twist: hold a hammer or a dumbbell handle with weight on one end, forearm on your thigh. Turn your palm down slowly, then up and over. 2 × 12–15 each arm.',
+    'Lift: forearm on your thigh, palm down, a light dumbbell or a full 1.5 L bottle. Lift the back of your hand, pause, lower slowly. 2 × 15–20 each arm.',
+    'Grip: 2 × 30 seconds of grabbing and squeezing in a bucket of rice, or 2 × 20 on a hand gripper, or wring out a wet towel both ways.',
+    'First 2 weeks: 1 set of each. Wrist curls are in your gym sessions, so home trains the other side and the twist.',
+    'Achy wrists early on are normal. Sharp pain, or still sore the next morning? Skip the home days until it\'s gone. Hands getting rough or cracked? Moisturise at night.'] },
   'ride:Z2': { t: 'Easy ride, 45 min', s: ['Bike outside or at the gym for 45 minutes.', 'Keep it easy: you can talk in full sentences. Heart rate about 125–145.', 'Too hard and it eats into your leg recovery.'] },
   'ride:LONG': { t: 'Long ride, 60–90 min', s: ['Option 1: 60–90 minutes at an easy, chatty pace.', 'Option 2: 10 min easy, then 6 rounds of 2 min hard + 2 min easy, then 10 min easy.', 'Eat breakfast first and take water. Shake after.'] },
   'ride:EASY': { t: 'Easy ride, 30 min', s: ['30 minutes of light pedalling, outside or on a gym bike.', 'It should feel easy. It helps your legs recover.'] },
@@ -3158,17 +3185,34 @@ function swapSheet() {
     ${opts.length ? '<button class="btn ghost block" data-a="swSkip1" style="margin-top:6px">None of these work, skip it</button>' : ''}
   </div>`;
 }
+// which half of the body a session trains, so a swap doesn't put the same muscles on two days in a row
+const halfOf = p => SESS[p] ? ({ U: 'up', L: 'low' })[p[0]] || 'full' : null;
+function swapClash(k, x) {
+  const after = d => d === k ? planFor(x) : d === x ? planFor(k) : planFor(d);
+  for (const d of [k, x]) {
+    const h = halfOf(after(d)); if (!h) continue;
+    for (const n of [addDays(d, -1), addDays(d, 1)]) { const hn = halfOf(after(n)); if (hn && (hn === h || hn === 'full' || h === 'full')) return SESS[after(d)].n + ' ' + onDay(d).replace(/^Today$/, 'today').replace(/^(?![tT])/, 'on ') + ', ' + SESS[after(n)].n + ' the day ' + (n < d ? 'before' : 'after') + ': same muscles two days running'; }
+  }
+  return '';
+}
+const onDay = x => x === addDays(TODAY(), 1) ? 'tomorrow' : dayName(x);
 function daySheet() {
-  const k = TODAY(), plan = planFor(k), orig = weekPlan()[parseKey(k).getDay()], name = SESS[orig] ? SESS[orig].n : CARDIO[orig] ? CARDIO[orig].n : 'today\'s plan';
+  const k = TODAY(), tk = addDays(k, 1), plan = planFor(k), orig = weekPlan()[parseKey(k).getDay()], name = SESS[orig] ? SESS[orig].n : CARDIO[orig] ? CARDIO[orig].n : 'today\'s plan', ride = !!CARDIO[plan];
   const opt = (v, t, d) => `<button class="opt" data-a="dayApply" data-v="${v}"><b>${t}</b><span>${d}</span></button>`;
+  // swap days this week: a gym session comes to today and the ride goes to its day, or the other way round. Clashes go last, with a warning.
+  const swaps = [1, 2, 3, 4, 5, 6].map(i => addDays(k, i)).filter(x => ride ? SESS[planFor(x)] : SESS[plan] && CARDIO[planFor(x)]).map(x => ({ x, c: swapClash(k, x) })).sort((a, b) => !!a.c - !!b.c);
+  const swapOpt = ({ x, c }) => { const px = planFor(x); return `<button class="opt" data-a="moveDay" data-v="${k}|${x}"><b>${esc(ride ? 'Gym today: ' + SESS[px].n : CARDIO[px].n + ' today')}</b><span>${esc((ride ? 'The ride moves to ' : SESS[plan].n + ' moves to ') + onDay(x) + '.')}${c ? ` <b style="color:var(--orange)">${esc(c)}, so you'd lift less.</b>` : ''}</span></button>`; };
   return `<div class="in" role="dialog" aria-label="Change today">
     <div class="spread"><span class="lbl">Change today</span><button class="btn small ghost" data-a="closeSheet">Close</button></div>
-    <h2>Can't do ${esc(name)} today?</h2>
+    ${ride ? `<h2>Gym instead of the ride?</h2>
+    ${swaps.length ? '<p class="small muted">Swap the days: the gym session comes to today and the ride goes to its day. Nothing lost this week.</p>' + swaps.map(swapOpt).join('') : '<p class="small muted">No gym session left this week to swap with.</p>'}
+    <h3>Or</h3>` : `<h2>Can't do ${esc(name)} today?</h2>
     ${opt('HOME', 'Home workout instead', '25 minutes, no equipment. Still counts.')}
     ${opt('Z2', 'Easy ride instead', '45 minutes on the bike.')}
-    ${opt('MOVE', 'Move it to tomorrow', 'Today becomes a rest day, tomorrow you do ' + esc(name) + '.')}
+    ${swaps.length ? '<h3>Ride today, gym another day</h3>' + swaps.map(swapOpt).join('') : ''}`}
+    ${!ride || !SESS[planFor(tk)] ? opt('MOVE', 'Move it to tomorrow', 'Today becomes a rest day, tomorrow you do ' + esc(ride ? CARDIO[plan].n.toLowerCase() : name) + '.') : ''}
     ${opt('REST', 'I can\'t train at all today', 'You\'ll have to say why. Gym Bro keeps a record.')}
-    <button class="opt" data-a="moveOpen" data-v="${k}"><b>Move it to another time or day</b><span>Pick a new time today, or swap with another day this week.</span></button>
+    <button class="opt" data-a="moveOpen" data-v="${k}"><b>Move it to another time or day</b><span>Pick a new time today, or swap with any day this week.</span></button>
     ${S.core.overrides[k] ? opt('UNDO', 'Back to the original plan', esc(name) + ' today.') : ''}
     <p class="small muted">Feeling ill? Use the mode button at the top instead.</p>
   </div>`;
@@ -3428,7 +3472,7 @@ function moveSheet(k) {
     <div class="row" style="flex-wrap:nowrap"><input id="mv-time" type="time" value="${planTime(k)}"><button class="btn blue" data-a="moveTimeSave" data-v="${k}">Save</button></div>
     ${slots.length ? `<div class="row"><span class="small muted">Free in your calendar:</span>${slots.map(t => `<button class="btn ghost small" data-a="moveTime" data-v="${k}|${t}">${t}</button>`).join('')}</div>` : ''}
     <h3>Swap with another day</h3>
-    ${days.map(x => { const px = planFor(x), n = busyOn(x).length; return `<button class="opt" data-a="moveDay" data-v="${k}|${x}"><b>${esc(dayName(x))}</b><span>${SESS[px] ? 'Swap with ' + esc(SESS[px].n) : CARDIO[px] ? 'Swap with the ' + esc(CARDIO[px].n.toLowerCase()) : 'Rest day: free'}${n ? ' · ' + n + ' event' + (n > 1 ? 's' : '') + ' in your calendar' : ''}</span></button>`; }).join('')}
+    ${days.map(x => { const px = planFor(x), n = busyOn(x).length; return `<button class="opt" data-a="moveDay" data-v="${k}|${x}"><b>${esc(dayName(x))}</b><span>${SESS[px] ? 'Swap with ' + esc(SESS[px].n) : CARDIO[px] ? 'Swap with the ' + esc(CARDIO[px].n.toLowerCase()) : 'Rest day: free'}${n ? ' · ' + n + ' event' + (n > 1 ? 's' : '') + ' in your calendar' : ''}${(c => c ? ` · <b style="color:var(--orange)">${esc(c)}</b>` : '')(swapClash(k, x))}</span></button>`; }).join('')}
     ${k === TODAY() && SESS[p] ? '<button class="btn ghost block" data-a="dayOpen">I can\'t train today at all</button>' : ''}
   </div>`;
 }
@@ -3475,6 +3519,7 @@ function helpSheet(id) {
   return `<div class="in" role="dialog" aria-label="${esc(h.t)}">${close}
     <h2>${esc(h.t)}</h2>
     <ol class="steps">${h.s.map(x => `<li><span>${esc(fill(x))}</span></li>`).join('')}</ol>
+    ${String(id).startsWith('ride:') && id.slice(5) === planFor(TODAY()) ? '<button class="btn ghost block" data-a="dayOpen">Gym instead today?</button>' : ''}
     <button class="btn block" data-a="closeSheet">Got it</button>
   </div>`;
 }
@@ -3789,6 +3834,7 @@ const A = {
   phyApply() {
     const G = S.core.goal, P = S.core.physique, next = reqs().filter(r => REQS[r].fat);
     P.focus.forEach(f => { if (!next.includes(f.area) && next.filter(r => REQS[r].ex.length).length < REQ_MAX) next.push(f.area); });
+    G.reqAt = G.reqAt || {}; next.filter(r => !reqs().includes(r)).forEach(r => { G.reqAt[r] = TODAY(); });
     G.req = next; saveCore(); syncPlan(); render(); toast('Added to your sessions. Check again in 4–6 weeks.');
   },
   tapeOff() { S.core.noTape = true; saveCore(); syncPush(); render(); toast('No tape: body fat comes from your photos now.'); },
@@ -3797,7 +3843,7 @@ const A = {
     const G = S.core.goal, k = el.dataset.v, on = reqs();
     if (on.includes(k)) G.req = on.filter(x => x !== k);
     else if (REQS[k].ex.length && on.filter(r => REQS[r].ex.length).length >= REQ_MAX) { toast('Two at a time, so you can recover. Turn one off first.'); return; }
-    else G.req = on.concat(k);
+    else { G.req = on.concat(k); G.reqAt = G.reqAt || {}; G.reqAt[k] = TODAY(); }
     saveCore(); syncPlan(); render();
     if (G.req.includes(k)) toast(REQS[k].ex.length ? 'Added to your sessions.' : 'Done. Your steps went up.');
   },
@@ -3987,8 +4033,8 @@ const A = {
     const v = el.dataset.v, k = TODAY(), tk = addDays(k, 1), o = S.core.overrides, orig = weekPlan()[parseKey(k).getDay()];
     if (v === 'REST' && !el.dataset.ok) { UI.sheet = { skipday: { reason: '', note: '' } }; render(); return; }
     for (const key in o) if (key < addDays(k, -14)) delete o[key];
-    if (v === 'UNDO') { if (o[tk] === orig) delete o[tk]; delete o[k]; }
-    else if (v === 'MOVE') { o[k] = 'REST'; o[tk] = orig; }
+    if (v === 'UNDO') { const sw = (S.core.swapped || {})[k]; if (sw) { delete o[sw]; delete S.core.swapped[sw]; delete S.core.swapped[k]; } else if (o[tk] === orig) delete o[tk]; delete o[k]; }
+    else if (v === 'MOVE') { o[tk] = CARDIO[planFor(k)] ? planFor(k) : orig; o[k] = 'REST'; }
     else o[k] = v;
     markMoved(k); markMoved(tk);
     const d = getDay(k); if (d && d.mode === undefined) d.mode = S.core.mode.type;
@@ -4248,8 +4294,10 @@ const A = {
   moveDay(el) {
     const [k, x] = el.dataset.v.split('|'), o = S.core.overrides, pk = planFor(k), px = planFor(x);
     o[k] = px; o[x] = pk; markMoved(k); markMoved(x);
+    const sw = S.core.swapped = S.core.swapped || {}; sw[k] = x; sw[x] = k; for (const d in sw) if (d < addDays(TODAY(), -14)) delete sw[d];
     if (S.core.timeOv[k]) { S.core.timeOv[x] = S.core.timeOv[k]; delete S.core.timeOv[k]; }
-    UI.sheet = null; UI.sess = null; saveCore(); tankSay('neutral', (SESS[pk] ? SESS[pk].n : CARDIO[pk] ? CARDIO[pk].n : 'It') + ' moved to ' + dayName(x).toLowerCase() + '. No more moving.'); render();
+    UI.sheet = null; UI.sess = null; saveCore();
+    tankSay('neutral', CARDIO[pk] && SESS[px] ? 'Gym ' + (k === TODAY() ? 'today' : 'on ' + dayName(k)) + ': ' + SESS[px].n + '. The ride moves to ' + onDay(x) + '.' : (SESS[pk] ? SESS[pk].n : CARDIO[pk] ? CARDIO[pk].n : 'It') + ' moved to ' + dayName(x).toLowerCase() + '. No more moving.'); render();
   },
   sdReason(el) { const r = UI.sheet.skipday; r.note = val('sd-note'); r.reason = el.dataset.v; render(); },
   sdMode(el) { UI.sheet = null; A.setMode({ dataset: { v: el.dataset.v } }); },

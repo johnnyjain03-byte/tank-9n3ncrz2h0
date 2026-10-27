@@ -1377,7 +1377,7 @@ async function loadPrices() {
   try { const r = await fetch('prices.json?t=' + Date.now(), { cache: 'no-store' }); if (r.ok) { const p = await r.json(); if (p && p.items) { S.prices = p; try { localStorage.setItem('gymbro-prices', JSON.stringify(p)); } catch (e) {} } } } catch (e) {}
 }
 // the app updates itself: when a newer version is online, reload into it (your data stays on the phone)
-const APP_VERSION = '40';
+const APP_VERSION = '41';
 async function checkUpdate() {
   try {
     const v = (await (await fetch('version.txt?t=' + Date.now(), { cache: 'no-store' })).text()).trim();
@@ -1486,13 +1486,15 @@ function ranked(poolKey) {
   return list.map((id, i) => [id, score(id), i]).sort((a, b) => a[1] - b[1] || a[2] - b[2]).map(x => x[0]);
 }
 // real-kitchen amounts: whole eggs, ¼ of a lemon, ½ a tin, grams in 5–25 g steps. Never "3.25 eggs".
-const HALVES = ['Spring onions', 'Beef stock cube', 'Aubergine', 'Banana', 'Avocado', 'Mango', 'Cucumber', 'Red pepper', 'Onion', 'Red onion', 'Lemon', 'Lime', 'Courgette', 'Red chilli', 'Tomato', 'Apple'];
+// What you can sensibly cut: halves of onions, peppers, lemons, avocados and cucumbers, never quarters.
+// Everything else in pieces (tomatoes, apples, bananas, chillies, eggs) comes whole.
+const HALVES = ['Beef stock cube', 'Aubergine', 'Avocado', 'Mango', 'Cucumber', 'Red pepper', 'Onion', 'Red onion', 'Lemon', 'Lime', 'Courgette'];
 function scaleQty(q, u, f, name) {
   const x = q * f;
   // protein powder goes by your scoop: whole and quarter scoops, so the grams match what you actually scoop
   if (u === 'g' && /whey/i.test(name)) { const g = (S.core.food.whey || {}).g || 30; return Math.max(0.25, round(x / g, 0.25)) * g; }
   if (u === 'g' || u === 'ml') return Math.max(5, x < 100 ? round(x, 5) : x < 250 ? round(x, 10) : round(x, 25));
-  if (u === 'pcs') return HALVES.includes(name) ? Math.max(0.25, round(x, 0.25)) : Math.max(1, Math.round(x));
+  if (u === 'pcs') return HALVES.includes(name) ? Math.max(0.5, round(x, 0.5)) : Math.max(1, Math.round(x));
   if (u === 'tin') return Math.max(0.5, round(x, 0.5));
   if (u === 'clove') return Math.max(1, Math.round(x));
   if (u === 'bunch') return Math.max(0.25, round(x, 0.25));
@@ -1505,6 +1507,16 @@ function ingHint(n, q) {
   if (n.endsWith('whey')) { const sc = round(q / ((S.core.food.whey || {}).g || 30), 0.25); return ` (${fracTxt(Math.max(0.25, sc))} scoop${sc > 1 ? 's' : ''})`; }
   if (n === 'Honey' || n === 'Butter') return ` (${fracTxt(Math.max(0.5, round(q / 5, 0.5)))} tsp)`;
   return '';
+}
+// half an onion or half a tin left over: the next meal that uses it, or how long it keeps
+const KEEP = { Onion: 'keeps a week in a closed box in the fridge', 'Red onion': 'keeps a week in a closed box in the fridge', 'Red pepper': 'keeps 3–5 days in the fridge', Cucumber: 'keeps 3 days wrapped in the fridge', Courgette: 'keeps 3 days wrapped in the fridge', Aubergine: 'keeps 2–3 days wrapped in the fridge', Avocado: 'keeps 1–2 days with the stone in, lemon on the cut side, wrapped', Lemon: 'keeps 3–4 days cut side down in the fridge', Lime: 'keeps 3–4 days cut side down in the fridge', Mango: 'keeps 2 days in a box in the fridge', 'Beef stock cube': 'keeps in the cupboard, wrapped' };
+function restHint(n, q, u, k, i) {
+  const left = Math.ceil(q - 1e-9) - q; if (!['pcs', 'tin', 'bunch'].includes(u) || left < 0.2) return '';
+  for (let dd = 0; dd <= 3; dd++) {
+    const day = addDays(k, dd), hit = dayMeals(day).find(m => (dd > 0 || m.i > i) && R[m.id].ing.some(x => x[0] === n));
+    if (hit) return `other ${fracTxt(left)}: ${dd === 0 ? 'later today' : dd === 1 ? 'tomorrow' : parseKey(day).toLocaleDateString('en-GB', { weekday: 'long' })}, ${R[hit.id].n}`;
+  }
+  return `other ${fracTxt(left)} ${u === 'tin' ? 'keeps 2 days in a covered box in the fridge (not in the tin)' : u === 'bunch' ? 'keeps 5 days in a glass of water or damp kitchen paper' : KEEP[n] || 'keeps 2–3 days wrapped in the fridge'}`;
 }
 const FRAC = { 0.25: '¼', 0.5: '½', 0.75: '¾' };
 const fracTxt = x => { const w = Math.floor(x + 1e-9), r = Math.round((x - w) * 4) / 4; return r === 1 ? String(w + 1) : (w ? w : '') + (FRAC[r] || '') || '0'; };
@@ -1556,6 +1568,17 @@ function weekPick(arr, n, seed, slot) {
   });
   return out;
 }
+// what rounding to whole tomatoes, half onions and whole eggs adds or takes away, from the nutrition table,
+// so the numbers match what's on the plate
+const RD = {};
+function roundDelta(id, f) {
+  const key = id + '|' + f; if (RD[key]) return RD[key];
+  return (RD[key] = R[id].ing.reduce((t, [n, q, u]) => {
+    if (!['pcs', 'tin', 'bunch', 'clove'].includes(u) || !NUT[n]) return t;
+    const a = ingMac(n, q * f, u), b = ingMac(n, scaleQty(q, u, f, n), u);
+    return t.map((v, j) => v + b[j] - a[j]);
+  }, [0, 0, 0, 0, 0]));
+}
 function dayMealsWith(k, pools) {
   const wd = (parseKey(k).getDay() + 6) % 7, wk = weekStart(k), seed = Math.floor(diffDays(wk, '2026-01-05') / 7);
   const B = weekPick(pools.b, 4, seed, 'b'), L = weekPick(pools.l, 4, seed, 'l'), D = weekPick(pools.d, 5, seed, 'd'), Sn = pools.s;
@@ -1581,9 +1604,14 @@ function dayMealsWith(k, pools) {
   let ids = mains.concat(snacks), snackK = snacks.reduce((s, id) => s + R[id].k, 0);
   // light eaters: drop a snack instead of serving more food than the target
   while (ids.length > 4 && (T.kcal - snackK - fixK) / mainK < 0.6) { ids.pop(); snackK = ids.slice(3).reduce((s, id) => s + R[id].k, 0); }
-  const f = Math.round(Math.max(0.55, Math.min(1.6, (T.kcal - snackK - fixK) / mainK)) * 20) / 20;
+  const f0 = Math.round(Math.max(0.55, Math.min(1.6, (T.kcal - snackK - fixK) / mainK)) * 20) / 20;
+  // whole tomatoes and half onions move the total a little: portions allow for it
+  // so try the portion sizes around it and keep the one closest to your target
+  const rdSum = ff => ids.reduce((a, id, i) => a + (i < 3 && (ov[i] || had(i)) ? 0 : roundDelta(id, i < 3 ? ff : 1)[0]), 0);
+  const off = ff => Math.abs(ff * mainK + rdSum(ff) - (T.kcal - snackK - fixK));
+  const f = [-0.15, -0.1, -0.05, 0.05, 0.1, 0.15].map(d => Math.round(Math.max(0.55, Math.min(1.6, f0 + d)) * 20) / 20).reduce((b, c) => off(c) < off(b) ? c : b, f0);
   const at = mealTimes(k);
-  return ids.map((id, i) => { const r = R[id], ff = i < 3 ? ((had(i) || {}).f || f) : 1; return { id, i, key: id + '#' + i, slot: SLOTS[i], at: at[i], f: ff, k: Math.round(r.k * ff), p: Math.round(r.p * ff), fat: Math.round(r.fat * ff), c: Math.round(r.c * ff), s: Math.round(r.s * ff) }; }).filter(m => !(m.i < 3 && ov[m.i])).map(m => (d0.mealEdit || {})[m.key] ? editedMeal(m, k) : m);
+  return ids.map((id, i) => { const r = R[id], ff = i < 3 ? ((had(i) || {}).f || f) : 1, rd = roundDelta(id, ff); return { id, i, key: id + '#' + i, slot: SLOTS[i], at: at[i], f: ff, k: Math.round(r.k * ff + rd[0]), p: Math.round(r.p * ff + rd[1]), fat: Math.round(r.fat * ff + rd[2]), c: Math.round(r.c * ff + rd[3]), s: Math.round(r.s * ff + rd[4]) }; }).filter(m => !(m.i < 3 && ov[m.i])).map(m => (d0.mealEdit || {})[m.key] ? editedMeal(m, k) : m);
 }
 function eaten(k) {
   const d = getDay(k), tot = { kcal: 0, p: 0, fat: 0, c: 0, s: 0 };
@@ -2725,7 +2753,7 @@ function viewFood() {
 function mealCard(m, done, canEat) {
   const r = R[m.id], open = UI.open === m.key + (canEat ? '' : '-all');
   const fav = r.quick || POOLS.s.includes(m.id) ? null : (S.core.food.fav || []).includes(m.id);
-  const ing = (canEat ? mealIng(m) : r.ing.map(([n, q, u]) => ({ n, u, q: scaleQty(q, u, m.f, n) }))).map(x => x.off ? `<li class="muted"><s>${esc(x.n)}</s>: not today</li>` : `<li>${esc(x.n)}: <b>${qtyTxt(x.q, x.u)}</b>${ingHint(x.n, x.q)}</li>`).join('');
+  const ing = (canEat ? mealIng(m) : r.ing.map(([n, q, u]) => ({ n, u, q: scaleQty(q, u, m.f, n) }))).map(x => x.off ? `<li class="muted"><s>${esc(x.n)}</s>: not today</li>` : `<li>${esc(x.n)}: <b>${qtyTxt(x.q, x.u)}</b>${ingHint(x.n, x.q)}${canEat && open ? (h => h ? ` <span class="small muted">· ${esc(h)}</span>` : '')(restHint(x.n, x.q, x.u, TODAY(), m.i)) : ''}</li>`).join('');
   return `<div class="meal ${done ? 'done' : ''}">
     <div class="meal-h">
       ${canEat ? `<button class="eat" data-a="eat" data-v="${m.i}" aria-label="Mark ${esc(r.n)} eaten" aria-pressed="${done}">${CHECK}</button>` : ''}

@@ -1386,7 +1386,7 @@ async function loadPrices() {
   try { const r = await fetch('prices.json?t=' + Date.now(), { cache: 'no-store' }); if (r.ok) { const p = await r.json(); if (p && p.items) { S.prices = p; try { localStorage.setItem('gymbro-prices', JSON.stringify(p)); } catch (e) {} } } } catch (e) {}
 }
 // the app updates itself: when a newer version is online, reload into it (your data stays on the phone)
-const APP_VERSION = '46';
+const APP_VERSION = '47';
 async function checkUpdate() {
   try {
     const v = (await (await fetch('version.txt?t=' + Date.now(), { cache: 'no-store' })).text()).trim();
@@ -1523,7 +1523,7 @@ function restHint(n, q, u, k, i) {
   const left = Math.ceil(q - 1e-9) - q; if (!['pcs', 'tin', 'bunch'].includes(u) || left < 0.2) return '';
   for (let dd = 0; dd <= 3; dd++) {
     const day = addDays(k, dd), hit = dayMeals(day).find(m => (dd > 0 || m.i > i) && R[m.id].ing.some(x => x[0] === n));
-    if (hit) return `other ${fracTxt(left)}: ${dd === 0 ? 'later today' : dd === 1 ? 'tomorrow' : parseKey(day).toLocaleDateString('en-GB', { weekday: 'long' })}, ${R[hit.id].n}`;
+    if (hit) return `other ${fracTxt(left)}: ${dd === 0 ? (k === TODAY() ? 'later today' : 'later that day') : day === addDays(TODAY(), 1) ? 'tomorrow' : parseKey(day).toLocaleDateString('en-GB', { weekday: 'long' })}, ${R[hit.id].n}`;
   }
   return `other ${fracTxt(left)} ${u === 'tin' ? 'keeps 2 days in a covered box in the fridge (not in the tin)' : u === 'bunch' ? 'keeps 5 days in a glass of water or damp kitchen paper' : KEEP[n] || 'keeps 2–3 days wrapped in the fridge'}`;
 }
@@ -2797,9 +2797,12 @@ function viewFood() {
   if (UI.food === 'home') return segs + foodHome();
   if (UI.food === 'prefs') return segs + menuCard + cuisineCard() + foodPrefs() + wheyCard();
   if (UI.food === 'budget') return segs + foodBudget();
+  const off = UI.fday || 0;
+  const dayChips = `<div class="pchips">${[0, 1, 2, 3, 4, 5, 6].map(i => `<button class="pchip ${off === i ? 'on' : ''}" data-a="fday" data-v="${i}">${i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : DOW[parseKey(addDays(TODAY(), i)).getDay()]}</button>`).join('')}</div>`;
+  if (off > 0) return segs + dayChips + foodDay(addDays(TODAY(), off), off);
   const k = TODAY(), d = getDay(k) || {}, T = targets(S.core.mode.type, k), e = eaten(k), ate = d.ate || [], meals = dayMeals(k);
   const mini = (l, v, t, cls) => `<div class="mini"><span>${l}</span><b>${v}<small class="muted" style="font-size:13px"> / ${t} g</small></b><div class="bar ${cls}"><i style="width:${Math.min(100, v / t * 100)}%"></i></div></div>`;
-  return `${segs}${tankTip('food')}
+  return `${segs}${dayChips}${tankTip('food')}
   <div class="card">
     <div class="grid2">
       <div><span class="lbl">Calories</span><div class="big">${fmt(e.kcal)}<small>/ ${fmt(T.kcal)}</small></div><div class="bar"><i style="width:${Math.min(100, e.kcal / T.kcal * 100)}%"></i></div>${T.bonus ? `<span class="small" style="color:var(--orange);font-weight:800">+${fmt(T.bonus)} for extra sport</span>` : ''}</div>
@@ -2821,10 +2824,29 @@ function viewFood() {
   ${budgetAlertCard()}
   ${suppCard()}`;
 }
-function mealCard(m, done, canEat) {
-  const r = R[m.id], open = UI.open === m.key + (canEat ? '' : '-all');
+// a future day's meals, laid out like today's: times, numbers, recipes, swaps (ticking and logging stay on today)
+function foodDay(k, off) {
+  const T = targets(dayMode(k), k), meals = dayMeals(k), p = planFor(k);
+  const tot = meals.reduce((a, m) => ({ k: a.k + m.k, p: a.p + m.p, fat: a.fat + m.fat, c: a.c + m.c, s: a.s + m.s }), { k: 0, p: 0, fat: 0, c: 0, s: 0 });
+  const when = off === 1 ? 'Tomorrow' : parseKey(k).toLocaleDateString('en-GB', { weekday: 'long' });
+  return `<div class="card">
+    <div class="grid2">
+      <div><span class="lbl">Planned calories</span><div class="big">${fmt(tot.k)}<small>/ ${fmt(T.kcal)}</small></div></div>
+      <div><span class="lbl">Protein</span><div class="big">${tot.p}<small>/ ${T.protein} g</small></div></div>
+    </div>
+    <p class="small muted">${esc(when)}: ${esc(SESS[p] ? 'gym, ' + SESS[p].n : CARDIO[p] ? CARDIO[p].n.toLowerCase() : 'rest day')}. Fat ${tot.fat} g · carbs ${tot.c} g · sugar ${tot.s} g.</p>
+  </div>
+  <div class="card">
+    <h2>${esc(when)}'s meals</h2>
+    <p class="muted small">Open a recipe to see what you'll need. Swap anything you don't fancy.</p>
+    <div class="tasks">${mealOrder(meals).map(m => mealCard(m, false, false, k)).join('')}</div>
+    <button class="btn ghost block" data-a="fdayShop" data-v="${off + 1}">Shopping for today to ${esc(when.toLowerCase())}</button>
+  </div>`;
+}
+function mealCard(m, done, canEat, pk) {
+  const r = R[m.id], open = UI.open === m.key + (canEat ? '' : pk ? '-' + pk : '-all');
   const fav = r.quick || POOLS.s.includes(m.id) ? null : (S.core.food.fav || []).includes(m.id);
-  const ing = (canEat ? mealIng(m) : r.ing.map(([n, q, u]) => ({ n, u, q: scaleQty(q, u, m.f, n) }))).map(x => x.off ? `<li class="muted"><s>${esc(x.n)}</s>: not today</li>` : `<li>${esc(x.n)}: <b>${qtyTxt(x.q, x.u)}</b>${ingHint(x.n, x.q)}${canEat && open ? (h => h ? ` <span class="small muted">· ${esc(h)}</span>` : '')(restHint(x.n, x.q, x.u, TODAY(), m.i)) : ''}</li>`).join('');
+  const ing = (canEat ? mealIng(m) : r.ing.map(([n, q, u]) => ({ n, u, q: scaleQty(q, u, m.f, n) }))).map(x => x.off ? `<li class="muted"><s>${esc(x.n)}</s>: not today</li>` : `<li>${esc(x.n)}: <b>${qtyTxt(x.q, x.u)}</b>${ingHint(x.n, x.q)}${(canEat || pk) && open ? (h => h ? ` <span class="small muted">· ${esc(h)}</span>` : '')(restHint(x.n, x.q, x.u, pk || TODAY(), m.i)) : ''}</li>`).join('');
   return `<div class="meal ${done ? 'done' : ''}">
     <div class="meal-h">
       ${canEat ? `<button class="eat" data-a="eat" data-v="${m.i}" aria-label="Mark ${esc(r.n)} eaten" aria-pressed="${done}">${CHECK}</button>` : ''}
@@ -2833,8 +2855,8 @@ function mealCard(m, done, canEat) {
       ${fav !== null ? `<button class="favbtn ${fav ? 'on' : ''}" data-a="favToggle" data-v="${m.id}" aria-pressed="${fav}" aria-label="${fav ? 'Favourite: in your menu every week. Tap to remove' : 'Make it a favourite: in your menu every week'}"><svg viewBox="0 0 24 24"><path d="M12 20.5s-7.6-4.6-9.4-9.3C1.2 7.6 3.4 4 7 4c2.2 0 3.8 1.3 5 3 1.2-1.7 2.8-3 5-3 3.6 0 5.8 3.6 4.4 7.2-1.8 4.7-9.4 9.3-9.4 9.3z"/></svg></button>` : ''}
     </div>
     <div class="mact">
-      <button class="pill ${open ? 'on' : ''}" data-a="openRecipe" data-v="${m.key + (canEat ? '' : '-all')}">${open ? 'Hide recipe' : 'Recipe · ' + (r.min ? r.min + ' min' : 'no cooking')}</button>
-      ${canEat ? `<button class="pill ${UI.edit === m.key ? 'on' : ''}" data-a="meOpen" data-v="${m.key}">${UI.edit === m.key ? 'Close edit' : 'Edit'}</button><button class="pill" data-a="swap" data-v="${m.i}">Swap</button>` : ''}
+      <button class="pill ${open ? 'on' : ''}" data-a="openRecipe" data-v="${m.key + (canEat ? '' : pk ? '-' + pk : '-all')}">${open ? 'Hide recipe' : 'Recipe · ' + (r.min ? r.min + ' min' : 'no cooking')}</button>
+      ${canEat ? `<button class="pill ${UI.edit === m.key ? 'on' : ''}" data-a="meOpen" data-v="${m.key}">${UI.edit === m.key ? 'Close edit' : 'Edit'}</button><button class="pill" data-a="swap" data-v="${m.i}">Swap</button>` : pk ? `<button class="pill" data-a="swap" data-v="${m.i}" data-k="${pk}">Swap</button>` : ''}
       ${canEat && m.i < 3 && !done ? `<button class="pill" data-a="replOpen" data-v="${m.i}">Replace</button><button class="pill" data-a="busyOpen" data-v="${m.i}">No time?</button><button class="pill" data-a="outOpen" data-v="${m.i}">Eating out?</button>` : ''}
     </div>
     ${canEat && r.quick ? `<p class="mnote">Quick option today · <button class="linkbtn" data-a="busyUndo" data-v="${m.i}">Back to the plan</button></p>` : ''}
@@ -4647,8 +4669,10 @@ const A = {
     setAte(d, m, on); touch(); render();
     if (on) toast('+' + m.k + ' kcal · ' + m.p + ' g protein');
   },
+  fday(el) { UI.fday = +el.dataset.v; UI.open = null; UI.edit = null; render(); },
+  fdayShop(el) { UI.food = 'shop'; UI.shopRange = +el.dataset.v; render(); window.scrollTo(0, 0); },
   swap(el) {
-    const k = TODAY(), i = +el.dataset.v, m = dayMeals(k).find(x => x.i === i), list = budgetPools()[SLOT_POOL[i]], wk = weekStart(k), wd = (parseKey(k).getDay() + 6) % 7;
+    const k = el.dataset.k || TODAY(), i = +el.dataset.v, m = dayMeals(k).find(x => x.i === i), list = budgetPools()[SLOT_POOL[i]], wk = weekStart(k), wd = (parseKey(k).getDay() + 6) % 7;
     if (!m) return;
     const next = list[(list.indexOf(m.id) + 1) % list.length];
     const sw = S.core.food.swaps[wk] = S.core.food.swaps[wk] || {}; sw[wd + '-' + i] = next;

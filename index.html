@@ -1367,7 +1367,7 @@ async function loadPrices() {
   try { const r = await fetch('prices.json?t=' + Date.now(), { cache: 'no-store' }); if (r.ok) { const p = await r.json(); if (p && p.items) { S.prices = p; try { localStorage.setItem('gymbro-prices', JSON.stringify(p)); } catch (e) {} } } } catch (e) {}
 }
 // the app updates itself: when a newer version is online, reload into it (your data stays on the phone)
-const APP_VERSION = '37';
+const APP_VERSION = '38';
 async function checkUpdate() {
   try {
     const v = (await (await fetch('version.txt?t=' + Date.now(), { cache: 'no-store' })).text()).trim();
@@ -1990,10 +1990,85 @@ function heroHTML() {
     <div class="say"><b>Gym Bro</b><p>${esc(tm.msg)}</p><i>Tap Gym Bro to poke him</i></div></div>
   <div class="talk">${[['motivate', 'Motivate me'], ['lazy', 'I don\'t want to train'], ['hungry', 'I\'m hungry'], ['roast', 'Roast me']].map(([v, l]) => `<button data-a="talk" data-v="${v}">${l}</button>`).join('')}</div>`;
 }
+/* ---------- health check: conditions and injuries change what's safe ---------- */
+// One tap-only screen that covers the PAR-Q+ general questions (heart or blood pressure, chest pain, dizziness or fainting,
+// other long-term conditions and medicines, bone and joint problems, supervised-only exercise) plus a few common extras.
+// stop = see a GP before training. It all stays on the phone: never sent to the Gym Bro server.
+const MED = {
+  diabetes: { n: 'Diabetes' },
+  hbp: { n: 'High blood pressure' },
+  lbp: { n: 'Low blood pressure' },
+  heart: { n: 'Heart condition or chest pain', stop: true },
+  dizzy: { n: 'Dizzy spells or fainting this year', stop: true },
+  asthma: { n: 'Asthma or breathing problems' },
+  preg: { n: 'Pregnant or had a baby this year', female: true },
+  injury: { n: 'Injury or operation' },
+  superv: { n: 'A doctor said: supervised exercise only', stop: true },
+  other: { n: 'Something else' },
+};
+const MED_AREAS = { knee: 'Knee', back: 'Back', shoulder: 'Shoulder', neck: 'Neck', elbow: 'Elbow', wrist: 'Wrist or hand', hip: 'Hip', ankle: 'Ankle or foot' };
+const medC = () => (S.core.med && S.core.med.c) || {};
+const medDraft = () => ({ c: JSON.parse(JSON.stringify(medC())) });
+const medKeep = () => { const t = $('#med-other'); if (t && UI.med && UI.med.c.other) UI.med.c.other.txt = t.value.slice(0, 120); };
+const andList = a => a.length > 1 ? a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1] : a[0] || '';
+// what needs a doctor's OK before training
+function medStops(c = medC()) {
+  const out = Object.keys(c).filter(k => MED[k] && MED[k].stop).map(k => MED[k].n.toLowerCase().replace('a doctor said: supervised exercise only', 'supervised-only exercise'));
+  if (c.hbp && c.hbp.ctl !== 'yes') out.push('blood pressure that may not be under control');
+  if (c.preg) out.push(c.preg.when === 'after' ? 'a recent birth' : 'pregnancy');
+  Object.entries((c.injury || {}).areas || {}).forEach(([a, x]) => { if (x.when !== 'old') out.push('a recent ' + MED_AREAS[a].toLowerCase() + ' injury or operation'); });
+  return out;
+}
+function medForm(D, sheet) {
+  const c = D.c, inj = (c.injury || {}).areas || {};
+  const chip = (on, a, v, label) => `<button class="pchip ${on ? 'on' : ''}" data-a="${a}" data-v="${v}">${esc(label)}</button>`;
+  const opt = (k, f, list) => `<div class="pchips">${list.map(([v, l]) => chip((c[k] || {})[f] === v, 'medSet', k + '|' + f + '|' + v, l)).join('')}</div>`;
+  const keys = Object.keys(MED).filter(k => !MED[k].female || S.core.profile.sex !== 'male');
+  const follow = [
+    c.diabetes && `<div class="field"><span>Diabetes: which type?</span>${opt('diabetes', 't', [['1', 'Type 1'], ['2', 'Type 2']])}</div>
+      <div class="field"><span>Do you take insulin, or tablets that can cause hypos?</span>${opt('diabetes', 'hypo', [['yes', 'Yes'], ['no', 'No'], ['ns', 'Not sure']])}</div>`,
+    c.hbp && `<div class="field"><span>High blood pressure: treated and under control?</span>${opt('hbp', 'ctl', [['yes', 'Yes'], ['no', 'No'], ['ns', 'Not sure']])}</div>`,
+    c.preg && `<div class="field"><span>Which one?</span>${opt('preg', 'when', [['now', 'Pregnant now'], ['after', 'Had a baby']])}</div>`,
+    c.injury && `<div class="field"><span>Injury or operation: where?</span><div class="pchips">${Object.entries(MED_AREAS).map(([a, l]) => chip(inj[a], 'medArea', a, l)).join('')}</div></div>
+      ${Object.keys(inj).map(a => `<div class="field"><span>${esc(MED_AREAS[a])}: when, and does it hurt now?</span><div class="pchips">${[['recent', 'Last 6 months'], ['old', 'Longer ago']].map(([v, l]) => chip(inj[a].when === v, 'medInj', a + '|when|' + v, l)).join('')}</div>
+        <div class="pchips" style="margin-top:6px">${[['no', 'Doesn\'t hurt'], ['some', 'Sometimes'], ['yes', 'Hurts now']].map(([v, l]) => chip(inj[a].hurt === v, 'medInj', a + '|hurt|' + v, l)).join('')}</div></div>`).join('')}`,
+    c.other && `<label class="field"><span>What is it?</span><input id="med-other" type="text" maxlength="120" value="${esc(c.other.txt || '')}" placeholder="e.g. epilepsy, osteoporosis, a hernia, a regular medicine"></label>`,
+  ].filter(Boolean).join('');
+  return `<h2>Anything I should know?</h2>
+    <p class="small muted">Health conditions and injuries change what's safe for you. Tap any that apply.</p>
+    <div class="pchips">${keys.map(k => chip(c[k], 'medTog', k, MED[k].n)).join('')}</div>
+    ${follow}
+    <p class="small muted" style="margin-top:12px">Gym Bro gives general exercise and food suggestions, not medical advice. Check with your GP or specialist before you start, especially with a health condition or injury. Chest pain, feeling faint or sharp pain: stop. By continuing you accept the <a href="terms.html">health & safety terms</a>.</p>
+    ${keys.some(k => c[k]) ? '<button class="btn blue block" data-a="medSave">Save</button>' : `<button class="btn green block" data-a="medNone">${sheet ? 'Nothing to note' : 'Nothing, let\'s go'}</button>`}`;
+}
+function medSheet() {
+  UI.med = UI.med || medDraft();
+  return `<div class="in" role="dialog" aria-label="Health and injuries"><div class="spread"><span class="lbl">Health & injuries</span><button class="btn small ghost" data-a="closeSheet">Close</button></div>${medForm(UI.med, true)}</div>`;
+}
+// Today: the health check until it's answered, then the GP banner if needed, and a one-tap check every 3 months
+function medTodayCard() {
+  const M = S.core.med;
+  if (!M) { UI.med = UI.med || medDraft(); return `<div class="card">${medForm(UI.med)}</div>`; }
+  const st = medStops();
+  if (st.length && !M.ok) return `<div class="banner warn"><h3>See your doctor before you train</h3><p class="small">You told Gym Bro about ${esc(andList(st))}. Show your GP${M.c.preg ? ', midwife' : ''} or specialist this plan and ask what's safe for you. Until then, keep to walking and light activity.</p>
+    <div class="row"><button class="btn small" data-a="medOk">My doctor said it's OK</button><button class="btn small ghost" data-a="medOpen">Change my answers</button></div></div>`;
+  if (diffDays(TODAY(), M.at) >= 90) return `<div class="banner travel"><p class="small"><b>Health still the same?</b> A new condition, injury or medicine changes what's safe.</p>
+    <div class="row"><button class="btn small" data-a="medSame">All good</button><button class="btn small ghost" data-a="medOpen">Something changed</button></div></div>`;
+  return '';
+}
+function medCard() {
+  const M = S.core.med, c = medC(), keys = Object.keys(c).filter(k => MED[k]);
+  const list = keys.map(k => k === 'injury' ? 'Injury: ' + Object.keys(c.injury.areas || {}).map(a => MED_AREAS[a].toLowerCase()).join(', ') : k === 'other' ? c.other.txt || MED.other.n : MED[k].n);
+  return `<div class="card"><div class="spread"><h2>Health & injuries</h2><button class="btn small violet" data-a="medOpen">Change</button></div>
+    <p class="small">${!M ? 'Not answered yet.' : keys.length ? esc(list.join(' · ')) : 'Nothing to note.'}</p>
+    ${M && M.ok && medStops().length ? `<p class="small muted">Your doctor's OK: ${esc(shortDate(M.ok))}.</p>` : ''}
+    <p class="small muted">Stays on your phone, never sent anywhere. Not medical advice: check with your GP or specialist before you start.</p></div>`;
+}
 function viewToday() {
   if (S.core.needsSetup) return `<div class="hero neutral"><span class="face">${tankSVG('neutral')}</span><div class="say"><b>Gym Bro</b><p>New recruit. Fill this in. I'll know if you lie.</p></div></div>` + setupCard();
   const k = TODAY(), tasks = tasksFor(k), st = streak(), qn = quietGap(), late = new Date().getHours() >= 19 || new Date().getHours() < 4;
   return `${heroHTML()}
+  ${medTodayCard()}
   ${qn ? `<div class="banner warn"><h3>Where were you?</h3><div class="row">
       <button class="btn small blue" data-a="quiet" data-v="travel">Away</button>
       <button class="btn small" data-a="quiet" data-v="sick">Ill</button>
@@ -2835,6 +2910,7 @@ function viewMe() {
     ${paceMsg ? `<div class="banner ${g.need > 0.8 ? 'warn' : 'good'}"><p class="small">${esc(paceMsg)}</p></div>` : ''}
     <button class="btn ghost small" data-a="reviewOpen">Plan report so far</button>
   </div>
+  ${medCard()}
   ${workingCard()}
   ${pushCard(false)}
   ${healthCard()}
@@ -3809,7 +3885,7 @@ function render() {
   const sh = $('#sheet');
   if (UI.sheet) {
     const x = UI.sheet;
-    sh.innerHTML = x === 'mode' ? modeSheet() : x === 'goal' ? goalSheet() : x === 'day' ? daySheet() : x === 'addEx' ? addExSheet() : x.fin ? finSheet() : x.swap ? swapSheet() : x.food ? foodSheet() : x.busy !== undefined ? busySheet(x.busy) : x.out ? outSheet() : x.act ? actSheet() : x.move ? moveSheet(x.move) : x.skipday ? skipDaySheet() : helpSheet(x.help);
+    sh.innerHTML = x.med ? medSheet() : x === 'mode' ? modeSheet() : x === 'goal' ? goalSheet() : x === 'day' ? daySheet() : x === 'addEx' ? addExSheet() : x.fin ? finSheet() : x.swap ? swapSheet() : x.food ? foodSheet() : x.busy !== undefined ? busySheet(x.busy) : x.out ? outSheet() : x.act ? actSheet() : x.move ? moveSheet(x.move) : x.skipday ? skipDaySheet() : helpSheet(x.help);
     sh.hidden = false;
   } else { sh.hidden = true; sh.innerHTML = ''; }
   bcAttach();
@@ -3850,6 +3926,26 @@ const A = {
   },
   mode() { UI.sheet = 'mode'; render(); },
   closeSheet() { UI.sheet = null; render(); },
+  // health check
+  medTog(el) { medKeep(); const c = UI.med.c, k = el.dataset.v; if (c[k]) delete c[k]; else c[k] = k === 'injury' ? { areas: {} } : {}; render(); },
+  medSet(el) { medKeep(); const [k, f, v] = el.dataset.v.split('|'); UI.med.c[k][f] = v; render(); },
+  medArea(el) { medKeep(); const ar = UI.med.c.injury.areas, a = el.dataset.v; if (ar[a]) delete ar[a]; else ar[a] = {}; render(); },
+  medInj(el) { medKeep(); const [a, f, v] = el.dataset.v.split('|'); UI.med.c.injury.areas[a][f] = v; render(); },
+  medNone() { UI.med = { c: {} }; A.medSave(); },
+  medSave() {
+    medKeep(); const c = UI.med.c, prev = S.core.med;
+    if (c.injury && !Object.keys(c.injury.areas).length) { toast('Pick where the injury is, or untick it.'); return; }
+    if (c.injury && Object.values(c.injury.areas).some(x => !x.when)) { toast('Say when each injury was.'); return; }
+    if (c.other && !(c.other.txt || '').trim()) { toast('Write what it is, or untick "Something else".'); return; }
+    const st = medStops(c), keepOk = !!(prev && prev.ok && st.every(x => medStops(prev.c).includes(x)));
+    S.core.med = { at: TODAY(), acc: TODAY(), c: JSON.parse(JSON.stringify(c)), ...(keepOk ? { ok: prev.ok } : {}) };
+    UI.med = null; UI.sheet = null; saveCore();
+    tankSay(st.length && !keepOk ? 'soft' : 'happy', st.length && !keepOk ? 'Thanks for telling me. Doctor first, then we train. Safely.' : Object.keys(c).length ? 'Got it. I\'ll keep it in mind.' : 'Nothing to note. Good. Now let\'s work.', 10000);
+    render();
+  },
+  medOpen() { UI.med = medDraft(); UI.sheet = { med: 1 }; render(); },
+  medOk() { S.core.med.ok = TODAY(); saveCore(); tankSay('happy', 'Doctor said yes. Good. We start easy and build up.', 10000); render(); },
+  medSame() { S.core.med.at = TODAY(); saveCore(); toast('Thanks. I\'ll ask again in 3 months.'); render(); },
   async bfAi(el, file) {
     UI.bfai = { loading: true }; render();
     S.core.aiOk.body = TODAY(); saveCore();

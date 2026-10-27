@@ -529,6 +529,28 @@ const R = {
     ing: [['Sourdough bread', 50, 'g', 'Bread & grains'], ['Peanut butter', 15, 'g', 'Cupboard'], ['Banana', 1, 'pcs', 'Fruit & veg']], steps: ['Toast the bread, spread the peanut butter.', 'Slice the banana on top. Pinch of cinnamon if you like.'] },
   hummuspitta: { n: 'Hummus, carrots & warm pitta', tag: 'cold', d: 'Snack', k: 350, p: 10, fat: 14, c: 45, s: 7, min: 3,
     ing: [['Hummus', 50, 'g', 'Dairy & eggs'], ['Carrots', 100, 'g', 'Fruit & veg'], ['Wholemeal pitta', 1, 'pcs', 'Bread & grains']], steps: ['Warm the pitta in the toaster, cut into strips.', 'Carrot sticks and hummus to dip.'] },
+  // grab-and-go: only offered by the "No time" button, never part of the weekly menu
+  qshake: { n: 'Protein shake & banana', tag: 'cold', quick: true, d: 'No cooking: shake, drink, go', k: 375, p: 36, fat: 7, c: 43, s: 29, min: 2,
+    ing: [['Vanilla whey', 30, 'g', 'Cupboard'], ['Semi-skimmed milk', 300, 'ml', 'Dairy & eggs'], ['Banana', 1, 'pcs', 'Fruit & veg']],
+    steps: ['Shake the whey with the milk (water works too, 120 kcal less).', 'Your creatine can go in the same shake.', 'Banana on the way.'] },
+  qskyr: { n: 'Skyr, granola & an apple', tag: 'cold', quick: true, d: 'Two pots and a spoon', k: 420, p: 37, fat: 6, c: 56, s: 37, min: 1,
+    ing: [['Skyr', 300, 'g', 'Dairy & eggs'], ['Granola', 30, 'g', 'Cupboard'], ['Apple', 1, 'pcs', 'Fruit & veg']],
+    steps: ['Granola on the skyr.', 'Apple in your bag.'] },
+  qeggs: { n: 'Boiled eggs, cottage cheese & rice cakes', tag: 'cold', quick: true, d: 'Boil a batch of eggs on Sunday: they keep 5 days', k: 380, p: 32, fat: 20, c: 22, s: 6, min: 2,
+    ing: [['Eggs', 3, 'pcs', 'Dairy & eggs'], ['Cottage cheese', 100, 'g', 'Dairy & eggs'], ['Rice cakes', 2, 'pcs', 'Bread & grains'], ['Cherry tomatoes', 80, 'g', 'Fruit & veg']],
+    steps: ['Peel the eggs (boiled earlier: 9 min, cold water).', 'Cottage cheese on the rice cakes, tomatoes on the side.'] },
+  qpitta: { n: 'Tuna & hummus pitta', tag: 'cold', quick: true, d: 'Three minutes, no cooking', k: 416, p: 41, fat: 9, c: 42, s: 6, min: 3,
+    ing: [['Tuna in spring water (tin)', 1, 'tin', 'Cupboard'], ['Wholemeal pitta', 1, 'pcs', 'Bread & grains'], ['Hummus', 30, 'g', 'Dairy & eggs'], ['Greek yogurt 0%', 50, 'g', 'Dairy & eggs'], ['Cucumber', 0.5, 'pcs', 'Fruit & veg']],
+    steps: ['Drain the tuna, stir in the yogurt with pepper.', 'Hummus inside the pitta, then tuna and sliced cucumber.'] },
+  qbowl: { n: 'Cottage cheese & chickpea bowl', tag: 'bowl', quick: true, d: 'Tin, tub, chop, done', k: 406, p: 33, fat: 13, c: 38, s: 12, min: 4,
+    ing: [['Chickpeas (tin)', 120, 'g', 'Cupboard'], ['Cottage cheese', 200, 'g', 'Dairy & eggs'], ['Cherry tomatoes', 100, 'g', 'Fruit & veg'], ['Cucumber', 0.5, 'pcs', 'Fruit & veg'], ['Olive oil', 5, 'ml', 'Cupboard'], ['Lemon', 0.25, 'pcs', 'Fruit & veg']],
+    steps: ['Rinse the chickpeas, halve the tomatoes, chop the cucumber.', 'Everything in a bowl with the cottage cheese, oil, lemon, salt and pepper.'] },
+  qcous: { n: 'Tuna couscous', tag: 'bowl', quick: true, d: 'Kettle only: 5 minutes', k: 491, p: 39, fat: 8, c: 65, s: 6, min: 5,
+    ing: [['Couscous', 80, 'g', 'Bread & grains'], ['Tuna in spring water (tin)', 1, 'tin', 'Cupboard'], ['Cherry tomatoes', 100, 'g', 'Fruit & veg'], ['Cucumber', 0.5, 'pcs', 'Fruit & veg'], ['Olive oil', 5, 'ml', 'Cupboard'], ['Lemon', 0.5, 'pcs', 'Fruit & veg']],
+    steps: ['Pour boiling water just over the couscous, cover for 5 minutes, fluff with a fork.', 'Stir in the tuna, tomatoes, cucumber, oil and lemon.'] },
+  qeggtoast: { n: 'Scrambled eggs on toast', tag: 'hot', quick: true, d: 'One pan, 6 minutes', k: 589, p: 44, fat: 26, c: 43, s: 2, min: 6,
+    ing: [['Eggs', 4, 'pcs', 'Dairy & eggs'], ['Egg whites', 100, 'ml', 'Dairy & eggs'], ['Sourdough bread', 80, 'g', 'Bread & grains'], ['Butter', 5, 'g', 'Dairy & eggs'], ['Spinach', 50, 'g', 'Fruit & veg']],
+    steps: ['Toast the bread.', 'Melt the butter, wilt the spinach, add the whisked eggs and whites. Stir on low heat until just set.', 'Onto the toast.'] },
 };
 const POOLS = {
   b: ['omelette', 'yog', 'avoomelette', 'shakshuka', 'turkish', 'salmontoast', 'appleoats'],
@@ -536,6 +558,8 @@ const POOLS = {
   d: ['steakeggs', 'cod', 'souvlaki', 'prawnpasta', 'kofta', 'salmontray', 'meatballs', 'gambas', 'steak', 'gochujang'],
   s: ['skyr', 'cottage', 'shake', 'edamame', 'applenuts', 'pbtoast', 'hummuspitta'],
 };
+// the "No time" button's options for each main meal
+const QUICK = { 0: ['qshake', 'qskyr', 'qeggs'], 1: ['qpitta', 'qbowl', 'qcous'], 2: ['qeggtoast', 'qcous', 'qpitta'] };
 const SLOTS = ['Breakfast', 'Lunch', 'Dinner', 'Afternoon snack', 'Evening snack', 'Morning snack'];
 const SLOT_POOL = ['b', 'l', 'd', 's', 's', 's'];
 const TAGS = { hot: 'Hot', cold: 'Cold', bowl: 'Bowl' };
@@ -807,8 +831,9 @@ function budgetPools() {
 }
 // a fixed basket (every recipe once) shows how prices moved, whatever the menu is this week
 // (the recipes are saved with the budget, so adding new recipes never looks like a price rise)
-const BASKET_V1 = Object.keys(R).filter(id => !['avoomelette', 'steakeggs'].includes(id));
-const basketIndex = (c, ids = Object.keys(R)) => ids.filter(id => R[id]).reduce((s, id) => s + recipeCost(id, 1, c), 0);
+const BASKET_V1 = Object.keys(R).filter(id => !R[id].quick && !['avoomelette', 'steakeggs'].includes(id));
+const basketIds = () => Object.keys(R).filter(id => !R[id].quick);
+const basketIndex = (c, ids = basketIds()) => ids.filter(id => R[id]).reduce((s, id) => s + recipeCost(id, 1, c), 0);
 function priceCheck() {
   const b = S.core.budget, c = priceCtx();
   if (!c || !(b.weekly > 0) || !S.prices.updated || b.seen === S.prices.updated) return;
@@ -1106,7 +1131,7 @@ function pushStatus() {
   for (let i = 0; i < 7; i++) { const dk = addDays(k, i), p = planFor(dk); week[parseKey(dk).getDay()] = { p, n: SESS[p] ? SESS[p].n : CARDIO[p] ? CARDIO[p].n : p === 'HOME' ? 'Home workout' : 'Rest' }; }
   return {
     tz: Intl.DateTimeFormat().resolvedOptions().timeZone, times: S.core.settings, mode: S.core.mode.type, week,
-    today: { date: k, done, ate: (d.ate || []).map(x => +x.split('#')[1]), ci: !!d.ci, meals: dayMeals(k).map(m => R[m.id].n), gym: planTime(k),
+    today: { date: k, done, ate: (d.ate || []).map(x => +x.split('#')[1]).concat(Object.keys(d.slotOv || {}).map(Number)), ci: !!d.ci, meals: (ms => [0, 1, 2, 3, 4, 5].map(i => { const m = ms.find(x => x.i === i); return m ? R[m.id].n : ''; }))(dayMeals(k)), gym: planTime(k),
       extra: dayMode(k) === 'extra' ? extraPlan(k).filter(b => !b.skip && !d.t['x:' + b.id]).map(b => ({ t: b.t, n: actOf(b.a).n })) : [] },
     meas: S.core.measurements.some(m => m.d >= ws),
     alerts: S.core.budget.alert && !S.core.budget.alert.down ? ['price'] : [],
@@ -1163,7 +1188,7 @@ async function loadPrices() {
   try { const r = await fetch('prices.json?t=' + Date.now(), { cache: 'no-store' }); if (r.ok) { const p = await r.json(); if (p && p.items) { S.prices = p; try { localStorage.setItem('gymbro-prices', JSON.stringify(p)); } catch (e) {} } } } catch (e) {}
 }
 // the app updates itself: when a newer version is online, reload into it (your data stays on the phone)
-const APP_VERSION = '22';
+const APP_VERSION = '23';
 async function checkUpdate() {
   try {
     const v = (await (await fetch('version.txt?t=' + Date.now(), { cache: 'no-store' })).text()).trim();
@@ -1315,12 +1340,16 @@ function dayMealsWith(k, pools) {
   const training = !!SESS[planFor(k)], T = targets(dayMode(k), k), sw = S.core.food.swaps[wk] || {};
   const pickSw = (id, i) => (sw[wd + '-' + i] && R[sw[wd + '-' + i]]) ? sw[wd + '-' + i] : id;
   const mains = [rot(B, wd), rot(L, Math.floor(wd / 2)), rot(D, wd)].map(pickSw);
-  const mainK = mains.reduce((s, id) => s + R[id].k, 0), mainP = mains.reduce((s, id) => s + R[id].p, 0);
+  // a meal you skipped, ate out or already ate is fixed: the meals still to come are portioned around it
+  const d0 = getDay(k) || {}, ov = d0.slotOv || {}, had = i => (d0.ate || []).includes(mains[i] + '#' + i) && d0.ateM && d0.ateM[mains[i] + '#' + i];
+  const live = [0, 1, 2].filter(i => !ov[i] && !had(i)), fixed = Object.values(ov).concat([0, 1, 2].filter(i => !ov[i] && had(i)).map(had));
+  const fixK = fixed.reduce((a, o) => a + (o.k || 0), 0), fixP = fixed.reduce((a, o) => a + (o.p || 0), 0);
+  const mainK = live.reduce((a, i) => a + R[mains[i]].k, 0) || 1, mainP = live.reduce((a, i) => a + R[mains[i]].p, 0);
   // Snacks top up protein only as far as your target (more than ~2.2 g/kg builds nothing), the rest is fuel.
   const hiP = Sn.filter(id => R[id].p / R[id].k >= 0.08), loP = Sn.filter(id => R[id].p / R[id].k < 0.08);
   if (training && hiP.includes('shake')) hiP.unshift(...hiP.splice(hiP.indexOf('shake'), 1));
   const n = S.core.goal.type === 'gain' ? 3 : 2, snacks = [];
-  let gap = T.protein - mainP * Math.max(0.55, Math.min(1.6, (T.kcal - 500) / mainK));
+  let gap = T.protein - fixP - mainP * Math.max(0.55, Math.min(1.6, (T.kcal - 500 - fixK) / mainK));
   for (let j = 0; j < n; j++) {
     const pool = ((gap > 12 || (training && j === 0)) && hiP.length ? hiP : loP.length ? loP : hiP).filter(x => !snacks.includes(x));
     const id = pickSw((training && pool[0] === 'shake') ? 'shake' : rot(pool.length ? pool : Sn, wd + j), 3 + j);
@@ -1328,10 +1357,10 @@ function dayMealsWith(k, pools) {
   }
   let ids = mains.concat(snacks), snackK = snacks.reduce((s, id) => s + R[id].k, 0);
   // light eaters: drop a snack instead of serving more food than the target
-  while (ids.length > 4 && (T.kcal - snackK) / mainK < 0.6) { ids.pop(); snackK = ids.slice(3).reduce((s, id) => s + R[id].k, 0); }
-  const f = Math.round(Math.max(0.55, Math.min(1.6, (T.kcal - snackK) / mainK)) * 20) / 20;
+  while (ids.length > 4 && (T.kcal - snackK - fixK) / mainK < 0.6) { ids.pop(); snackK = ids.slice(3).reduce((s, id) => s + R[id].k, 0); }
+  const f = Math.round(Math.max(0.55, Math.min(1.6, (T.kcal - snackK - fixK) / mainK)) * 20) / 20;
   const at = mealTimes(k);
-  return ids.map((id, i) => { const r = R[id], ff = i < 3 ? f : 1; return { id, i, key: id + '#' + i, slot: SLOTS[i], at: at[i], f: ff, k: Math.round(r.k * ff), p: Math.round(r.p * ff), fat: Math.round(r.fat * ff), c: Math.round(r.c * ff), s: Math.round(r.s * ff) }; });
+  return ids.map((id, i) => { const r = R[id], ff = i < 3 ? ((had(i) || {}).f || f) : 1; return { id, i, key: id + '#' + i, slot: SLOTS[i], at: at[i], f: ff, k: Math.round(r.k * ff), p: Math.round(r.p * ff), fat: Math.round(r.fat * ff), c: Math.round(r.c * ff), s: Math.round(r.s * ff) }; }).filter(m => !(m.i < 3 && ov[m.i]));
 }
 function eaten(k) {
   const d = getDay(k), tot = { kcal: 0, p: 0, fat: 0, c: 0, s: 0 };
@@ -1346,7 +1375,7 @@ function eaten(k) {
 }
 function setAte(d, meal, on) {
   d.ate = (d.ate || []).filter(x => x !== meal.key); d.ateM = d.ateM || {};
-  if (on) { d.ate.push(meal.key); d.ateM[meal.key] = { k: meal.k, p: meal.p, fat: meal.fat, c: meal.c, s: meal.s }; } else delete d.ateM[meal.key];
+  if (on) { d.ate.push(meal.key); d.ateM[meal.key] = { k: meal.k, p: meal.p, fat: meal.fat, c: meal.c, s: meal.s, f: meal.f }; } else delete d.ateM[meal.key];
 }
 
 /* ---------- daily tasks & streak ---------- */
@@ -2181,8 +2210,9 @@ function viewFood() {
     <h2>Today's meals</h2>
     <p class="muted small">Tick a meal when you've eaten it.</p>
     <div class="tasks">${mealOrder(meals).map(m => mealCard(m, ate.includes(m.key), true)).join('')}</div>
+    ${Object.entries(d.slotOv || {}).map(([i, o]) => `<p class="small" style="border-top:1px solid var(--line);padding-top:8px"><b>${esc(SLOTS[i])}:</b> ${o.t === 'skip' ? 'skipped, spread over your other meals' : 'eaten out: ' + esc(o.n) + ', ~' + fmt(o.k) + ' kcal'} · <button class="linkbtn" data-a="slotUndo" data-v="${i}">Undo</button></p>`).join('')}
     ${(d.food || []).length ? `<div><div class="aisle">Also today</div>${d.food.map((f, i) => `<div class="spread small" style="border-top:1px solid var(--line);padding-top:8px"><span style="flex:1;min-width:0"><b>${esc(f.n)}</b> <span class="muted">${f.k} kcal · P ${f.p} · sugar ${f.s || 0} g</span></span><button class="linkbtn" data-a="rmFood" data-v="${i}">Remove</button></div>`).join('')}</div>` : ''}
-    <button class="btn green block" data-a="foodOpen">+ Add food or drink</button>
+    <div class="row" style="flex-wrap:nowrap"><button class="btn green" style="flex:1" data-a="foodOpen">+ Add food or drink</button><button class="btn ghost" style="flex:1" data-a="outOpen">Eating out</button></div>
     <p class="small muted">Coffee, a croissant, a beer: type it like you'd say it and Gym Bro counts it.</p>
   </div>
   ${budgetAlertCard()}
@@ -2196,7 +2226,8 @@ function mealCard(m, done, canEat) {
       ${canEat ? `<button class="eat" data-a="eat" data-v="${m.i}" aria-label="Mark ${esc(r.n)} eaten" aria-pressed="${done}">${CHECK}</button>` : ''}
       <div class="t"><span class="slot">${m.slot ? esc(m.slot) + (m.at ? ' · ' + fromMin(m.at) : '') : ''}<i class="${r.tag}">${TAGS[r.tag]}</i></span><b>${esc(r.n)}</b><em>${esc(r.d)}${m.f !== 1 ? ` · portion ×${m.f}` : ''}</em>
         ${macLine(m)}
-        <div class="meal-act"><button class="linkbtn" data-a="openRecipe" data-v="${m.key + (canEat ? '' : '-all')}">${open ? 'Hide recipe' : 'Recipe · ' + (r.min ? r.min + ' min' : 'no cooking')}</button>${canEat ? `<button class="linkbtn" data-a="swap" data-v="${m.i}">Swap</button>` : ''}</div></div>
+        <div class="meal-act"><button class="linkbtn" data-a="openRecipe" data-v="${m.key + (canEat ? '' : '-all')}">${open ? 'Hide recipe' : 'Recipe · ' + (r.min ? r.min + ' min' : 'no cooking')}</button>${canEat ? `<button class="linkbtn" data-a="swap" data-v="${m.i}">Swap</button>` : ''}${canEat && m.i < 3 && !done ? `<button class="linkbtn" data-a="busyOpen" data-v="${m.i}">No time?</button><button class="linkbtn" data-a="outOpen" data-v="${m.i}">Eating out?</button>` : ''}</div>
+        ${canEat && r.quick ? `<p class="small" style="font-weight:700;color:var(--blue)">Quick option today · <button class="linkbtn" data-a="busyUndo" data-v="${m.i}">Back to the plan</button></p>` : ''}</div>
     </div>
     ${open ? `<div class="recipe"><b>You need</b><ul>${ing}</ul><b>How to make it</b><ol>${r.steps.map(s => `<li>${esc(s)}</li>`).join('')}</ol></div>` : ''}
   </div>`;
@@ -2931,6 +2962,52 @@ function bcPortions(P) {
   if (P.sq !== 100 && P.pq !== 100) out.push([100, '100 ' + P.unit]);
   return out;
 }
+/* ---------- eating out: what to order where. [name, kcal, protein, fat, carbs, sugar], typical portions ---------- */
+const OUT = {
+  cafe: { n: 'Café or sandwich shop', picks: [['Chicken salad wrap or sandwich, no mayo', 450, 32, 14, 48, 5], ['Protein pot: egg, chicken or salmon', 250, 22, 14, 8, 3], ['Egg breakfast roll or egg & spinach wrap', 380, 22, 16, 36, 3], ['Chicken or tuna salad bowl', 400, 30, 18, 25, 6], ['Soup with a roll', 420, 18, 12, 58, 10]], avoid: 'Pastries, muffins, cookies and big flavoured lattes: 400–600 kcal with almost no protein.' },
+  chicken: { n: "Chicken place (Nando's style)", picks: [['¼ chicken breast, corn on the cob, side salad', 470, 45, 18, 30, 6], ['Chicken butterfly with mixed leaf salad', 480, 55, 22, 10, 4], ['Chicken wrap, no mayo, side salad', 560, 40, 16, 60, 6], ['½ chicken, spicy rice, side salad', 840, 67, 40, 45, 5]], avoid: 'Chips, garlic bread, halloumi and bottomless drinks.' },
+  asian: { n: 'Sushi or Asian', picks: [['Sashimi, edamame and miso soup', 450, 45, 15, 25, 5], ['Poke bowl with salmon or tuna', 600, 35, 22, 65, 10], ['Chicken teriyaki rice bowl, half the rice', 600, 38, 14, 75, 18], ['Salmon & avocado sushi box', 520, 22, 16, 72, 10]], avoid: 'Tempura, katsu curry with all the rice, sweet sauces and bubble tea.' },
+  pub: { n: 'Pub', picks: [['Grilled chicken breast, salad, jacket potato', 650, 55, 15, 70, 6], ['Rump steak, salad and peas instead of chips', 600, 60, 30, 20, 5], ['Chicken Caesar, dressing on the side', 550, 45, 30, 20, 4], ['Fish & chips, leave half the chips', 850, 40, 40, 85, 4]], avoid: 'Burgers with everything, pies, mixed grills, and pints (about 200 kcal each).' },
+  burger: { n: 'Burger place', picks: [['Bunless double with salad', 520, 45, 36, 8, 4], ['Single burger, side salad, diet drink', 550, 30, 28, 40, 9], ['Grilled chicken burger, small fries', 650, 35, 25, 70, 8]], avoid: 'Doubles with bacon and cheese, loaded fries, milkshakes (500–800 kcal each).' },
+  kebab: { n: 'Kebab or Turkish', picks: [['Chicken shish in pitta with salad', 520, 45, 12, 55, 5], ['Lamb shish plate with salad, no rice', 550, 45, 32, 15, 5], ['Chicken shish plate, half rice, sauce on the side', 650, 55, 18, 65, 6]], avoid: 'Doner meat, garlic mayo and chips in the wrap.' },
+  italian: { n: 'Pizza or Italian', picks: [['Grilled chicken or fish with vegetables', 500, 45, 22, 20, 6], ['Half a thin-crust chicken pizza and a side salad', 650, 35, 22, 75, 8], ['Chicken or prawn pasta in tomato sauce', 700, 38, 18, 90, 10]], avoid: 'Carbonara and creamy sauces, garlic bread, deep-pan pizza, tiramisu.' },
+  indian: { n: 'Indian', picks: [['Chicken tikka (dry), salad, 1 chapati', 520, 50, 20, 32, 6], ['Tandoori chicken, dal, half a portion of plain rice', 700, 55, 20, 75, 6], ['Chicken jalfrezi or madras, half plain rice', 700, 45, 28, 65, 10]], avoid: 'Korma and tikka masala, pilau rice, naan and bhajis add up fast.' },
+  shop: { n: 'Supermarket meal deal', picks: [['Protein drink, egg pot and a banana', 450, 42, 14, 40, 25], ['Chicken sandwich (no mayo), protein yogurt, water', 550, 45, 14, 60, 15], ['Sushi box and an edamame pot', 480, 22, 12, 70, 10], ['Chicken pasta salad and fruit', 550, 30, 18, 70, 15]], avoid: 'Crisps, chocolate and fizzy drinks as the "snack" and "drink".' },
+};
+const OUT_TIPS = ['Protein first: chicken, fish, eggs, steak, prawns, tofu.', 'One carb, not three: rice or bread or potatoes.', 'Sauces and dressings on the side. Use half.', 'Drinks count: water, black coffee or diet.', 'Huge portion? Stop at three quarters.'];
+// the main meal still to come: the one Eating out replaces by default
+function nextMain(k) { const d = getDay(k) || {}, ov = d.slotOv || {}, ate = d.ate || [], ms = dayMeals(k).filter(m => m.i < 3 && !ate.includes(m.key)); const now = new Date(), t = now.getHours() * 60 + now.getMinutes(); return (ms.find(m => m.at + 60 >= t) || ms[ms.length - 1] || { i: [0, 1, 2].find(i => !ov[i]) ?? 1 }).i; }
+function busySheet(i) {
+  const k = TODAY(), m = dayMeals(k).find(x => x.i === i), close = `<div class="spread"><span class="lbl">No time?</span><button class="btn small ghost" data-a="closeSheet">Close</button></div>`;
+  if (!m) return `<div class="in">${close}<p>Nothing planned there.</p></div>`;
+  const opts = QUICK[i].filter(id => id !== m.id && okRecipe(id)).concat(QUICK[i].filter(id => id !== m.id && !okRecipe(id)));
+  return `<div class="in" role="dialog" aria-label="No time for ${esc(SLOTS[i].toLowerCase())}">${close}
+    <h2>No time for ${esc(SLOTS[i].toLowerCase())}?</h2>
+    <p class="small muted">Planned: ${esc(R[m.id].n)}, about ${fmt(m.k)} kcal and ${m.p} g protein.</p>
+    <div class="aisle">Grab and go</div>
+    <div class="sug-list">${opts.map(id => `<button data-a="busyPick" data-v="${id}"><b>${esc(R[id].n)}</b><span>${fmt(R[id].k * m.f)} kcal · P ${Math.round(R[id].p * m.f)} · ${R[id].min} min</span></button>`).join('')}</div>
+    <p class="small muted">These go on your shopping list, so keep them in: a tub of skyr, a dozen eggs, tins of tuna.</p>
+    <button class="btn ghost block" data-a="busySkip">Skip it: spread it over my other meals</button>
+    <button class="btn ghost block" data-a="outOpen" data-v="${i}">I'll eat out instead</button>
+  </div>`;
+}
+function outSheet() {
+  const O = UI.sheet.out, k = TODAY(), ms = dayMeals(k), m = ms.find(x => x.i === O.i), close = `<div class="spread"><span class="lbl">Eating out</span><button class="btn small ghost" data-a="closeSheet">Close</button></div>`;
+  const bud = m ? { k: m.k, p: m.p } : { k: 600, p: 40 }, P = OUT[O.place];
+  const fit = x => Math.abs(x[1] - bud.k) <= bud.k * 0.25 && x[2] >= Math.min(25, bud.p);
+  const picks = P ? P.picks.map((x, j) => ({ x, j })).sort((a, b) => (fit(b.x) - fit(a.x)) || (Math.abs(a.x[1] - bud.k) - Math.abs(b.x[1] - bud.k))) : [];
+  return `<div class="in" role="dialog" aria-label="Eating out">${close}
+    <h2>Eating out</h2>
+    <div class="segs">${[0, 1, 2].map(i => `<button class="seg ${O.i === i ? 'on' : ''}" data-a="outSlot" data-v="${i}">${SLOTS[i]}</button>`).join('')}</div>
+    <p class="small">${m ? `Your ${esc(SLOTS[O.i].toLowerCase())} plan: about <b>${fmt(bud.k)} kcal</b> and <b>${bud.p} g protein</b>. Aim near that.` : `Your ${esc(SLOTS[O.i].toLowerCase())} is already sorted today. Aim for about 600 kcal and 40 g protein.`}</p>
+    <div class="pchips">${Object.entries(OUT).map(([key, x]) => `<button class="pchip ${O.place === key ? 'on' : ''}" data-a="outPlace" data-v="${key}">${esc(x.n)}</button>`).join('')}</div>
+    ${P ? `<div class="sug-list">${picks.map(({ x, j }) => `<button data-a="outHad" data-v="${j}"><b>${esc(x[0])}${fit(x) ? ' ✓' : ''}</b><span>~${fmt(x[1])} kcal · P ${x[2]}</span></button>`).join('')}</div>
+      <p class="small muted">✓ fits your plan. Tap what you had to log it. <b>Skip:</b> ${esc(P.avoid)}</p>` : '<p class="small muted">Pick the type of place.</p>'}
+    <ul class="small" style="padding-left:18px;margin:4px 0">${OUT_TIPS.map(t => `<li>${esc(t)}</li>`).join('')}</ul>
+    <p class="small muted">Rough numbers for typical portions. Chains print exact calories on the menu: those win. Something else? <button class="linkbtn" data-a="outOther">Photo or type it</button></p>
+  </div>`;
+}
+
 /* ---------- photo analysis: Claude through the Gym Bro server, only when you tap, never stored ---------- */
 // meals go to Claude Haiku (the check step below catches its mistakes), body photos to Claude Opus
 async function aiJpeg(blob) {
@@ -3348,7 +3425,7 @@ function render() {
   const sh = $('#sheet');
   if (UI.sheet) {
     const x = UI.sheet;
-    sh.innerHTML = x === 'mode' ? modeSheet() : x === 'goal' ? goalSheet() : x === 'day' ? daySheet() : x === 'addEx' ? addExSheet() : x.swap ? swapSheet() : x.food ? foodSheet() : x.act ? actSheet() : x.move ? moveSheet(x.move) : x.skipday ? skipDaySheet() : helpSheet(x.help);
+    sh.innerHTML = x === 'mode' ? modeSheet() : x === 'goal' ? goalSheet() : x === 'day' ? daySheet() : x === 'addEx' ? addExSheet() : x.swap ? swapSheet() : x.food ? foodSheet() : x.busy !== undefined ? busySheet(x.busy) : x.out ? outSheet() : x.act ? actSheet() : x.move ? moveSheet(x.move) : x.skipday ? skipDaySheet() : helpSheet(x.help);
     sh.hidden = false;
   } else { sh.hidden = true; sh.innerHTML = ''; }
   bcAttach();
@@ -3644,7 +3721,45 @@ const A = {
     const d = getDay(k); if (d && d.ate && d.ate.includes(m.key)) setAte(d, m, false);
     saveCore(); toast('Swapped to ' + R[next].n); render();
   },
-  rmFood(el) { const d = getDay(TODAY()); d.food.splice(+el.dataset.v, 1); touch(); render(); },
+  // no time for a meal: a grab-and-go option, skip it, or eat out
+  busyOpen(el) { UI.sheet = { busy: +el.dataset.v }; render(); },
+  busyPick(el) {
+    const k = TODAY(), i = UI.sheet.busy, m = dayMeals(k).find(x => x.i === i), wk = weekStart(k), wd = (parseKey(k).getDay() + 6) % 7;
+    const sw = S.core.food.swaps[wk] = S.core.food.swaps[wk] || {}; sw[wd + '-' + i] = el.dataset.v;
+    const d = getDay(k); if (d && m && d.ate && d.ate.includes(m.key)) setAte(d, m, false);
+    UI.sheet = null; saveCore(); syncPush(); render(); toast('Gym Bro: "' + R[el.dataset.v].n + '. Fast, but it counts."', 3000);
+  },
+  busyUndo(el) { const k = TODAY(), sw = S.core.food.swaps[weekStart(k)] || {}; delete sw[((parseKey(k).getDay() + 6) % 7) + '-' + el.dataset.v]; saveCore(); render(); },
+  busySkip() {
+    const i = UI.sheet.busy, d = todayDay(), m = dayMeals(TODAY()).find(x => x.i === i);
+    if (m && d.ate && d.ate.includes(m.key)) setAte(d, m, false);
+    d.slotOv = d.slotOv || {}; d.slotOv[i] = { t: 'skip' }; UI.sheet = null; touch(); syncPush(); render();
+    // portions stop at 1.6×, so a skipped meal can leave the day a bit short
+    const k = TODAY(), left = dayMeals(k).filter(x => !(d.ate || []).includes(x.key)).reduce((a, x) => a + x.k, 0), short = targets(dayMode(k), k).kcal - eaten(k).kcal - left;
+    toast(short > 150 ? `Skipped. Your other meals got bigger, and you'll be about ${fmt(round(short, 50))} kcal under today. Fine once in a while.` : 'Skipped. Your other meals got bigger to make up for it.', 4000);
+  },
+  outOpen(el) { const i = el && el.dataset && el.dataset.v !== undefined ? +el.dataset.v : nextMain(TODAY()); UI.sheet = { out: { i, place: '' } }; render(); },
+  outSlot(el) { UI.sheet.out.i = +el.dataset.v; render(); },
+  outPlace(el) { UI.sheet.out.place = el.dataset.v; render(); },
+  outOther() { UI.sheet = { food: { q: '', items: [], view: 'main' } }; render(); },
+  outHad(el) {
+    const O = UI.sheet.out, x = OUT[O.place].picks[+el.dataset.v], d = todayDay(), m = dayMeals(TODAY()).find(y => y.i === O.i), oid = 'out' + Date.now().toString(36);
+    d.food = d.food || []; d.food.push({ n: x[0] + ' (out)', k: x[1], p: x[2], fat: x[3], c: x[4], s: x[5], oid });
+    // it takes the place of that meal, so the rest of the day is portioned around it
+    if (m) { if (d.ate && d.ate.includes(m.key)) setAte(d, m, false); d.slotOv = d.slotOv || {}; d.slotOv[O.i] = { t: 'out', n: x[0], k: x[1], p: x[2], oid }; }
+    UI.sheet = null; touch(); syncPush(); render();
+    toast(x[1] > (m ? m.k : 700) * 1.25 ? 'Gym Bro: "Logged. Next meal is lighter, I sorted it."' : 'Gym Bro: "Good order. Logged."', 3200);
+  },
+  slotUndo(el) {
+    const d = todayDay(), o = (d.slotOv || {})[el.dataset.v]; if (!o) return;
+    if (o.oid) d.food = (d.food || []).filter(f => f.oid !== o.oid);
+    delete d.slotOv[el.dataset.v]; touch(); syncPush(); render();
+  },
+  rmFood(el) {
+    const d = getDay(TODAY()), f = d.food.splice(+el.dataset.v, 1)[0];
+    if (f && f.oid && d.slotOv) for (const i in d.slotOv) if (d.slotOv[i].oid === f.oid) delete d.slotOv[i];
+    touch(); syncPush(); render();
+  },
   prefToggle(el) { const ex = S.core.food.exclude, n = el.dataset.v, i = ex.indexOf(n); if (i >= 0) ex.splice(i, 1); else ex.push(n); saveCore(); render(); },
   prefReset() { S.core.food.exclude = []; saveCore(); render(); },
   shopRange(el) { UI.shopRange = +el.dataset.v; render(); },
@@ -3931,7 +4046,7 @@ const A = {
   bSave() { const v = num('b-weekly'); if (!(v > 0)) { toast('How much a week?'); return; } A.bSet(v, 'custom'); },
   bSet(v, tier) {
     const b = S.core.budget, c = priceCtx();
-    b.weekly = v; b.tier = tier; b.ref = { date: S.prices.updated, idx: basketIndex(c), ids: Object.keys(R) }; b.seen = S.prices.updated; b.alert = null;
+    b.weekly = v; b.tier = tier; b.ref = { date: S.prices.updated, idx: basketIndex(c), ids: basketIds() }; b.seen = S.prices.updated; b.alert = null;
     S.core.food.swaps = {}; saveCore(); toast('Budget ' + money(v) + ' a week. Menu updated.'); render();
   },
   bRaise() { A.bSet(Math.ceil(S.core.budget.alert.cost / 5) * 5, 'custom'); },

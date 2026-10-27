@@ -807,23 +807,48 @@ const BUDGET_SWAPS = {
   'Walnuts': 'Peanuts instead.', 'Almonds': 'Peanuts instead.', 'Feta': 'Own-brand salad cheese.',
   'Lean beef mince 5%': 'Turkey mince or 10% beef mince.', 'Kalamata olives': 'Own-brand black olives.',
 };
+// each supermarket against the average in prices.json (UK: Tesco, Sainsbury's and Aldi; EU: Germany and France; US: national).
+// UK from the Which? basket, Sept 2026; convenience stores from Which?'s Express/Local studies; EU and US rough.
+const STORES = {
+  UK: [['aldi', 'Aldi', 0.89], ['lidl', 'Lidl', 0.9], ['asda', 'Asda', 1.04], ['tescocc', 'Tesco with Clubcard', 1.05], ['tesco', 'Tesco without Clubcard', 1.09], ['sainsburys', "Sainsbury's", 1.06], ['morrisons', 'Morrisons', 1.08], ['ocado', 'Ocado', 1.17], ['express', "Tesco Express or Sainsbury's Local", 1.15], ['coop', 'Co-op', 1.18], ['waitrose', 'Waitrose', 1.25], ['ms', 'M&S', 1.25]],
+  EU: [['aldi', 'Aldi', 0.94], ['lidl', 'Lidl', 0.94], ['leclerc', 'E.Leclerc', 0.95], ['kaufland', 'Kaufland', 0.98], ['intermarche', 'Intermarché or Auchan', 1.0], ['carrefour', 'Carrefour', 1.03], ['rewe', 'Rewe or Edeka', 1.05], ['city', 'City or convenience store', 1.15], ['monoprix', 'Monoprix', 1.25]],
+  US: [['aldi', 'Aldi', 0.9], ['walmart', 'Walmart', 0.9], ['kroger', 'Kroger', 0.9], ['costco', 'Costco (bulk)', 0.88], ['traderjoes', "Trader Joe's", 0.95], ['target', 'Target', 1.0], ['albertsons', 'Albertsons or Safeway', 1.05], ['publix', 'Publix', 1.12], ['wholefoods', 'Whole Foods', 1.3]],
+  OT: [['avg', 'A typical supermarket', 1]],
+};
+// not on the list: the average plus 10%, so your real bill comes in under the app, not over
+const STORE_OTHER = ['other', 'Not listed: average + 10%', 1.1];
+const storeOf = b => (STORES[b.region] || []).concat([STORE_OTHER]).find(x => x[0] === b.store);
 function priceCtx() {
   const b = S.core.budget, P = S.prices;
   if (!P || !P.items || !b.region) return null;
   const like = b.region === 'OT' ? (b.like || 'US') : b.region, cur = b.region === 'OT' ? (b.cur || 'USD') : P.cur[b.region];
   const fx = b.region === 'OT' ? (P.fx[cur] || 1) / (P.fx[P.cur[like]] || 1) : 1;
-  return { i: RIDX[like], cur, fx, sym: CUR_SYM[cur] || cur + ' ' };
+  const st = storeOf(b);
+  return { i: RIDX[like], cur, fx, store: st ? st[2] : 1, sym: CUR_SYM[cur] || cur + ' ' };
 }
 const money = (n, c = priceCtx()) => !c ? '' : c.sym + (n < 20 ? n.toFixed(2) : Math.round(n).toLocaleString('en-GB'));
 function ingCost(name, q, u, c) {
   const p = ((S.prices.items || {})[name] || [])[c.i];
-  return p === undefined ? 0 : (u === 'g' || u === 'ml' ? q / 1000 : q) * p * c.fx;
+  return p === undefined ? 0 : (u === 'g' || u === 'ml' ? q / 1000 : q) * p * c.fx * (c.store || 1);
+}
+// your protein powder, from its label: recipes are written for 30 g scoops at 77% protein, this corrects them
+const WHEY0 = { p: 0.77, k: 3.85 };
+function applyWhey() {
+  const W = S.core.food.whey || { g: 30, p: 24, k: 120 }, dp = W.p / W.g - WHEY0.p, dk = W.k / W.g - WHEY0.k;
+  for (const r of Object.values(R)) {
+    if (!r.base) r.base = { k: r.k, p: r.p };
+    const g = r.ing.filter(i => /whey/i.test(i[0])).reduce((a, i) => a + i[1], 0);
+    r.k = Math.round(r.base.k + g * dk); r.p = Math.round(r.base.p + g * dp);
+  }
+  Object.assign(FOOD.proteinshake, { por: '1 scoop (' + W.g + ' g)', k: Math.round(W.k), p: Math.round(W.p) });
 }
 const recipeCost = (id, f = 1, c = priceCtx()) => !c ? 0 : R[id].ing.reduce((s, [n, q, u]) => s + ingCost(n, u === 'tsp' || u === 'tbsp' ? q : q * f, u, c), 0);
+// a week's food as you pay for it: whole packs, except cupboard staples that last for weeks
 function weekCostWith(pools, c = priceCtx()) {
-  const ws = weekStart(TODAY()); let tot = 0;
-  for (let i = 0; i < 7; i++) dayMealsWith(addDays(ws, i), pools).forEach(m => { tot += recipeCost(m.id, m.f, c); });
-  return tot;
+  if (!c) return 0;
+  const ws = weekStart(TODAY()), need = {};
+  for (let i = 0; i < 7; i++) dayMealsWith(addDays(ws, i), pools).forEach(m => R[m.id].ing.forEach(([n, q, u]) => { const key = n + '|' + u; need[key] = (need[key] || 0) + (u === 'tsp' || u === 'tbsp' ? q : scaleQty(q, u, m.f, n)); }));
+  return Object.entries(need).reduce((t, [key, q]) => { const [n, u] = key.split('|'), P = packOf(n); return t + ingCost(n, P[1] >= 60 ? q : choosePacks(q, P[0]).reduce((a, b) => a + b, 0), u, c); }, 0);
 }
 const basePools = () => ({ b: ranked('b'), l: ranked('l'), d: ranked('d'), s: ranked('s') });
 // Pricey recipes (salmon, prawns, steak, cod) are treats, not the base of the menu. A bigger budget
@@ -848,7 +873,7 @@ function tierCosts() { const c = priceCtx(); if (!c) return null; const o = {}; 
 let BP = null;
 function budgetPools() {
   const b = S.core.budget, c = priceCtx();
-  const key = JSON.stringify([TODAY(), S.core.goal, S.core.food.focus, S.core.food.exclude, S.core.food.fav, b.region, b.like, b.cur, b.weekly, b.tier, S.prices && S.prices.updated]);
+  const key = JSON.stringify([TODAY(), S.core.goal, S.core.food.focus, S.core.food.exclude, S.core.food.fav, b.store, S.core.food.whey, b.region, b.like, b.cur, b.weekly, b.tier, S.prices && S.prices.updated]);
   if (BP && BP.key === key) return BP.v;
   // Smart is the default. Treat only if you picked it; a big budget alone doesn't buy more steak.
   let v = tierPools('normal', c);
@@ -1090,8 +1115,8 @@ const DEFAULT_CORE = () => ({
   plans: [],
   gym: { swap: {}, avoid: [] },
   overrides: {}, timeOv: {},
-  food: { focus: 'normal', exclude: [], extras: [], swaps: {}, fav: [] },
-  budget: { region: '', like: 'US', cur: '', weekly: 0, tier: '', supp: 0, ref: null, seen: '', alert: null },
+  food: { focus: 'normal', exclude: [], extras: [], swaps: {}, fav: [], whey: { g: 30, p: 24, k: 120 } },
+  budget: { region: '', like: 'US', cur: '', weekly: 0, tier: '', supp: 0, ref: null, seen: '', alert: null, store: '' },
   myFoods: [], recentFoods: [],
   mode: { type: 'normal', since: TODAY(), sick: '', rampStart: null },
   measurements: [], photos: [], shop: {}, pantry: [], quietHandled: '', noTape: false,
@@ -1133,6 +1158,7 @@ async function loadStore() {
   for (const grp of ['settings', 'profile', 'goal', 'food', 'gym', 'plan', 'budget', 'health']) for (const k in def[grp]) if (S.core[grp][k] === undefined) S.core[grp][k] = def[grp][k];
   if (!S.core.sid) S.core.sid = (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2) + 'gymbro').toLowerCase();
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
+  applyWhey();
   await loadPhotoURLs();
 }
 function flush() {
@@ -1214,7 +1240,7 @@ async function loadPrices() {
   try { const r = await fetch('prices.json?t=' + Date.now(), { cache: 'no-store' }); if (r.ok) { const p = await r.json(); if (p && p.items) { S.prices = p; try { localStorage.setItem('gymbro-prices', JSON.stringify(p)); } catch (e) {} } } } catch (e) {}
 }
 // the app updates itself: when a newer version is online, reload into it (your data stays on the phone)
-const APP_VERSION = '25';
+const APP_VERSION = '26';
 async function checkUpdate() {
   try {
     const v = (await (await fetch('version.txt?t=' + Date.now(), { cache: 'no-store' })).text()).trim();
@@ -1334,7 +1360,7 @@ function scaleQty(q, u, f, name) {
 function ingHint(n, q) {
   if (n === 'Sourdough bread') { const s = Math.max(0.5, round(q / 40, 0.5)); return ` (${fracTxt(s)} slice${s > 1 ? 's' : ''})`; }
   if (n === 'Olive oil') return q % 15 === 0 ? ` (${q / 15} tbsp)` : ` (${fracTxt(Math.max(0.5, round(q / 5, 0.5)))} tsp)`;
-  if (n.endsWith('whey')) return ` (${fracTxt(Math.max(0.25, round(q / 30, 0.25)))} scoop)`;
+  if (n.endsWith('whey')) return ` (${fracTxt(Math.max(0.25, round(q / ((S.core.food.whey || {}).g || 30), 0.25)))} scoop)`;
   if (n === 'Honey' || n === 'Butter') return ` (${fracTxt(Math.max(0.5, round(q / 5, 0.5)))} tsp)`;
   return '';
 }
@@ -2226,7 +2252,7 @@ function viewFood() {
     <div class="gchips"><span>${esc(GOALS[S.core.goal.type].n)}</span><span>${esc(FOCUS[S.core.food.focus].n)}</span>${S.core.food.exclude.length ? `<span>${S.core.food.exclude.length} foods crossed out</span>` : ''}</div></div>`;
   if (UI.food === 'week') return segs + menuCard + foodWeek();
   if (UI.food === 'shop') return segs + foodShop();
-  if (UI.food === 'prefs') return segs + menuCard + foodPrefs();
+  if (UI.food === 'prefs') return segs + menuCard + foodPrefs() + wheyCard();
   if (UI.food === 'budget') return segs + foodBudget();
   const k = TODAY(), d = getDay(k) || {}, T = targets(S.core.mode.type, k), e = eaten(k), ate = d.ate || [], meals = dayMeals(k);
   const mini = (l, v, t, cls) => `<div class="mini"><span>${l}</span><b>${v}<small class="muted" style="font-size:13px"> / ${t} g</small></b><div class="bar ${cls}"><i style="width:${Math.min(100, v / t * 100)}%"></i></div></div>`;
@@ -2273,6 +2299,13 @@ function foodWeek() {
     <p class="small muted">Plus snacks every day. Lunches repeat in pairs (Mon–Tue, Wed–Thu, Fri–Sat), so you cook once for two days.</p></div>
   <div class="card"><h2>All recipes</h2><div class="tasks">${['b', 'l', 'd', 's'].flatMap(p => POOLS[p]).map(id => mealCard({ id, i: 0, key: 'all-' + id, slot: '', f: 1, ...R[id] }, false, false)).join('')}</div></div>`;
 }
+function wheyCard() {
+  const W = S.core.food.whey || { g: 30, p: 24, k: 120 };
+  return `<div class="card"><h2>Your protein powder</h2>
+    <p class="small muted">Copy these from the tub's label (per scoop or per serving). Every shake and recipe uses them, and "scoops" match your scoop.</p>
+    <div class="grid3"><label class="field"><span>1 scoop, g</span><input id="wh-g" inputmode="decimal" value="${W.g}"></label><label class="field"><span>Protein, g</span><input id="wh-p" inputmode="decimal" value="${W.p}"></label><label class="field"><span>kcal</span><input id="wh-k" inputmode="decimal" value="${W.k}"></label></div>
+    <button class="btn ghost small" data-a="wheySave">Save</button></div>`;
+}
 function foodPrefs() {
   const all = {}; Object.values(R).forEach(r => r.ing.forEach(i => { all[i[0]] = i[3]; }));
   const ex = S.core.food.exclude, left = ['b', 'l', 'd'].map(p => POOLS[p].filter(okRecipe).length);
@@ -2286,7 +2319,10 @@ function foodPrefs() {
 function foodBudget() {
   const b = S.core.budget, c = priceCtx(), P = S.prices;
   if (!P || !P.items) return `<div class="card"><h2>Food budget</h2><p class="small">Prices load when you're online. Try again in a minute.</p></div>`;
+  const stores = b.region ? (STORES[b.region] || []).concat([STORE_OTHER]) : [], st = storeOf(b);
   const region = `<div class="field"><span>Where do you shop?</span><div class="segs">${Object.entries(REGIONS).map(([v, l]) => `<button class="seg ${b.region === v ? 'on' : ''}" data-a="bRegion" data-v="${v}">${l}</button>`).join('')}</div></div>
+    ${stores.length ? `<div class="field"><span>Your supermarket</span><div class="pchips">${stores.map(([v, l, f]) => `<button class="pchip ${b.store === v ? 'on' : ''}" data-a="bStore" data-v="${v}">${esc(l)}</button>`).join('')}</div>
+      <p class="small muted">${st ? (st[0] === 'other' ? `Not on the list: Gym Bro uses the average plus 10%, so your real bill should come in under it.` : st[2] === 1 ? 'Average prices.' : `Prices for ${esc(st[1])}: about ${Math.abs(Math.round((st[2] - 1) * 100))}% ${st[2] >= 1 ? 'above' : 'below'} the ${b.region === 'OT' ? '' : esc(REGIONS[b.region]) + ' '}average.`) : 'Pick yours: prices differ by up to 40% between the cheapest and dearest shops.'} Costs count whole packs, like at the till.</p></div>` : ''}
     <label class="field"><span>Country</span><input id="b-country" type="text" value="${esc(b.country)}" placeholder="e.g. England"></label>
     ${b.region === 'OT' ? `<div class="grid2"><label class="field"><span>Currency</span><select id="b-cur">${Object.keys(P.fx).map(x => `<option ${b.cur === x ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
       <label class="field"><span>Prices most like</span><select id="b-like">${['UK', 'EU', 'US'].map(x => `<option ${b.like === x ? 'selected' : ''}>${x}</option>`).join('')}</select></label></div>
@@ -3758,6 +3794,11 @@ const A = {
     const d = getDay(k); if (d && d.ate && d.ate.includes(m.key)) setAte(d, m, false);
     saveCore(); toast('Swapped to ' + R[next].n); render();
   },
+  wheySave() {
+    const g = num('wh-g'), p = num('wh-p'), k = num('wh-k');
+    if (!(g >= 10 && g <= 80) || !(p > 0 && p < g) || !(k >= p * 3 && k <= g * 6)) { toast('Check the numbers: scoop 10–80 g, protein less than the scoop, kcal from the label.'); return; }
+    S.core.food.whey = { g, p, k }; applyWhey(); BP = null; saveCore(); render(); toast(`Saved: ${p} g protein in a ${g} g scoop.`);
+  },
   favToggle(el) {
     const F = S.core.food, id = el.dataset.v; F.fav = F.fav || [];
     const on = !F.fav.includes(id); F.fav = on ? F.fav.concat(id) : F.fav.filter(x => x !== id);
@@ -4081,7 +4122,13 @@ const A = {
     toast(tot > 600 ? 'Gym Bro: "' + fmt(tot) + ' kcal? I saw that."' : '+' + fmt(tot) + ' kcal added', 3000);
   },
   // budget
-  bRegion(el) { const b = S.core.budget, v = el.dataset.v; b.country = val('b-country') || b.country; if (b.region !== v) { b.region = v; b.weekly = 0; b.tier = ''; b.ref = null; b.alert = null; b.supp = 0; } saveCore(); render(); },
+  bRegion(el) { const b = S.core.budget, v = el.dataset.v; b.country = val('b-country') || b.country; if (b.region !== v) { b.region = v; b.weekly = 0; b.tier = ''; b.ref = null; b.alert = null; b.supp = 0; b.store = ''; } saveCore(); render(); },
+  bStore(el) {
+    const b = S.core.budget; b.store = el.dataset.v; BP = null;
+    // compare future price checks against this shop, not the old one
+    const c = priceCtx(); if (c && b.ref) { b.ref.idx = basketIndex(c, b.ref.ids || BASKET_V1); b.alert = null; }
+    saveCore(); render(); const st = storeOf(b); toast(st ? 'Prices now for ' + st[1] + '.' : 'Saved.');
+  },
   bCountry() { S.core.budget.country = val('b-country'); saveCore(); toast('Saved.'); },
   bOther() { const b = S.core.budget; b.country = val('b-country'); b.cur = val('b-cur') || 'USD'; b.like = val('b-like') || 'US'; b.weekly = 0; b.tier = ''; b.ref = null; saveCore(); render(); },
   bTier(el) { const tc = tierCosts(); A.bSet(Math.ceil(tc[el.dataset.v] / 5) * 5, el.dataset.v); },

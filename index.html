@@ -432,7 +432,17 @@ const ALTS = {
   hacksq: ['lpress', 'gobletsq'], seatcurl: ['lcurl', 'pullthrough', 'glutebridge'], latpd: ['assistpull', 'pull'], dbrow: ['csrow', 'crow'], hipthrust: ['glutebridge'], pullthrough: ['glutebridge', 'rdl'],
   wcurl: ['wext', 'pron'], wext: ['wcurl', 'pron'], revcurl: ['hammer', 'pron', 'wext'], pron: ['revcurl', 'wext'],
 };
-const AREAS = { knee: 'knee', back: 'lower back', shoulder: 'shoulder' };
+const AREAS = { knee: 'knee', back: 'lower back', shoulder: 'shoulder', neck: 'neck', elbow: 'elbow', wrist: 'wrist', hip: 'hip', ankle: 'ankle' };
+// the newer areas: what loads the neck (bar on the upper back, pressing overhead, crunching), elbows and wrists (curls,
+// extensions, dips, push-ups, forearm work), hips (squats, hinges, lunges, thrusts) and ankles (squats, lunges, calf raises)
+const STRESS2 = {
+  neck: ['squat', 'ohp', 'crunch'],
+  elbow: ['curl', 'hammer', 'revcurl', 'push', 'ohext', 'dip', 'cgbench', 'wcurl', 'wext', 'pron'],
+  wrist: ['curl', 'revcurl', 'wcurl', 'wext', 'pron', 'pushup', 'dip', 'cgbench'],
+  hip: ['squat', 'dl', 'tbdl', 'rdl', 'bss', 'lunge', 'revlunge', 'stepup', 'gobletsq', 'hacksq', 'lpress', 'hipthrust', 'pullthrough', 'glutebridge', 'hlr'],
+  ankle: ['squat', 'bss', 'lunge', 'revlunge', 'stepup', 'gobletsq', 'hacksq', 'calf', 'scalf', 'lpcalf'],
+};
+for (const [a, ids] of Object.entries(STRESS2)) ids.forEach(id => { if (EX[id] && !EX[id].stress.includes(a)) EX[id].stress.push(a); });
 const SESS = {
   UA: { n: 'Upper 1', sub: 'Chest & back, heavy', ex: ['bench', 'wpull', 'idb', 'csrow', 'lat', 'ohext', 'curl'], info: 'Upper body, heavy. Chest and back first, then shoulders and arms.' },
   LA: { n: 'Legs 1', sub: 'Squat day', ex: ['squat', 'rdl', 'bss', 'seatcurl', 'calf', 'hlr'], info: 'Legs built around the squat. Thighs, glutes, hamstrings, calves and abs.' },
@@ -1367,7 +1377,7 @@ async function loadPrices() {
   try { const r = await fetch('prices.json?t=' + Date.now(), { cache: 'no-store' }); if (r.ok) { const p = await r.json(); if (p && p.items) { S.prices = p; try { localStorage.setItem('gymbro-prices', JSON.stringify(p)); } catch (e) {} } } } catch (e) {}
 }
 // the app updates itself: when a newer version is online, reload into it (your data stays on the phone)
-const APP_VERSION = '39';
+const APP_VERSION = '40';
 async function checkUpdate() {
   try {
     const v = (await (await fetch('version.txt?t=' + Date.now(), { cache: 'no-store' })).text()).trim();
@@ -2618,7 +2628,8 @@ function viewGym() {
   const unit = repUnit(E) === 's' ? 'seconds' : 'reps', prev = lastLog(id, TODAY()), sg = suggestion(id);
   const hint = sg.down && w === sg.w ? `Last time your first set was ${prev.r[0]}, below ${repsOf(E)[0]}, so ${+(prev.w - sg.w).toFixed(2)} kg lighter today.` : prev && Array.isArray(prev.r) && prev.w === w ? `Last time${bw ? '' : ' at ' + w + ' kg'}: ${prev.r.join(', ')}. Beat it.` : '';
   let main;
-  if (G.reps) main = `<p class="gym-big">How many ${unit} on each set?</p>
+  if (G.hurt) main = gymHurtHTML(G, x);
+  else if (G.reps) main = `<p class="gym-big">How many ${unit} on each set?</p>
       ${G.reps.map((r, i) => `<div class="gym-rep"><b>Set ${i + 1}</b><button class="btn ghost" data-a="gymRep" data-v="${i}|-1" aria-label="One less">−</button><input id="gr-${i}" inputmode="numeric" value="${r}" aria-label="Set ${i + 1}"><button class="btn ghost" data-a="gymRep" data-v="${i}|1" aria-label="One more">+</button></div>`).join('')}
       <button class="btn blue block" data-a="gymRepsSave">Save</button>
       <button class="btn ghost block" data-a="gymRepsBack">Back</button>
@@ -2646,8 +2657,35 @@ function viewGym() {
     ${main}
     <details ${G.how || !lastLog(id, TODAY()) ? 'open' : ''}><summary>How to do it</summary><div class="how">${exHowHTML(id)}</div></details>
     ${G.swap ? `<div class="field"><span>Machine taken? Do one of these instead:</span><div class="pchips">${alts.map(a => `<button class="pchip" data-a="gymSwap" data-v="${a}">${esc(EX[a].n)}</button>`).join('') || '<span class="small muted">No swap left. Ask "how many sets left?", or skip it.</span>'}</div></div>` : ''}
-    <div class="meal-act">${G.i > 0 ? '<button class="linkbtn" data-a="gymPrev">Back</button>' : ''}<button class="linkbtn" data-a="gymSwapOpen">${G.swap ? 'Keep this one' : 'Machine taken?'}</button><button class="linkbtn" data-a="gymSkip">Skip it</button></div>
+    <div class="meal-act">${G.i > 0 ? '<button class="linkbtn" data-a="gymPrev">Back</button>' : ''}<button class="linkbtn" data-a="gymSwapOpen">${G.swap ? 'Keep this one' : 'Machine taken?'}</button><button class="linkbtn" data-a="gymSkip">Skip it</button><button class="linkbtn" data-a="gymHurt" style="color:var(--red)">Something hurts?</button></div>
   </div>`;
+}
+
+// "Something hurts?" in gym mode: where, how bad, then the safe next step. Chest pain or feeling faint: stop and get help.
+const HURT = { mild: ['A dull ache', 'I can still move normally', 2], mod: ['It hurts on this exercise', 'Sore when I do the movement', 5], bad: ['Sharp or sudden', 'Or swelling, numbness, tingling, 7+ out of 10', 8] };
+const cap = t => t[0].toUpperCase() + t.slice(1);
+function gymHurtHTML(G, x) {
+  const h = G.hurt, id = x.id, E = EX[id], area = AREAS[h.area] || '';
+  if (!h.area) return `<p class="gym-big">Where does it hurt?</p>
+    <div class="pchips">${Object.entries(AREAS).map(([v, l]) => `<button class="pchip" data-a="ghArea" data-v="${v}">${esc(cap(l))}</button>`).join('')}<button class="pchip" data-a="ghArea" data-v="other">Somewhere else</button></div>
+    <button class="btn ghost block" data-a="ghArea" data-v="chest" style="margin-top:12px;color:var(--red);border:2px solid var(--red)">Chest pain, or I feel faint or dizzy</button>
+    <button class="btn ghost block" data-a="ghCancel">False alarm, carry on</button>`;
+  if (h.area === 'chest') return `<div class="banner warn"><h3>Stop now and sit down</h3><p class="small">Chest pain or tightness, pain spreading to your arm, jaw or back, or feeling faint that doesn't pass in a few minutes: call 999 now, or ask the gym staff to. Don't drive yourself.</p></div>
+    <button class="btn block" data-a="gymExit">Stop the session</button>`;
+  if (!h.lvl) return `<p class="gym-big">${esc(cap(area || 'it'))}: how bad?</p>
+    ${Object.entries(HURT).map(([v, [t, d]]) => `<button class="opt" data-a="ghLvl" data-v="${v}"><b>${esc(t)}</b><span>${esc(d)}</span></button>`).join('')}
+    <button class="btn ghost block" data-a="ghCancel">Back</button>`;
+  if (h.lvl === 'bad') return `<div class="banner warn"><h3>Stop this exercise</h3><p class="small">Don't train through sharp pain. ${area ? `Gym Bro now protects your ${esc(area)} in every session: exercises that load it are swapped or left out.` : ''} Rest it. If it swells, gets worse, or isn't better in a few days, see a GP or physio. Severe pain or you can't put weight on it: NHS 111 or A&E.</p></div>
+    <button class="btn blue block" data-a="ghDone">OK, next exercise</button>`;
+  const alts = [x.orig].concat(ALTS[x.orig] || []).filter(a => EX[a] && a !== id && (!h.area || h.area === 'other' || safeFor(a, [h.area])) && safeFor(a, avoidList()) && !gymQueue(G).some(y => y.id === a));
+  const loads = h.area && h.area !== 'other' && (E.stress || []).includes(h.area);
+  return `<p class="gym-big">${h.lvl === 'mild' ? 'A dull ache' : 'It hurts on this one'}</p>
+    <p class="small">${h.lvl === 'mild' ? 'Go lighter and slower. If it gets worse during a set, stop.' : `Don't push through it. ${loads ? esc(E.n) + ' loads your ' + esc(area) + '.' : ''} Do one of these instead:`}</p>
+    ${h.lvl === 'mild' && (E.inc || gymW(id)) ? `<button class="btn blue block" data-a="ghLighter">Carry on 20% lighter</button>` : ''}
+    ${alts.map(a => `<button class="opt" data-a="ghSwap" data-v="${a}"><b>${esc(EX[a].n)}</b><span>${EX[a].sets} × ${repsOf(EX[a]).join('–')}${h.area && h.area !== 'other' ? ' · easy on the ' + esc(area) : ''}</span></button>`).join('') || (h.lvl === 'mod' ? `<p class="small muted">No ${esc(area || 'safe')}-friendly swap for this one.</p>` : '')}
+    <button class="btn ghost block" data-a="ghSkip">Skip it</button>
+    ${area && !avoidList().includes(h.area) ? `<button class="btn ghost block" data-a="ghProtect">Protect my ${esc(area)} in every session</button>` : ''}
+    <p class="small muted">Sharp pain, swelling, or pain that lasts over a week: see a GP or physio.</p>`;
 }
 
 /* ---------- Food ---------- */
@@ -3371,7 +3409,7 @@ function swapSheet() {
   }
   if (!sw.reason) return `<div class="in" role="dialog" aria-label="Swap exercise">${close}
     <h2>Why swap ${esc(EX[cur].n.toLowerCase())}?</h2>
-    ${[['busy', 'Machine busy or no equipment', 'Pick something that works the same muscles'], ['nope', 'I don\'t want to do it', 'Fine. Pick another one. It still has to be done.'], ['pain', 'It hurts', 'Knee, lower back or shoulder. Gym Bro picks safe options.']].map(([v, t, d]) => `<button class="opt" data-a="swReason" data-v="${v}"><b>${t}</b><span>${d}</span></button>`).join('')}
+    ${[['busy', 'Machine busy or no equipment', 'Pick something that works the same muscles'], ['nope', 'I don\'t want to do it', 'Fine. Pick another one. It still has to be done.'], ['pain', 'It hurts', 'Tell Gym Bro where, and he picks exercises that spare it.']].map(([v, t, d]) => `<button class="opt" data-a="swReason" data-v="${v}"><b>${t}</b><span>${d}</span></button>`).join('')}
     <button class="btn ghost block" data-a="swSkip1" style="margin-top:6px">Skip it (last resort)</button></div>`;
   if (sw.reason === 'pain' && !sw.area) return `<div class="in" role="dialog" aria-label="Where does it hurt">${close}
     <h2>Where does it hurt?</h2>
@@ -4127,6 +4165,30 @@ const A = {
     G.swap = false; gymSave(); render();
   },
   gymSkipRest() { UI.gym.restEnd = 0; gymBeepStop(); gymSave(); render(); },
+  gymHurt() { const G = UI.gym; G.hurt = {}; G.restEnd = 0; gymBeepStop(); gymSave(); render(); window.scrollTo(0, 0); },
+  ghCancel() { const G = UI.gym; G.hurt = G.hurt && G.hurt.lvl ? { area: G.hurt.area } : null; if (G.hurt && !G.hurt.area) G.hurt = null; gymSave(); render(); },
+  ghArea(el) { const G = UI.gym; G.hurt = { area: el.dataset.v }; gymSave(); render(); },
+  ghLvl(el) {
+    const G = UI.gym, h = G.hurt, x = gymQueue(G)[G.i]; h.lvl = el.dataset.v;
+    // every report goes in the pain log (Me), so you or a physio can see a pattern
+    const k = TODAY(); S.core.skipLog = (S.core.skipLog || []).concat({ d: k, orig: x.orig, ex: EX[x.id].n, reason: 'pain', area: AREAS[h.area] ? h.area : '', pain: HURT[h.lvl][2], note: 'Gym mode: ' + HURT[h.lvl][0].toLowerCase() }).slice(-200);
+    saveCore(); gymSave(); render();
+  },
+  ghLighter() { const G = UI.gym, x = gymQueue(G)[G.i], E = EX[x.id], dr = UI.draft[x.id] = UI.draft[x.id] || {}; dr.w = Math.max(0, round(gymW(x.id) * 0.8, E.inc >= 2.5 ? 2.5 : 1)); G.hurt = null; gymSave(); render(); toast(dr.w + ' kg. Slow and controlled.'); },
+  ghSwap(el) {
+    const G = UI.gym, x = gymQueue(G)[G.i], d = getDay(TODAY(), true); d.exSwap = d.exSwap || {};
+    if (el.dataset.v === x.orig) delete d.exSwap[x.orig]; else d.exSwap[x.orig] = el.dataset.v;
+    delete UI.draft[x.id]; G.hurt = null; G.set = 1; G.ask = false; G.reps = null; touch(); gymSave(); render();
+    tankSay('soft', 'Pain is a stop sign. ' + EX[el.dataset.v].n + ' instead. Still counts.');
+  },
+  ghSkip() {
+    const G = UI.gym, x = gymQueue(G)[G.i], h = G.hurt || {}, d = getDay(TODAY(), true); d.exSkip = d.exSkip || {};
+    d.exSkip[x.orig] = { ex: x.id, reason: 'pain', area: AREAS[h.area] ? h.area : '', pain: HURT[h.lvl] ? HURT[h.lvl][2] : 0, note: 'Gym mode: ' + (HURT[h.lvl] ? HURT[h.lvl][0].toLowerCase() : 'it hurt') };
+    delete UI.draft[x.id]; G.hurt = null; G.set = 1; G.ask = false; G.reps = null; touch(); gymSave(); render(); window.scrollTo(0, 0);
+  },
+  // sharp pain: skip this one first, then protect the area from here on (later exercises swap or drop out)
+  ghDone() { const a = (UI.gym.hurt || {}).area; A.ghSkip(); if (AREAS[a] && !S.core.gym.avoid.includes(a)) S.core.gym.avoid.push(a); saveCore(); render(); tankSay('soft', 'Good call. Look after that ' + (AREAS[a] || 'body') + '. Do the rest if it doesn\'t hurt.'); },
+  ghProtect() { const G = UI.gym, a = G.hurt.area; if (AREAS[a] && !S.core.gym.avoid.includes(a)) S.core.gym.avoid.push(a); G.hurt = null; G.set = 1; G.ask = false; G.reps = null; saveCore(); gymSave(); render(); toast('Every session is ' + AREAS[a] + '-friendly now.'); },
   gymMiss() { const G = UI.gym, id = gymQueue(G)[G.i].id, dr = UI.draft[id] || {}; G.reps = (dr.r && dr.r.length ? dr.r : Array(gymSets(G, id)).fill(repsOf(EX[id])[1])).slice(); gymSave(); render(); },
   gymRep(el) { const G = UI.gym, [i, d] = el.dataset.v.split('|').map(Number); gymRepsRead(); G.reps[i] = Math.max(0, (+G.reps[i] || 0) + d); gymSave(); render(); },
   gymRepsBack() { UI.gym.reps = null; gymSave(); render(); },

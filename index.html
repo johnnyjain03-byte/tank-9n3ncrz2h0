@@ -42,6 +42,11 @@ button{cursor:pointer;-webkit-tap-highlight-color:transparent}
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);display:flex;align-items:center;gap:10px;padding-block:14px 10px}
 .brand{font:800 22px/1.1 var(--body);flex:1;min-width:0}
 .brand small{display:block;font:600 14px/1.3 var(--body);color:var(--muted);margin-top:2px}
+.askbtn{padding:8px 10px;color:var(--blue)}
+.chat{display:flex;flex-direction:column;gap:8px;max-height:55vh;overflow-y:auto;padding:4px 0}
+.bub{padding:10px 13px;border-radius:18px;max-width:88%;font-size:16px;line-height:1.45;overflow-wrap:anywhere} .bub p{margin:0 0 6px} .bub p:last-child{margin:0} .bub ul{margin:4px 0 6px;padding-left:18px}
+.bub.u{align-self:flex-end;background:var(--blue);color:#fff;border-bottom-right-radius:6px} .bub.a{align-self:flex-start;background:var(--surface);border:1px solid var(--line);border-bottom-left-radius:6px} .bub.e{align-self:center;background:transparent;color:var(--muted);font-size:14px}
+#chat-in{width:100%;min-height:48px;max-height:120px;resize:none;background:var(--soft);border:2px solid transparent;border-radius:14px;padding:12px;font:inherit;font-size:17px;color:var(--ink)} #chat-in:focus{border-color:var(--blue);outline:none}
 .chip{border:2px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 14px;font-weight:800;font-size:15px;display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
 .chip .dot{width:10px;height:10px;border-radius:50%;background:var(--green)}
 .chip.travel .dot{background:var(--blue)} .chip.sick .dot{background:var(--red)} .chip.break .dot{background:var(--sun)}
@@ -289,6 +294,7 @@ details[open] summary{margin-bottom:12px}
 <div id="app">
   <header class="top">
     <div class="brand">Gym Bro<small id="sub">Loading…</small></div>
+    <button class="chip askbtn" data-a="chatOpen" aria-label="Ask Gym Bro"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.6A8 8 0 1 1 21 12z"/></svg></button>
     <button class="chip" id="modeChip" data-a="mode" aria-label="Change mode"><span class="dot"></span><span id="modeLabel">Normal</span></button>
   </header>
   <main id="view"><div class="loading">Gym Bro is waking up…</div></main>
@@ -1377,7 +1383,7 @@ async function loadPrices() {
   try { const r = await fetch('prices.json?t=' + Date.now(), { cache: 'no-store' }); if (r.ok) { const p = await r.json(); if (p && p.items) { S.prices = p; try { localStorage.setItem('gymbro-prices', JSON.stringify(p)); } catch (e) {} } } } catch (e) {}
 }
 // the app updates itself: when a newer version is online, reload into it (your data stays on the phone)
-const APP_VERSION = '43';
+const APP_VERSION = '44';
 async function checkUpdate() {
   try {
     const v = (await (await fetch('version.txt?t=' + Date.now(), { cache: 'no-store' })).text()).trim();
@@ -2714,6 +2720,50 @@ function gymHurtHTML(G, x) {
     <button class="btn ghost block" data-a="ghSkip">Skip it</button>
     ${area && !avoidList().includes(h.area) ? `<button class="btn ghost block" data-a="ghProtect">Protect my ${esc(area)} in every session</button>` : ''}
     <p class="small muted">Sharp pain, swelling, or pain that lasts over a week: see a GP or physio.</p>`;
+}
+
+/* ---------- Ask Gym Bro: a chat about food, training and health ---------- */
+// Questions go through the Gym Bro server to Claude (Sonnet) with a short summary of your plan; the chat itself stays on
+// this phone. Health answers only go along if you switch that on.
+const CHAT_KEY = 'gymbro-chat';
+const chatLoad = () => { if (!S.chat) { try { S.chat = JSON.parse(localStorage.getItem(CHAT_KEY) || '[]'); } catch (e) { S.chat = []; } } return S.chat; };
+const chatSave = () => { if (S.chat.length > 40) S.chat.splice(0, S.chat.length - 40); try { localStorage.setItem(CHAT_KEY, JSON.stringify(S.chat)); } catch (e) {} };
+const CHAT_STARTERS = ['What should I eat before training?', 'I slept badly. Train or rest?', 'Is creatine safe to take every day?', 'My bench press is stuck. What now?', 'What can I eat at a café that fits my plan?'];
+function medSummary() {
+  const c = medC(); return Object.keys(c).filter(k => MED[k]).map(k => k === 'injury' ? 'injury: ' + Object.entries(c.injury.areas || {}).map(([a, x]) => MED_AREAS[a].toLowerCase() + (x.when === 'old' ? ' (old' : ' (recent') + (x.hurt === 'yes' ? ', hurts now)' : x.hurt === 'some' ? ', sometimes hurts)' : ')')).join(', ') : k === 'other' ? c.other.txt : k === 'diabetes' ? 'type ' + (c.diabetes.t || '?') + ' diabetes' + (c.diabetes.hypo === 'yes' ? ' on insulin or hypo tablets' : '') : MED[k].n.toLowerCase()).join('; ');
+}
+function chatCtx() {
+  const p = S.core.profile, T = targets('normal'), k = TODAY(), plan = planFor(k), e = eaten(k);
+  return { sex: p.sex, age: ageNow(), height: p.height, weight: currentWeight(), goal: GOALS[S.core.goal.type].n, kcal: targets(dayMode(k), k).kcal, protein: T.protein, days: S.core.goal.days,
+    today: medWait() ? 'walking only, waiting for a doctor\'s OK' : SESS[plan] ? 'gym, ' + SESS[plan].n + ' (' + SESS[plan].sub + ')' : CARDIO[plan] ? CARDIO[plan].n.toLowerCase() : 'rest day', eaten: Math.round(e.kcal), eatenP: Math.round(e.p), mode: S.core.mode.type,
+    health: S.core.chatHealth ? medSummary() : '' };
+}
+// the answers use a little markdown: bold, bullet points, paragraphs
+function chatHTML(t) {
+  const out = []; let list = null;
+  for (const raw of String(t).split('\n')) {
+    const line = esc(raw.trim()).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>'), li = line.match(/^(?:[-•*]|\d+\.)\s+(.*)$/);
+    if (li) { (list = list || []).push('<li>' + li[1] + '</li>'); continue; }
+    if (list) { out.push('<ul>' + list.join('') + '</ul>'); list = null; }
+    if (line) out.push('<p>' + line + '</p>');
+  }
+  if (list) out.push('<ul>' + list.join('') + '</ul>');
+  return out.join('');
+}
+function chatSheet() {
+  const log = chatLoad(), hasMed = Object.keys(medC()).length > 0;
+  return `<div class="in" role="dialog" aria-label="Ask Gym Bro"><div class="spread"><span class="lbl">Ask Gym Bro</span><span>${log.length ? '<button class="btn small ghost" data-a="chatClear">Clear</button> ' : ''}<button class="btn small ghost" data-a="closeSheet">Close</button></span></div>
+    <div class="chat" id="chat-log">
+      ${log.length ? '' : `<div class="bub a"><p>Ask me anything about food, training, recovery, sleep or health. Short questions, straight answers.</p></div>`}
+      ${log.map(m => `<div class="bub ${m.r === 'u' ? 'u' : m.r === 'e' ? 'e' : 'a'}">${m.r === 'u' ? '<p>' + esc(m.t).replace(/\n/g, '<br>') + '</p>' : m.r === 'e' ? esc(m.t) : chatHTML(m.t)}</div>`).join('')}
+      ${UI.chatBusy ? '<div class="bub a"><p class="muted">Gym Bro is typing…</p></div>' : ''}
+    </div>
+    ${log.length ? '' : `<div class="pchips">${CHAT_STARTERS.map(q => `<button class="pchip" data-a="chatAsk" data-v="${esc(q)}">${esc(q)}</button>`).join('')}</div>`}
+    <textarea id="chat-in" rows="1" placeholder="Ask about food, training, health…" maxlength="1500">${esc(UI.chatDraft || '')}</textarea>
+    <button class="btn blue block" data-a="chatSend" ${UI.chatBusy ? 'disabled' : ''}>Send</button>
+    ${hasMed ? `<label class="small" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="chat-health" ${S.core.chatHealth ? 'checked' : ''}> Use my health answers for better advice</label>` : ''}
+    <p class="small muted">Answers come from Claude (Anthropic) through the Gym Bro server, with a short summary of your plan. Not medical advice: for anything worrying, see your GP or call 111. Emergency: 999.</p>
+  </div>`;
 }
 
 /* ---------- Food ---------- */
@@ -4110,7 +4160,7 @@ function render() {
   $('#modeChip').className = 'chip ' + m;
   $('#modeLabel').textContent = { normal: 'Normal', travel: 'Away', sick: 'Ill', break: 'Diet break' }[m] || 'Normal';
   const wk = Math.floor(diffDays(TODAY(), S.core.settings.start) / 7) + 1;
-  $('#sub').textContent = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }) + (wk > 0 ? ' · week ' + wk : '');
+  $('#sub').textContent = new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) + (wk > 0 ? ' · week ' + wk : '');
   const views = { gym: viewGym, today: viewToday, train: viewTrain, food: viewFood, me: viewMe, checkin: viewCheckin, report: viewReport, review: viewReview };
   const v = $('#view');
   v.className = 'tab-' + UI.tab;
@@ -4120,9 +4170,10 @@ function render() {
   const sh = $('#sheet');
   if (UI.sheet) {
     const x = UI.sheet;
-    sh.innerHTML = x.med ? medSheet() : x === 'mode' ? modeSheet() : x === 'goal' ? goalSheet() : x === 'day' ? daySheet() : x === 'addEx' ? addExSheet() : x.fin ? finSheet() : x.swap ? swapSheet() : x.food ? foodSheet() : x.busy !== undefined ? busySheet(x.busy) : x.repl !== undefined ? replSheet(x.repl) : x.out ? outSheet() : x.act ? actSheet() : x.move ? moveSheet(x.move) : x.skipday ? skipDaySheet() : helpSheet(x.help);
+    sh.innerHTML = x.chat ? chatSheet() : x.med ? medSheet() : x === 'mode' ? modeSheet() : x === 'goal' ? goalSheet() : x === 'day' ? daySheet() : x === 'addEx' ? addExSheet() : x.fin ? finSheet() : x.swap ? swapSheet() : x.food ? foodSheet() : x.busy !== undefined ? busySheet(x.busy) : x.repl !== undefined ? replSheet(x.repl) : x.out ? outSheet() : x.act ? actSheet() : x.move ? moveSheet(x.move) : x.skipday ? skipDaySheet() : helpSheet(x.help);
     sh.hidden = false;
   } else { sh.hidden = true; sh.innerHTML = ''; }
+  const cl = $('#chat-log'); if (cl) cl.scrollTop = cl.scrollHeight;
   bcAttach();
 }
 function ensureTodayMode() {
@@ -4528,6 +4579,22 @@ const A = {
   // a meal you already ticked keeps its new numbers
   meRefresh(d, key) { if ((d.ate || []).includes(key)) { const m = dayMeals(TODAY()).find(x => x.key === key); if (m) setAte(d, m, true); } },
   // no time for a meal: a grab-and-go option, skip it, or eat out
+  chatOpen() { chatLoad(); UI.sheet = { chat: 1 }; render(); },
+  chatClear() { S.chat = []; chatSave(); render(); },
+  chatAsk(el) { UI.chatDraft = el.dataset.v; A.chatSend(); },
+  async chatSend() {
+    const box = $('#chat-in'), t = ((box && box.value) || UI.chatDraft || '').trim(); if (!t || UI.chatBusy) return;
+    const log = chatLoad(); log.push({ r: 'u', t, at: Date.now() }); UI.chatDraft = ''; UI.chatBusy = true; chatSave(); render();
+    let res;
+    try {
+      const r = await fetch(PUSH_URL + '/ai/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: S.core.sid, imgs: [], msgs: log.filter(m => m.r !== 'e').slice(-12).map(m => ({ r: m.r, t: m.t })), ctx: chatCtx() }) });
+      res = await r.json();
+    } catch (e) { res = { error: 'offline' }; }
+    UI.chatBusy = false;
+    if (res && res.ok && res.data && res.data.text) log.push({ r: 'a', t: res.data.text, at: Date.now() });
+    else log.push({ r: 'e', t: { limit: 'That\'s 40 questions today. Ask me again tomorrow.', offline: 'No connection. Try again when you\'re online.', not_set_up: 'Chat isn\'t switched on yet.', busy: 'Too busy right now. Try again in a bit.' }[res && res.error] || 'Couldn\'t answer that right now. Try again.', at: Date.now() });
+    chatSave(); if (UI.sheet && UI.sheet.chat) render();
+  },
   homeGone(el) { homeSet(el.dataset.v, 0); if (UI.home) UI.home.res = null; render(); },
   homeAdd(el) {
     const n = el.dataset.v, u = ingUnit(n), key = n + '|' + u, have = homeStock().find(x => x.key === key);
@@ -4923,6 +4990,7 @@ async function compress(file) {
 }
 document.addEventListener('change', async e => {
   if (e.target.id === 'import-in' && e.target.files.length) { importBackup(e.target.files[0]); return; }
+  if (e.target.id === 'chat-health') { S.core.chatHealth = e.target.checked; saveCore(); return; }
   if (e.target.dataset && e.target.dataset.home) { const q = parseFloat(String(e.target.value).replace(',', '.')); if (isFinite(q) && q >= 0) { homeSet(e.target.dataset.home, q); if (UI.home) UI.home.res = null; render(); } return; }
   if (e.target.id === 'meal-in' && e.target.files.length && UI.sheet && UI.sheet.food) {
     const F = UI.sheet.food, f = e.target.files[0]; F.q = val('fa-q') || F.q;
@@ -4969,6 +5037,7 @@ document.addEventListener('input', e => {
     const tot = R2.items.filter(y => y.on).reduce((a, y) => { const w = aiScaled(y); a.k += w.k; a.p += w.p; return a; }, { k: 0, p: 0 }), t = $('#ai-tot'); if (t) t.innerHTML = `<b>${fmt(tot.k)}</b> kcal · P ${Math.round(tot.p)}`;
     return;
   }
+  if (el.id === 'chat-in') { UI.chatDraft = el.value; return; }
   if (el.id === 'home-q' && UI.home) { UI.home.q = el.value; const box = $('#home-sug'); if (box) box.innerHTML = homeSugHTML(el.value.length >= 2 ? ingNames().filter(n => n.toLowerCase().includes(el.value.toLowerCase())).slice(0, 8) : []); return; }
   if (el.id === 'ac-min' && UI.sheet && UI.sheet.act) { const v = num('ac-min'); if (v > 0) { UI.sheet.act.min = v; const b = $('#ac-burn'); if (b) b.innerHTML = burnTxt(UI.sheet.act); } return; }
   if (!el.dataset.ex) return;
@@ -4979,6 +5048,7 @@ document.addEventListener('input', e => {
 
 document.addEventListener('keydown', e => {
   if (e.key !== 'Enter') return;
+  if (e.target.id === 'chat-in' && !e.shiftKey && !/iPhone|iPad|Android/.test(navigator.userAgent)) { e.preventDefault(); A.chatSend(); return; }
   if (e.target.id === 'wx-q') { e.preventDefault(); A.wxFind(); }
   if (e.target.id === 'fa-q') { e.preventDefault(); A.faParse(); }
   if (e.target.id === 'fo-q') { e.preventDefault(); A.foSearch(); }

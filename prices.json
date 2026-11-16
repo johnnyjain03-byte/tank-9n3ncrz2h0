@@ -1,12 +1,12 @@
 {
-  "updated": "2026-10-27",
+  "updated": "2026-11-16",
   "note": "Typical supermarket prices, own-brand or mid-range. UK: Tesco, Sainsbury's and Aldi average (GBP). EU: Germany and France average (EUR). US: national average, Walmart and Kroger (USD). Per kg for grams, per litre for ml, per tsp or tbsp for spices, otherwise per item. Each price is [UK, EU, US].",
   "cur": {
     "UK": "GBP",
     "EU": "EUR",
     "US": "USD"
   },
-  "fx": {"USD": 1, "GBP": 0.75, "EUR": 0.86, "CHF": 0.8, "PLN": 3.65, "CZK": 21, "HUF": 335, "SEK": 9.4, "NOK": 10, "DKK": 6.4, "CAD": 1.38, "AUD": 1.52, "NZD": 1.7, "JPY": 150, "INR": 88, "AED": 3.67, "SAR": 3.75, "TRY": 42, "UAH": 41.5, "KZT": 520, "ZAR": 17.5, "BRL": 5.4, "MXN": 18.5, "SGD": 1.29, "HKD": 7.8},
+  "fx": {"USD": 1, "GBP": 0.75, "EUR": 0.9, "CHF": 0.8, "PLN": 3.65, "CZK": 21, "HUF": 335, "SEK": 9.4, "NOK": 10, "DKK": 6.4, "CAD": 1.38, "AUD": 1.52, "NZD": 1.7, "JPY": 160, "INR": 88, "AED": 3.67, "SAR": 3.75, "TRY": 42, "UAH": 41.5, "KZT": 520, "ZAR": 17.5, "BRL": 5.4, "MXN": 18.5, "SGD": 1.29, "HKD": 7.8},
   "items": {
     "Almonds": [11, 12, 14],
     "Apple": [0.3, 0.35, 0.8],
@@ -41,7 +41,7 @@
     "Edamame (frozen)": [5, 7, 7],
     "Egg noodles": [3, 3.5, 6],
     "Egg whites": [4, 5, 5],
-    "Eggs": [0.22, 0.3, 0.22],
+    "Eggs": [0.22, 0.3, 0.19],
     "Fajita seasoning": [0.22, 0.25, 0.3],
     "Feta": [10, 11, 13],
     "Fresh basil": [0.85, 1, 1.2],
